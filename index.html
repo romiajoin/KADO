@@ -1,30 +1,44 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>台灣抽卡機地圖</title>
+  <title>抽卡機在哪！Card Radar</title>
 
-  <!-- 📦 Leaflet.js：免費開源地圖套件，不需要 API 金鑰 -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-29PN14JRK8"></script>
+  <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-29PN14JRK8');
+  </script>
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-29PN14JRK8"></script>
+  <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1G91M8FLWQ');
+  </script>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- 🎨 Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
   <style>
-    /* ===== 全域變數（顏色、字體） ===== */
     :root {
-      --pink:    #ff4d8d;
-      --yellow:  #ffe44d;
-      --dark:    #1C1C1E;
-      --mid:     #2C2C2E;
-      --card:    #3A3A3C;
-      --white:   #f0eeff;
-      --grey:    #8892b0;
+      --pink:   #ff4d8d;
+      --yellow: #ffcf48;
+      --dark:   #1C1C1E;
+      --mid:    #2C2C2E;
+      --card:   #3A3A3C;
+      --white:  #f0eeff;
+      --grey:   #8892b0;
     }
 
-    /* ===== 重置預設樣式 ===== */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -37,7 +51,7 @@
       overflow: hidden;
     }
 
-    /* ===== 頂部標題列 ===== */
+    /* ===== Header ===== */
     header {
       background: var(--mid);
       border-bottom: 2px solid var(--pink);
@@ -45,967 +59,745 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      z-index: 1000;
       flex-shrink: 0;
+      z-index: 200;
     }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { font-size: 26px; animation: spin 4s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .logo h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
+    .logo h1 span { color: var(--yellow); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-info { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--grey); }
 
-    .logo {
+    /* View Toggle */
+    .view-toggle {
       display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      font-size: 28px;
-      animation: spin 4s linear infinite;
-    }
-
-    @keyframes spin {
-      0%   { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .logo h1 {
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: 1px;
-    }
-
-    .logo h1 span {
-      color: var(--pink);
-    }
-
-    .header-info {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--grey);
-    }
-
-    /* ===== 主體：側邊欄 + 地圖 ===== */
-    .main {
-      display: flex;
-      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
       overflow: hidden;
     }
+    .view-btn {
+      padding: 6px 16px;
+      font-size: 13px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 700;
+      background: none; border: none;
+      color: var(--grey); cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .view-btn:hover { color: var(--white); }
+    .view-btn.active { background: var(--pink); color: #fff; }
 
-    /* ===== 側邊欄 ===== */
+    /* ===== Toolbar ===== */
+    .toolbar {
+      background: var(--mid);
+      border-bottom: 1px solid rgba(255,77,141,0.15);
+      padding: 10px 24px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .search-box {
+      display: flex; align-items: center;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,77,141,0.35);
+      border-radius: 8px; padding: 7px 14px; gap: 8px;
+      flex: 1; max-width: 360px;
+    }
+    .search-box input {
+      background: none; border: none; outline: none;
+      color: var(--white); font-family: 'Noto Sans TC', sans-serif;
+      font-size: 14px; width: 100%;
+    }
+    .search-box input::placeholder { color: var(--grey); }
+    .count-badge { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--grey); white-space: nowrap; margin-left: auto; }
+    .count-badge strong { color: var(--pink); font-size: 16px; }
+
+    /* ===== Content ===== */
+    .content { flex: 1; overflow: hidden; display: flex; }
+
+    /* ===== Grid View ===== */
+    #gridView {
+      width: 100%; height: 100%; overflow-y: auto; padding: 24px;
+      display: none;
+    }
+    #gridView.active { display: block; }
+    #gridView::-webkit-scrollbar { width: 5px; }
+    #gridView::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 4px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    /* ===== Grid cards ===== */
+    .loc-card-grid {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      display: flex; flex-direction: column;
+    }
+    .loc-card-grid:hover {
+      border-color: #ffcf48;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .card-top { padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+    .card-name { font-weight: 700; font-size: 14px; line-height: 1.35; margin-bottom: 4px; }
+    .card-limited { font-size: 12px; color: var(--yellow); font-weight: 700; margin-bottom: 2px; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+    .tag {
+      font-size: 11px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(255,77,141,0.15); color: var(--pink);
+      border: 1px solid rgba(255,77,141,0.3);
+    }
+    .card-actions { padding: 0 16px 14px; display: flex; align-items: center; gap: 8px; margin-top: auto; }
+    .btn-gmaps {
+      display: inline-flex; align-items: center; gap: 5px;
+      color: var(--yellow); font-size: 13px; font-weight: 400;
+      font-family: 'Noto Sans TC', sans-serif;
+      text-decoration: underline; text-underline-offset: 3px;
+      background: none; border: none; padding: 0;
+      transition: opacity 0.2s; white-space: nowrap;
+    }
+    .btn-gmaps:hover { opacity: 0.75; }
+    .btn-expand {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 7px 14px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: var(--grey); font-size: 12px;
+      font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      margin-left: auto;
+    }
+    .btn-expand:hover { background: rgba(255,77,141,0.1); border-color: rgba(255,77,141,0.3); color: var(--pink); }
+    .btn-expand.open { color: var(--pink); border-color: rgba(255,77,141,0.3); background: rgba(255,77,141,0.08); }
+    .chevron { display: inline-block; transition: transform 0.25s; font-style: normal; }
+    .btn-expand.open .chevron { transform: rotate(180deg); }
+
+    .card-detail { overflow: hidden; transition: max-height 0.35s ease; border-top: 1px solid transparent; }
+    .card-detail.open { border-top-color: rgba(255,255,255,0.06); }
+    .card-detail-inner { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .detail-row { display: flex; gap: 8px; font-size: 13px; align-items: flex-start; }
+    .detail-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+    .detail-text { color: var(--grey); line-height: 1.5; }
+
+    /* Grid carousel */
+    .carousel-grid { margin-top: 4px; background: rgba(255,255,255,0.04); border-radius: 10px; overflow: hidden; }
+    .carousel-grid-img-wrap { width: 100%; aspect-ratio: 4/3; background: #222; display: flex; align-items: center; justify-content: center; }
+    .carousel-grid-img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; display: block; }
+    .carousel-controls-grid { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px; }
+    .single-img-wrap { margin-top: 4px; border-radius: 10px; overflow: hidden; aspect-ratio: 4/3; }
+    .single-img-wrap img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; display: block; }
+
+    /* ===== Map View ===== */
+    #mapView { width: 100%; height: 100%; display: none; }
+    #mapView.active { display: flex; }
+
+    /* ===== Sidebar (原始版樣式) ===== */
     .sidebar {
       width: 280px;
       background: var(--mid);
       border-right: 1px solid rgba(255,77,141,0.2);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      flex-shrink: 0;
+      display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
     }
-
     .sidebar-header {
       padding: 16px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
     }
-
     .sidebar-header h2 {
-      font-size: 13px;
-      color: var(--grey);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
+      font-size: 13px; color: var(--grey);
+      text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
     }
-
-    /* 搜尋框 */
-    .search-box {
-      display: flex;
-      align-items: center;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,77,141,0.3);
-      border-radius: 8px;
-      padding: 8px 12px;
-      gap: 8px;
-    }
-
-    .search-box input {
-      background: none;
-      border: none;
-      outline: none;
-      color: var(--white);
-      font-family: 'Noto Sans TC', sans-serif;
-      font-size: 14px;
-      width: 100%;
-    }
-
-    .search-box input::placeholder { color: var(--grey); }
-
-    /* 地點列表 */
-    .location-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-    }
-
+    .location-list { flex: 1; overflow-y: auto; padding: 8px; }
     .location-list::-webkit-scrollbar { width: 4px; }
     .location-list::-webkit-scrollbar-track { background: transparent; }
     .location-list::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 4px; }
 
-    /* 單一地點卡片 */
+    /* Sidebar card (原始版) */
     .loc-card {
       background: var(--card);
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      border: 1px solid transparent;
+      border-radius: 10px; padding: 12px; margin-bottom: 8px;
+      cursor: pointer; border: 1px solid transparent;
       transition: border-color 0.2s, transform 0.15s;
     }
+    .loc-card:hover { border-color: var(--pink); transform: translateX(3px); }
+    .loc-card.active { border-color: var(--yellow); }
+    .loc-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .loc-limited { font-size: 12px; color: var(--yellow); font-weight: 700; margin-bottom: 6px; }
+    .loc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .loc-tags .tag { font-size: 11px; padding: 2px 8px; }
 
-    .loc-card:hover {
-      border-color: var(--pink);
-      transform: translateX(3px);
-    }
+    /* Map */
+    #map { flex: 1; }
 
-    .loc-card.active {
-      border-color: var(--yellow);
-    }
-
-    .loc-name {
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-
-    .loc-addr {
-      font-size: 12px;
-      color: var(--grey);
-      margin-bottom: 6px;
-    }
-
-    .loc-meta {
-      font-size: 12px;
-      color: var(--grey);
-      margin-bottom: 3px;
-    }
-
-    .loc-limited {
-      font-size: 12px;
-      color: var(--yellow);
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .loc-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .tag {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      background: rgba(255,77,141,0.15);
-      color: var(--pink);
-      border: 1px solid rgba(255,77,141,0.3);
-    }
-
-    /* 側邊欄底部：新增按鈕 */
-    .sidebar-footer {
-      padding: 12px;
-      border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .btn-add {
-      width: 100%;
-      padding: 12px;
-      background: var(--pink);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-family: 'Noto Sans TC', sans-serif;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-
-    .btn-add:hover { opacity: 0.85; transform: scale(0.98); }
-
-    /* ===== 地圖區域 ===== */
-    #map {
-      flex: 1;
-      z-index: 1;
-      height: 100%;
-      min-height: 0;
-    }
-
-    /* ===== Leaflet 彈出視窗客製化 ===== */
+    /* ===== Leaflet popup (原始版) ===== */
     .leaflet-popup-content-wrapper {
-      background: #1c1c1e;
-      color: var(--white);
-      border: 1px solid #ffcf48;
-      border-radius: 16px;
+      background: #1c1c1e; color: var(--white);
+      border: 1px solid #ffcf48; border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
-
     .leaflet-popup-tip { background: var(--mid); }
-
-    .popup-title {
-      font-weight: 900;
-      font-size: 16px;
-      margin-bottom: 6px;
-      color: var(--yellow);
-    }
-
-    .popup-addr {
-      font-size: 13px;
-      color: var(--grey);
-      margin-bottom: 8px;
-    }
-
-    .popup-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-/* 輪播 */
-    .carousel { margin-bottom: 4px; }
-
-    /* 圖片置中 */
-    .carousel-img-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* 下方控制列：‹ 1/3 › */
-    .carousel-controls {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .carousel-btn {
-      background: #ffcf48;
-      color: #1c1c1e;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      font-size: 14px;
-      font-weight: bold;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.2s;
-      padding: 0;
-    }
-
-    .carousel-btn:hover { opacity: 0.8; }
-
-    .carousel-counter {
-      font-size: 12px;
-      color: var(--white);
-      min-width: 32px;
-      text-align: center;
-    }
-
-    /* 期間限定 */
+    .popup-title { font-weight: 900; font-size: 16px; margin-bottom: 6px; color: var(--yellow); }
+    .popup-addr { font-size: 13px; color: var(--grey); margin-bottom: 8px; }
     .popup-limited {
-      display: block;
-      margin-top: 8px;
-      padding: 6px 12px;
-      background: #1c1c1e;
-      border: 1px solid #ffcf48;
-      border-radius: 15px;
-      color: #ffcf48;
-      font-size: 12px;
-      font-weight: 400;
+      display: inline-block; padding: 6px 12px;
+      background: #1c1c1e; border: 1px solid #ffcf48;
+      border-radius: 15px; color: #ffcf48; font-size: 12px; font-weight: 400;
     }
-
-    /* 彈窗圖片容器 */
     .popup-img-wrap {
-      background: rgba(120,125,128,0.2);
-      border-radius: 8px;
-      padding: 10px;
-      margin: 10px 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: rgba(120,125,128,0.2); border-radius: 8px;
+      padding: 16px; margin: 12px 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
-
-    /* 彈窗圖片 */
-    .popup-img {
-      width: 120px;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 8px;
-      display: block;
-    }
-
-    /* Lightbox 全螢幕圖片 */
-    .lightbox {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.9);
-      z-index: 99999;
-      align-items: center;
-      justify-content: center;
-      cursor: zoom-out;
-    }
-
-    .lightbox.show { display: flex; }
-
-    .lightbox img {
-      max-width: 90vw;
-      max-height: 90vh;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-
-
-
-    /* Google Maps 連結 */
+    .popup-img { width: 100%; height: auto; border-radius: 8px; display: block; cursor: zoom-in; }
     .popup-gmaps-link {
-      display: block;
-      margin-top: 10px;
-      color: var(--pink);
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: opacity 0.2s;
+      display: block; margin-top: 10px; color: #ffcf48;
+      font-size: 12px; font-weight: 400; text-decoration: underline; transition: opacity 0.2s;
     }
+    .popup-gmaps-link:hover { opacity: 0.75; }
 
-    .popup-gmaps-link:hover {
-      opacity: 0.75;
-      text-decoration: underline;
+    /* Popup carousel */
+    .carousel { margin-bottom: 4px; }
+    .carousel-img-wrap { display: flex; align-items: center; justify-content: center; }
+    .carousel-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
+    .carousel-btn {
+      background: #ffcf48; color: #1c1c1e; border: none; border-radius: 50%;
+      width: 20px; height: 20px; min-width: 20px; font-size: 14px; font-weight: bold;
+      line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.2s; padding: 0;
     }
+    .carousel-btn:hover { opacity: 0.8; }
+    .carousel-counter { font-size: 12px; color: var(--white); min-width: 32px; text-align: center; }
 
-    /* ===== 地圖上的統計角標 ===== */
-    .map-badge {
-      position: absolute;
-      bottom: 24px;
-      right: 24px;
-      z-index: 999;
-      background: var(--mid);
-      border: 1px solid var(--pink);
-      border-radius: 12px;
-      padding: 10px 16px;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      pointer-events: none;
+    /* ===== Lightbox ===== */
+    .lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.9); z-index: 99999;
+      align-items: center; justify-content: center; cursor: zoom-out;
     }
+    .lightbox.show { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
 
-    .map-badge strong {
-      color: var(--pink);
-      font-size: 20px;
-      display: block;
+    /* ===== Grid Detail Modal ===== */
+    .grid-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 9999;
+      align-items: center; justify-content: center;
+      padding: 20px;
     }
-
-    /* ===== 投稿表單 Modal ===== */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
+    .grid-modal-overlay.show { display: flex; }
+    .grid-modal-box {
+      background: #1c1c1e; border: 1px solid #ffcf48;
+      border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 100%; max-width: 420px; max-height: 90vh;
+      overflow-y: auto; position: relative; padding: 20px;
     }
-
-    .modal-overlay.show { display: flex; }
-
-    .modal {
-      background: var(--mid);
-      border: 1px solid var(--pink);
-      border-radius: 16px;
-      padding: 28px;
-      width: 400px;
-      max-width: 90vw;
+    .grid-modal-close {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; color: var(--grey);
+      font-size: 18px; cursor: pointer; line-height: 1;
     }
+    .grid-modal-close:hover { color: var(--white); }
+    .grid-modal-content .popup-title { padding-right: 24px; }
 
-    .modal h3 {
-      font-size: 18px;
-      font-weight: 900;
-      margin-bottom: 20px;
-      color: var(--yellow);
-    }
+    /* ===== Empty ===== */
+    .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--grey); font-size: 15px; }
 
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      color: var(--grey);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,77,141,0.3);
-      border-radius: 8px;
-      color: var(--white);
-      font-family: 'Noto Sans TC', sans-serif;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      border-color: var(--pink);
-    }
-
-    .form-group textarea { resize: vertical; min-height: 80px; }
-
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .btn-submit {
-      flex: 1;
-      padding: 12px;
-      background: var(--pink);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-family: 'Noto Sans TC', sans-serif;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-
-    .btn-submit:hover { opacity: 0.85; }
-
-    .btn-cancel {
-      padding: 12px 20px;
-      background: transparent;
-      color: var(--grey);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      font-family: 'Noto Sans TC', sans-serif;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-
-    .btn-cancel:hover { border-color: var(--white); color: var(--white); }
-
-    /* 成功訊息 */
-    .toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: #1db954;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-weight: 700;
-      font-size: 14px;
-      opacity: 0;
-      transition: all 0.3s;
-      z-index: 99999;
-      pointer-events: none;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* ===== 手機版 RWD ===== */
-    @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-      }
-
-      header {
-        padding: 10px 16px;
-      }
-
+    /* ===== Mobile ===== */
+    @media (max-width: 640px) {
       .logo h1 { font-size: 16px; }
       .header-info { display: none; }
-
-      .main {
-        flex-direction: column;
-      }
-
-      /* 手機版側邊欄變成下半部 */
-      .sidebar {
-        width: 100%;
-        height: 45vh;
-        border-right: none;
-        border-top: 2px solid var(--pink);
-        flex-shrink: 0;
-      }
-
-      .sidebar-header h2 { display: none; }
-
-      /* 手機版地圖佔上半 */
-      #map {
-        height: 55vh;
-        min-height: 0;
-      }
-
-      /* 手機版卡片 hover 不位移 */
-      .loc-card:hover {
-        transform: none;
-      }
-
-      /* 手機版地圖容器 */
-      .main > div:last-child {
-        flex: none;
-        height: 55vh;
-      }
-
-      /* 右下角統計移到左下 */
-      .map-badge {
-        bottom: 12px;
-        right: 12px;
-        padding: 6px 12px;
-      }
-
-      .map-badge strong { font-size: 16px; }
+      #gridView { padding: 12px; }
+      .grid { grid-template-columns: 1fr; gap: 12px; }
+      .toolbar { padding: 8px 12px; }
+      .view-btn .label { display: none; }
+      .sidebar { width: 200px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ===== 頂部標題列 ===== -->
   <header>
     <div class="logo">
       <span class="logo-icon">🎰</span>
-      <h1>台灣<span>抽卡機</span>地圖</h1>
+      <h1>抽卡機在哪！<span>Card Radar</span></h1>
     </div>
-    <div class="header-info">社群共建 · 持續更新</div>
+    <div class="header-right">
+      <div class="header-info" id="lastUpdated">載入中...</div>
+      <div class="view-toggle">
+        <button class="view-btn" id="btnGrid" onclick="setView('grid')">☰ <span class="label">列表</span></button>
+        <button class="view-btn" id="btnMap" onclick="setView('map')">🗺 <span class="label">地圖</span></button>
+      </div>
+    </div>
   </header>
 
-  <!-- ===== 主體 ===== -->
-  <div class="main">
+  <div class="toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="搜尋 IP、縣市、場地..." />
+    </div>
+    <div class="count-badge"><strong id="countBadge">0</strong> 個地點</div>
+  </div>
 
-    <!-- 側邊欄 -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2>地點列表</h2>
-        <!-- 搜尋框 -->
-        <div class="search-box">
-          <span>🔍</span>
-          <input type="text" id="searchInput" placeholder="搜尋地點或地址..." />
-        </div>
-      </div>
-
-      <!-- 地點卡片列表（由 JS 動態產生） -->
-      <div class="location-list" id="locationList"></div>
-
-
-    </aside>
-
-    <!-- 地圖 -->
-    <div style="position:relative; flex:1;">
-      <div id="map"></div>
-      <!-- 右下角統計 -->
-      <div class="map-badge">
-        <strong id="countBadge">0</strong>
-        個地點
+  <div class="content">
+    <!-- Grid View -->
+    <div id="gridView">
+      <div class="grid" id="grid">
+        <div class="empty-state">⏳ 載入資料中...</div>
       </div>
     </div>
 
+    <!-- Map View -->
+    <div id="mapView">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>地點列表</h2>
+        </div>
+        <div class="location-list" id="locationList"></div>
+      </aside>
+      <div id="map"></div>
+    </div>
   </div>
 
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" />
+  </div>
 
-
-
+  <!-- Grid Detail Modal -->
+  <div class="grid-modal-overlay" id="gridModal" onclick="closeGridModal(event)">
+    <div class="grid-modal-box">
+      <button class="grid-modal-close" onclick="closeGridModal()">✕</button>
+      <div class="grid-modal-content" id="gridModalContent"></div>
+    </div>
+  </div>
 
   <script>
-    // =============================================
-    // 📌 Google Sheet CSV 網址
-    // 只要改這一行，就能換資料來源！
-    // =============================================
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
 
-    // 全域儲存所有地點資料（搜尋時會用到）
     let allLocations = [];
+    let currentFiltered = [];
+    let map = null;
+    let markers = [];
 
-    // =============================================
-    // 🗺️ 初始化地圖（以台灣為中心）
-    // =============================================
-    const map = L.map('map').setView([23.6, 121.0], 8);
-
-    // 載入地圖底圖（OpenStreetMap，完全免費）
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19
-    }).addTo(map);
-
-    // =============================================
-    // 📍 修正 Leaflet 預設圖示路徑問題（常見 bug）
-    // =============================================
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    });
-
-    // 自訂地標圖示（用 emoji）
     const customIcon = L.divIcon({
-      html: '🎰',
-      className: '',
-      iconSize: [30, 30],
-      iconAnchor: [15, 15],
-      popupAnchor: [0, -15]
+      html: '🎰', className: '',
+      iconSize: [52, 52], iconAnchor: [26, 26], popupAnchor: [0, -26]
     });
 
     // =============================================
-    // 📥 從 Google Sheet 讀取 CSV 資料
+    // 🗺️ 切換視圖
     // =============================================
-    async function loadFromSheet() {
-      // 顯示載入中狀態
-      document.getElementById('locationList').innerHTML =
-        '<div style="padding:20px;color:var(--grey);text-align:center;">⏳ 載入資料中...</div>';
+    function setView(view) {
+      document.getElementById('btnGrid').classList.toggle('active', view === 'grid');
+      document.getElementById('btnMap').classList.toggle('active', view === 'map');
+      document.getElementById('gridView').classList.toggle('active', view === 'grid');
+      document.getElementById('mapView').classList.toggle('active', view === 'map');
 
-      try {
-        // fetch() 是瀏覽器內建的功能，用來抓取網路上的資料
-        const response = await fetch(SHEET_CSV_URL);
-        const csvText = await response.text();
-
-        // 把 CSV 文字解析成陣列
-        // CSV 長這樣：店名,縣市,地區,地址,緯度,經度,熱門角色,備註,期間限定
-        const rows = csvText.trim().split('\n');  // 按換行切割成每一列
-        const headers = rows[0].split(',');       // 第一列是標題列
-
-        // 從第二列開始（跳過標題），把每列轉成物件
-        const locations = rows.slice(1)
-          .map(row => {
-            // 處理 CSV 欄位（有些欄位可能包含逗號，用引號包起來）
-            const cols = parseCSVRow(row);
-            return {
-              name:      cols[0] || '',   // 店名
-              venue:     cols[1] || '',   // 場地
-              city:      cols[2] || '',   // 縣市
-              addr:      cols[3] || '',   // 地址
-              lat:       parseFloat(cols[4]),  // 緯度
-              lng:       parseFloat(cols[5]),  // 經度
-              limited:   cols[6] || '',   // 期間限定
-              character: cols[7] || '',   // IP
-              image:     cols[8] || '',   // 圖片
-              edition:   cols[9] || '',   // 彈數
-              perDraw:   cols[10] || '',  // 一抽張數
-              note:      cols[11] || '',  // 備註
-            };
-          })
-          // 過濾掉：名稱是空的、或經緯度不是數字的列
-          .filter(loc => loc.name && !isNaN(loc.lat) && !isNaN(loc.lng));
-
-        // 排序：依期間限定結束日期從近到遠
-        // 格式假設為 "YYYY/MM/DD～YYYY/MM/DD"，取最後的結束日期
-        locations.sort((a, b) => {
-          const getEndDate = (limited) => {
-            if (!limited) return new Date('9999/12/31'); // 沒有期限的排最後
-            const parts = limited.split('～');
-            const dateStr = parts[parts.length - 1].trim().replace(/\//g, '-');
-            return new Date(dateStr);
-          };
-          return getEndDate(a.limited) - getEndDate(b.limited);
-        });
-
-        // 儲存到全域變數（搜尋時使用）
-        allLocations = locations;
-
-        // 畫到地圖上
-        renderLocations(locations);
-
-      } catch (error) {
-        // 如果讀取失敗，顯示錯誤訊息
-        console.error('載入失敗：', error);
-        document.getElementById('locationList').innerHTML =
-          '<div style="padding:20px;color:#ff6b6b;text-align:center;">❌ 資料載入失敗<br><small>請確認 Sheet 已設定公開發布</small></div>';
+      if (view === 'map') {
+        initMap();
+        setTimeout(() => { if (map) map.invalidateSize(); }, 50);
       }
     }
 
     // =============================================
-    // 🖼️ 把 Google Drive 分享連結轉成可顯示的圖片網址
-    // 原本：https://drive.google.com/file/d/【ID】/view?usp=sharing
-    // 轉成：https://drive.google.com/uc?export=view&id=【ID】
+    // 🗺️ 初始化地圖（只一次）
     // =============================================
-    function driveUrlToImage(url) {
-      if (!url) return '';
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match) {
-        return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-      }
-      return url; // 如果不是 Drive 連結，直接用原始網址
+    function initMap() {
+      if (map) return;
+      map = L.map('map').setView([23.6, 121.0], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19
+      }).addTo(map);
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+      renderMapLocations(currentFiltered.length ? currentFiltered : allLocations);
     }
 
     // =============================================
-    // 🔧 解析 CSV 單列（處理欄位含逗號的情況）
+    // 📍 渲染地圖 markers + 側邊欄（原始版邏輯）
     // =============================================
-    function parseCSVRow(row) {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-
-      for (let i = 0; i < row.length; i++) {
-        const char = row[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;        // 遇到引號，切換「是否在引號內」的狀態
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim()); // 遇到逗號且不在引號內，代表這個欄位結束
-          current = '';
-        } else {
-          current += char;             // 普通字元就累積
-        }
-      }
-      result.push(current.trim());     // 最後一個欄位
-      return result;
-    }
-
-    // =============================================
-    // 🔧 把地點資料畫到地圖 & 側邊欄
-    // =============================================
-    let markers = []; // 儲存所有地標，方便之後控制
-
-    function renderLocations(data) {
-      const list = document.getElementById('locationList');
-      list.innerHTML = ''; // 清空列表
-      markers.forEach(m => map.removeLayer(m)); // 清空地圖上的舊標記
+    function renderMapLocations(data) {
+      if (!map) return;
+      markers.forEach(m => map.removeLayer(m));
       markers = [];
+
+      const list = document.getElementById('locationList');
+      list.innerHTML = '';
 
       if (data.length === 0) {
         list.innerHTML = '<div style="padding:20px;color:var(--grey);text-align:center;">找不到符合的地點</div>';
-        document.getElementById('countBadge').textContent = 0;
         return;
       }
 
       data.forEach((loc, i) => {
-        // 組合標籤：用熱門角色和縣市當標籤
-        const tags = [loc.city, loc.character].filter(t => t);
+        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city + loc.addr)}`;
+        const imgs = loc.image
+          ? loc.image.split(',').map(s => driveUrlToImage(s.trim())).filter(Boolean)
+          : [];
 
-        // --- 建立地圖標記 ---
-        // Google Maps 連結：用地址搜尋（最準確）
-        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city + loc.district + loc.addr)}`;
+        // 圖片 HTML（原始版 popup 樣式）
+        let imgHtml = '';
+        if (imgs.length === 1) {
+          imgHtml = `<div class="popup-img-wrap"><img src="${imgs[0]}" class="popup-img" data-lightbox="${imgs[0]}" /></div>`;
+        } else if (imgs.length > 1) {
+          const cid = 'map-carousel-' + i;
+          imgHtml = `
+            <div class="popup-img-wrap">
+              <div class="carousel" id="${cid}" data-index="0" data-imgs='${JSON.stringify(imgs)}'>
+                <div class="carousel-img-wrap">
+                  <img src="${imgs[0]}" class="popup-img carousel-img" data-lightbox="${imgs[0]}" />
+                </div>
+                <div class="carousel-controls">
+                  <button class="carousel-btn" data-carousel-action="prev" data-carousel-id="${cid}">&#8249;</button>
+                  <span class="carousel-counter">1 / ${imgs.length}</span>
+                  <button class="carousel-btn" data-carousel-action="next" data-carousel-id="${cid}">&#8250;</button>
+                </div>
+              </div>
+            </div>`;
+        }
 
+        // Marker + popup（原始版）
         const marker = L.marker([loc.lat, loc.lng], { icon: customIcon })
           .addTo(map)
           .bindPopup(`
             <div class="popup-title">${loc.name}</div>
-            ${loc.venue ? `<div class="popup-addr">🏢 ${loc.venue}</div>` : ""}
+            ${loc.venue ? `<div class="popup-addr">🏢 ${loc.venue}</div>` : ''}
             <div class="popup-addr">📍 ${loc.addr}</div>
             ${loc.character ? `<div class="popup-addr">⭐ IP：${loc.character}</div>` : ''}
             ${loc.edition ? `<div class="popup-addr">🃏 彈數：${loc.edition}</div>` : ''}
             ${loc.perDraw ? `<div class="popup-addr">🎴 一抽張數：${loc.perDraw}</div>` : ''}
             ${loc.note ? `<div class="popup-addr">📝 ${loc.note}</div>` : ''}
-            ${loc.limited ? `<div class="popup-limited">⏰ 期間限定：${loc.limited}</div>` : ''}
-            ${loc.image ? (() => {
-              const imgs = loc.image.split(',').map(s => s.trim()).filter(s => s);
-              if (imgs.length === 1) {
-                return `<div class="popup-img-wrap"><img src="${imgs[0]}" class="popup-img" data-lightbox="${imgs[0]}" /></div>`;
-              }
-              const id = 'carousel-' + i;
-              return `
-                <div class="popup-img-wrap">
-                  <div class="carousel" id="${id}" data-index="0" data-imgs='${JSON.stringify(imgs)}'>
-                    <div class="carousel-img-wrap">
-                      <img src="${imgs[0]}" class="popup-img carousel-img" data-lightbox="${imgs[0]}" />
-                    </div>
-                    <div class="carousel-controls">
-                      <button class="carousel-btn" data-carousel-action="prev" data-carousel-id="${id}">&#8249;</button>
-                      <span class="carousel-counter">1 / ${imgs.length}</span>
-                      <button class="carousel-btn" data-carousel-action="next" data-carousel-id="${id}">&#8250;</button>
-                    </div>
-                  </div>
-                </div>
-              `;
-            })() : ''}
-            <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link">
-              在 Google Maps 查看 →
-            </a>
+            ${loc.hours ? `<div class="popup-addr">🕐 ${loc.hours}</div>` : ''}
+            ${loc.limited ? `<div class="popup-limited">期間限定：${loc.limited}</div>` : ''}
+            ${imgHtml}
+            <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link">在 Google Maps 查看 →</a>
           `);
         markers.push(marker);
 
-        // --- 建立側邊欄卡片 ---
+        // 側邊欄卡片（原始版）
         const card = document.createElement('div');
         card.className = 'loc-card';
         card.innerHTML = `
           <div class="loc-name">${loc.name}</div>
-          ${loc.limited ? `<div class="loc-limited">⏰ ${loc.limited}</div>` : ''}
+          ${loc.limited ? `<div class="loc-limited">${loc.limited}</div>` : ''}
           <div class="loc-tags">
             ${loc.character ? `<span class="tag">${loc.character}</span>` : ''}
             ${loc.city ? `<span class="tag">${loc.city}</span>` : ''}
             ${loc.venue ? `<span class="tag">${loc.venue}</span>` : ''}
           </div>
         `;
-
-        // 點卡片 → 地圖飛到該地點並打開彈窗
         card.addEventListener('click', () => {
           document.querySelectorAll('.loc-card').forEach(c => c.classList.remove('active'));
           card.classList.add('active');
           map.flyTo([loc.lat, loc.lng], 15, { duration: 1.2 });
           marker.openPopup();
         });
-
         list.appendChild(card);
       });
+    }
 
-      // 更新右下角統計數字
+    // =============================================
+    // 🖼️ Google Drive 轉圖片網址
+    // =============================================
+    function driveUrlToImage(url) {
+      if (!url) return '';
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+      return url;
+    }
+
+    // =============================================
+    // 🔧 解析 CSV 單列
+    // =============================================
+    function parseCSVRow(row) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+        if (char === '"') { inQuotes = !inQuotes; }
+        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+        else { current += char; }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    // =============================================
+    // 📥 載入 Google Sheet
+    // =============================================
+    async function loadFromSheet() {
+      document.getElementById('grid').innerHTML = '<div class="empty-state">⏳ 載入資料中...</div>';
+      try {
+        const response = await fetch(SHEET_CSV_URL);
+        const csvText = await response.text();
+        const rows = csvText.trim().split('\n');
+
+        const firstRow = parseCSVRow(rows[1] || '');
+        const lastUpdated = firstRow[13] || '';
+        document.getElementById('lastUpdated').textContent =
+          lastUpdated ? '最後更新：' + lastUpdated : '社群共建 · 持續更新';
+
+        const locations = rows.slice(1).map(row => {
+          const cols = parseCSVRow(row);
+          return {
+            name:      cols[0] || '',
+            venue:     cols[1] || '',
+            city:      cols[2] || '',
+            addr:      cols[3] || '',
+            lat:       parseFloat(cols[4]),
+            lng:       parseFloat(cols[5]),
+            limited:   cols[6] || '',
+            character: cols[7] || '',
+            image:     cols[8] || '',
+            edition:   cols[9] || '',
+            perDraw:   cols[10] || '',
+            note:      cols[11] || '',
+            hours:     cols[12] || '',
+          };
+        }).filter(loc => loc.name && !isNaN(loc.lat) && !isNaN(loc.lng));
+
+        locations.sort((a, b) => {
+          const getEnd = l => {
+            if (!l) return new Date('9999/12/31');
+            const p = l.split('～');
+            return new Date(p[p.length-1].trim().replace(/\//g, '-'));
+          };
+          return getEnd(a.limited) - getEnd(b.limited);
+        });
+
+        allLocations = locations;
+        currentFiltered = locations;
+        renderGrid(locations);
+
+      } catch (err) {
+        console.error('載入失敗：', err);
+        document.getElementById('grid').innerHTML =
+          '<div class="empty-state">❌ 資料載入失敗<br><small>請確認 Sheet 已設定公開發布</small></div>';
+      }
+    }
+
+    // =============================================
+    // 🃏 渲染格狀列表
+    // =============================================
+    function renderGrid(data) {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
       document.getElementById('countBadge').textContent = data.length;
+
+      if (data.length === 0) {
+        grid.innerHTML = '<div class="empty-state">找不到符合的地點 😢</div>';
+        return;
+      }
+
+      data.forEach((loc, i) => {
+        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city + loc.addr)}`;
+        const imgs = loc.image
+          ? loc.image.split(',').map(s => driveUrlToImage(s.trim())).filter(Boolean)
+          : [];
+
+        const cid = 'grid-c-' + i;
+        let imageHtml = '';
+        if (imgs.length === 1) {
+          imageHtml = `<div class="single-img-wrap"><img src="${imgs[0]}" data-lightbox="${imgs[0]}" loading="lazy"/></div>`;
+        } else if (imgs.length > 1) {
+          imageHtml = `
+            <div class="carousel-grid" id="${cid}" data-index="0" data-imgs='${JSON.stringify(imgs)}'>
+              <div class="carousel-grid-img-wrap">
+                <img src="${imgs[0]}" class="carousel-grid-img" data-lightbox="${imgs[0]}" loading="lazy"/>
+              </div>
+              <div class="carousel-controls-grid">
+                <button class="carousel-btn" data-grid-action="prev" data-grid-cid="${cid}">&#8249;</button>
+                <span class="carousel-counter" style="color:var(--grey)">1 / ${imgs.length}</span>
+                <button class="carousel-btn" data-grid-action="next" data-grid-cid="${cid}">&#8250;</button>
+              </div>
+            </div>`;
+        }
+
+        const hasDetail = loc.addr || loc.edition || loc.perDraw || loc.hours || loc.note || imgs.length > 0;
+        let detailHtml = '';
+        if (loc.addr) detailHtml += `<div class="detail-row"><span class="detail-icon">📍</span><span class="detail-text">${loc.city}${loc.addr}</span></div>`;
+        if (loc.hours) detailHtml += `<div class="detail-row"><span class="detail-icon">🕐</span><span class="detail-text">${loc.hours}</span></div>`;
+        if (loc.edition || loc.perDraw) {
+          const t = [loc.edition ? `彈數：${loc.edition}` : '', loc.perDraw ? `一抽：${loc.perDraw}張` : ''].filter(Boolean).join('　');
+          detailHtml += `<div class="detail-row"><span class="detail-icon">🃏</span><span class="detail-text">${t}</span></div>`;
+        }
+        if (loc.note) detailHtml += `<div class="detail-row"><span class="detail-icon">📝</span><span class="detail-text">${loc.note}</span></div>`;
+        if (imageHtml) detailHtml += imageHtml;
+
+        const card = document.createElement('div');
+        card.className = 'loc-card-grid';
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="card-name">${loc.name}</div>
+            ${loc.limited ? `<div class="card-limited">${loc.limited}</div>` : ''}
+            <div class="card-tags">
+              ${loc.character ? `<span class="tag">${loc.character}</span>` : ''}
+              ${loc.city ? `<span class="tag">${loc.city}</span>` : ''}
+              ${loc.venue ? `<span class="tag">${loc.venue}</span>` : ''}
+            </div>
+          </div>
+          <div class="card-actions">
+            <a href="${googleMapsUrl}" target="_blank" class="btn-gmaps">🗺️ 在 Google Maps 查看 →</a>
+            ${hasDetail ? `<button class="btn-expand" type="button">詳情 <i class="chevron">▾</i></button>` : ''}
+          </div>
+        `;
+
+        if (hasDetail) {
+          const btn = card.querySelector('.btn-expand');
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openGridModal(loc, imgs, googleMapsUrl);
+          });
+        }
+
+        grid.appendChild(card);
+      });
     }
 
     // =============================================
-    // 🔍 Lightbox 函式
+    // 🔍 搜尋
     // =============================================
-    function openLightbox(src) {
-      document.getElementById('lightboxImg').src = src;
-      document.getElementById('lightbox').classList.add('show');
-    }
-
-    function closeLightbox() {
-      document.getElementById('lightbox').classList.remove('show');
-    }
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeLightbox();
+    document.getElementById('searchInput').addEventListener('input', function () {
+      const kw = this.value.trim().toLowerCase();
+      currentFiltered = allLocations.filter(loc =>
+        loc.name.toLowerCase().includes(kw) ||
+        loc.addr.toLowerCase().includes(kw) ||
+        loc.city.toLowerCase().includes(kw) ||
+        loc.venue.toLowerCase().includes(kw) ||
+        loc.character.toLowerCase().includes(kw) ||
+        loc.edition.toLowerCase().includes(kw)
+      );
+      renderGrid(currentFiltered);
+      document.getElementById('countBadge').textContent = currentFiltered.length;
+      if (map) renderMapLocations(currentFiltered);
     });
 
     // =============================================
-    // 🎠 輪播控制函式
+    // 🖱️ 事件委派（輪播、Lightbox）
     // =============================================
-    function carouselPrev(id) {
-      const el = document.getElementById(id);
-      const imgs = JSON.parse(el.getAttribute('data-imgs'));
-      let idx = parseInt(el.getAttribute('data-index'));
-      idx = (idx - 1 + imgs.length) % imgs.length;
-      el.setAttribute('data-index', idx);
-      const img = el.querySelector('.carousel-img');
-      img.src = imgs[idx];
-      img.setAttribute('data-lightbox', imgs[idx]);
-      el.querySelector('.carousel-counter').textContent = (idx + 1) + ' / ' + imgs.length;
-    }
-
-    function carouselNext(id) {
-      const el = document.getElementById(id);
-      const imgs = JSON.parse(el.getAttribute('data-imgs'));
-      let idx = parseInt(el.getAttribute('data-index'));
-      idx = (idx + 1) % imgs.length;
-      el.setAttribute('data-index', idx);
-      const img = el.querySelector('.carousel-img');
-      img.src = imgs[idx];
-      img.setAttribute('data-lightbox', imgs[idx]);
-      el.querySelector('.carousel-counter').textContent = (idx + 1) + ' / ' + imgs.length;
-    }
-
-    // 頁面載入時，從 Google Sheet 讀取資料
-    loadFromSheet();
-
-    // 事件委派（capture 模式，確保 Leaflet 不攔截）
-    document.addEventListener('click', function(e) {
-      // 輪播按鈕
-      const btn = e.target.closest('[data-carousel-action]');
-      if (btn) {
+    document.addEventListener('click', function (e) {
+      // Grid carousel
+      const gridBtn = e.target.closest('[data-grid-action]');
+      if (gridBtn) {
         e.stopPropagation();
-        e.preventDefault();
-        const action = btn.getAttribute('data-carousel-action');
-        const id = btn.getAttribute('data-carousel-id');
-        if (action === 'prev') carouselPrev(id);
-        if (action === 'next') carouselNext(id);
+        const action = gridBtn.getAttribute('data-grid-action');
+        const cid = gridBtn.getAttribute('data-grid-cid');
+        const el = document.getElementById(cid);
+        if (!el) return;
+        const imgs = JSON.parse(el.getAttribute('data-imgs'));
+        let idx = parseInt(el.getAttribute('data-index'));
+        idx = action === 'prev' ? (idx - 1 + imgs.length) % imgs.length : (idx + 1) % imgs.length;
+        el.setAttribute('data-index', idx);
+        const img = el.querySelector('.carousel-grid-img');
+        img.src = imgs[idx];
+        img.setAttribute('data-lightbox', imgs[idx]);
+        el.querySelector('.carousel-counter').textContent = (idx + 1) + ' / ' + imgs.length;
         return;
       }
-      // 圖片點擊放大
+
+      // Lightbox（grid）
+      const lb = e.target.closest('[data-lightbox]');
+      if (lb && !e.target.closest('.leaflet-popup-content')) {
+        openLightbox(lb.getAttribute('data-lightbox') || lb.src);
+        return;
+      }
+    });
+
+    // Map popup: carousel + lightbox（capture mode，原始版）
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-carousel-action]');
+      if (btn) {
+        e.stopPropagation(); e.preventDefault();
+        const action = btn.getAttribute('data-carousel-action');
+        const id = btn.getAttribute('data-carousel-id');
+        const el = document.getElementById(id);
+        if (!el) return;
+        const imgs = JSON.parse(el.getAttribute('data-imgs'));
+        let idx = parseInt(el.getAttribute('data-index'));
+        idx = action === 'prev' ? (idx - 1 + imgs.length) % imgs.length : (idx + 1) % imgs.length;
+        el.setAttribute('data-index', idx);
+        const img = el.querySelector('.carousel-img');
+        img.src = imgs[idx];
+        img.setAttribute('data-lightbox', imgs[idx]);
+        el.querySelector('.carousel-counter').textContent = (idx + 1) + ' / ' + imgs.length;
+        return;
+      }
+      // Lightbox（popup）
       const img = e.target.closest('[data-lightbox]');
-      if (img) {
-        e.stopPropagation();
-        e.preventDefault();
-        // 如果是輪播圖片，取目前顯示的圖片
-        const carouselImg = img.classList.contains('carousel-img')
-          ? img
-          : img.querySelector('.carousel-img') || img;
+      if (img && e.target.closest('.leaflet-popup-content')) {
+        e.stopPropagation(); e.preventDefault();
+        const carouselImg = img.classList.contains('carousel-img') ? img : (img.querySelector('.carousel-img') || img);
         openLightbox(carouselImg.src);
         return;
       }
     }, true);
 
-    // =============================================
-    // 🔍 搜尋功能
-    // =============================================
-    document.getElementById('searchInput').addEventListener('input', function () {
-      const keyword = this.value.trim().toLowerCase();
-      // 過濾：名稱、地址、縣市、角色包含關鍵字
-      const filtered = allLocations.filter(loc =>
-        loc.name.toLowerCase().includes(keyword) ||
-        loc.addr.toLowerCase().includes(keyword) ||
-        loc.city.toLowerCase().includes(keyword) ||
-        loc.venue.toLowerCase().includes(keyword) ||
-        loc.character.toLowerCase().includes(keyword) ||
-        loc.edition.toLowerCase().includes(keyword)
-      );
-      renderLocations(filtered);
-    });
-
-    // =============================================
-    // 📝 投稿 Modal 控制
-    // =============================================
-    function openModal() {
-      document.getElementById('modalOverlay').classList.add('show');
-    }
-
-    function closeModal() {
-      document.getElementById('modalOverlay').classList.remove('show');
-    }
-
-    // 點 Modal 背景也可以關閉
-    document.getElementById('modalOverlay').addEventListener('click', function (e) {
-      if (e.target === this) closeModal();
-    });
-
-    function submitForm() {
-      const name = document.getElementById('f-name').value.trim();
-      const addr = document.getElementById('f-addr').value.trim();
-
-      // 簡單驗證
-      if (!name || !addr) {
-        alert('請填寫地點名稱和地址！');
-        return;
+    function openGridModal(loc, imgs, googleMapsUrl) {
+      const mid = 'modal-carousel';
+      let imgHtml = '';
+      if (imgs.length === 1) {
+        imgHtml = `<div class="popup-img-wrap"><img src="${imgs[0]}" class="popup-img" data-lightbox="${imgs[0]}" /></div>`;
+      } else if (imgs.length > 1) {
+        imgHtml = `
+          <div class="popup-img-wrap">
+            <div class="carousel" id="${mid}" data-index="0" data-imgs='${JSON.stringify(imgs)}'>
+              <div class="carousel-img-wrap">
+                <img src="${imgs[0]}" class="carousel-img popup-img" data-lightbox="${imgs[0]}" />
+              </div>
+              <div class="carousel-controls">
+                <button class="carousel-btn" data-carousel-action="prev" data-carousel-id="${mid}">&#8249;</button>
+                <span class="carousel-counter">${1} / ${imgs.length}</span>
+                <button class="carousel-btn" data-carousel-action="next" data-carousel-id="${mid}">&#8250;</button>
+              </div>
+            </div>
+          </div>`;
       }
 
-      // 這裡之後可以接 Google Form 或後端 API
-      // 目前先印在 console 讓你看到資料結構
-      console.log('投稿資料：', { name, addr,
-        brand: document.getElementById('f-brand').value,
-        note: document.getElementById('f-note').value
-      });
-
-      closeModal();
-      showToast();
-
-      // 清空表單
-      ['f-name', 'f-addr', 'f-brand', 'f-note'].forEach(id => {
-        document.getElementById(id).value = '';
-      });
+      document.getElementById('gridModalContent').innerHTML = `
+        <div class="popup-title">${loc.name}</div>
+        ${loc.venue ? `<div class="popup-addr">🏢 ${loc.venue}</div>` : ''}
+        ${loc.addr ? `<div class="popup-addr">📍 ${loc.city}${loc.addr}</div>` : ''}
+        ${loc.character ? `<div class="popup-addr">⭐ IP：${loc.character}</div>` : ''}
+        ${loc.edition ? `<div class="popup-addr">🃏 彈數：${loc.edition}</div>` : ''}
+        ${loc.perDraw ? `<div class="popup-addr">🎴 一抽張數：${loc.perDraw}</div>` : ''}
+        ${loc.hours ? `<div class="popup-addr">🕐 ${loc.hours}</div>` : ''}
+        ${loc.note ? `<div class="popup-addr">📝 ${loc.note}</div>` : ''}
+        ${loc.limited ? `<div class="popup-limited" style="margin:8px 0;display:inline-block">期間限定：${loc.limited}</div>` : ''}
+        ${imgHtml}
+        <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link">在 Google Maps 查看 →</a>
+      `;
+      document.getElementById('gridModal').classList.add('show');
     }
 
-    function showToast() {
-      const toast = document.getElementById('toast');
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+    function closeGridModal(e) {
+      if (e && e.target !== document.getElementById('gridModal')) return;
+      document.getElementById('gridModal').classList.remove('show');
     }
+
+    function openLightbox(src) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightbox').classList.add('show');
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('show');
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+    // 初始化
+    setView('grid');
+    loadFromSheet();
   </script>
-  <!-- Lightbox -->
-  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <img id="lightboxImg" src="" />
-  </div>
 
 </body>
 </html>
