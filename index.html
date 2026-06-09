@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>抽卡機在哪！Card Radar</title>
+  <meta name="description" content="想知道臺灣哪裡有抽卡機和相卡機？來抽卡機在哪？Card Radar 搜搜吧！">
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-29PN14JRK8"></script>
@@ -22,21 +23,25 @@
 
   <style>
     :root {
-      --pink:   #ff4d8d;
-      --yellow: #ffcf48;
-      --dark:   #F2F2F7;
-      --mid:    #2C2C2E;
-      --card:   #3A3A3C;
-      --white:  #f0eeff;
-      --grey:   #8892b0;
+      --primary-blue:     #0066FF;
+      --primary-yellow:   #FFCF48;
+      --fill-black:    #000000;
+      --fill-white:    #FFFFFF;
+      --fill-gray:     #3C3C43;
+      --fill-gray-8:   rgba(60,60,67,0.08);
+      --fill-gray-16:  rgba(60,60,67,0.16);
+      --fill-gray-64:  rgba(60,60,67,0.64);
+      --fill-blue-8: rgba(0,102,255,0.08);
+      --fill-blue-16: rgba(0,102,255,0.16);
+      --background-offwhite: #F2F2F7;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Chiron GoRound TC', sans-serif;
-      background: var(--dark);
-      color: #000000;
+      background: var(--background-offwhite);
+      color: var(--fill-black);
       height: 100dvh;
       display: flex;
       flex-direction: column;
@@ -45,8 +50,8 @@
 
     /* ===== Header ===== */
     header {
-      background: var(--dark);
-      padding: 12px 24px;
+      background: var(--background-offwhite);
+      padding: 24px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -58,15 +63,15 @@
       width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
       flex-shrink: 0; object-fit: cover;
     }
-    .logo h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; color: #000000; }
-    .logo h1 span { color: #0066FF; }
+    .logo h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; color: var(--fill-black); }
+    .logo h1 span { color: var(--primary-blue); }
     .header-right { display: flex; align-items: center; gap: 12px; }
-    .header-info { font-family: 'Space Mono', monospace; font-size: 12px; color: #000000; }
+    .header-info { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--fill-black); }
 
     /* View Toggle */
     .view-toggle {
       display: flex;
-      background: rgba(60,60,67,0.16);
+      background: var(--fill-gray-16);
       border-radius: 8px;
       overflow: hidden;
     }
@@ -76,59 +81,60 @@
       font-family: 'Chiron GoRound TC', sans-serif;
       font-weight: 700;
       background: none; border: none;
-      color: #000000; cursor: pointer;
+      color: var(--black); cursor: pointer;
       transition: background 0.18s, color 0.18s;
       display: flex; align-items: center; gap: 5px;
     }
-    .view-btn:hover { color: #0066FF; }
-    .view-btn.active { background: #0066FF; color: #ffffff; }
+    .view-btn:hover { color: var(--primary-blue); }
+    .view-btn.active { background: var(--primary-blue); color: var(--fill-white); }
 
     /* ===== Toolbar ===== */
     .toolbar {
-      background: rgba(142,142,147,0.16);
-      padding: 16px 24px;
-      display: flex; align-items: center; gap: 12px;
+      padding: 24px 20px;
+      display: flex; align-items: center; gap: 24px;
       flex-shrink: 0;
     }
     .search-box {
       display: flex; align-items: center;
-      background: rgba(235,235,245,0.16);
-      border: 1px solid rgba(235,235,245,0.16);
-      border-radius: 8px; padding: 7px 14px; gap: 8px;
-      flex: 1;
+      background: var(--fill-gray-8);
+      border-radius: 9999px; gap: 12px;
+      padding: 10px 16px;
+      width: 400px;
+      flex-shrink: 0;
     }
     .search-box input {
       background: none; border: none; outline: none;
-      color: #000000; font-family: 'Chiron GoRound TC', sans-serif;
-      font-size: 16px; width: 100%;
+      color: var(--black); font-family: 'Chiron GoRound TC', sans-serif;
+      font-size: 14px; width: 100%;
     }
-    .search-box input::placeholder { color: #8892b0; }
-    .count-badge { font-family: 'Space Mono', monospace; font-size: 14px; color: #000000; white-space: nowrap; margin-left: auto; }
-    .count-badge strong { color: #0066FF; font-size: 20px; font-weight: 700; }
+    .search-box input::placeholder { color: var(--fill-gray-64); }
+    .search-clear-btn { display: none; background: none; border: none; padding: 0; cursor: pointer; color: var(--fill-black); flex-shrink: 0; line-height: 0; }
+    .search-clear-btn:hover { color: var(--primary-blue); }
+    .count-badge { font-family: 'Chiron GoRound TC', sans-serif; font-size: 16px; color: var(--fill-black); white-space: nowrap; margin-left: auto; }
+    .count-badge strong { color: var(--primary-blue); font-size: 20px; font-weight: 700; }
 
     /* ===== Filter Chips ===== */
     .filter-bar {
-      background: rgba(142,142,147,0.10);
+      background: var(--gray-8);
       padding: 8px 24px 10px;
       display: flex; align-items: center; gap: 8px;
       flex-shrink: 0;
-      border-top: 1px solid rgba(255,255,255,0.05);
     }
     .filter-chip {
       padding: 5px 14px;
       font-size: 13px;
       font-family: 'Chiron GoRound TC', sans-serif;
       font-weight: 500;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.15);
+      background: var(--gray-8);
+      border: 1px solid var(--gray-16);
       border-radius: 20px;
-      color: #000000;
+      color: var(--black);
       cursor: pointer;
       transition: background 0.18s, color 0.18s, border-color 0.18s;
       white-space: nowrap;
     }
-    .filter-chip:hover { color: #0066FF; border-color: #0066FF; }
-    .filter-chip.active { background: #0066FF; color: #ffffff; }
+    .filter-chip:hover { color: var(--primary-blue); border-color: var(--primary-blue); }
+    .filter-chip.active { background: var(--primary-blue); color: var(--fill-white); border-color: var(--primary-blue); }
 
     /* Badge */
     .type-badge {
@@ -136,10 +142,10 @@
       align-self: flex-start;
       font-size: 12px; font-weight: 500;
       padding: 4px 8px; border-radius: 4px;
-      color: #000;
+      color: var(--fill-black);
     }
-    .type-badge.gacha { background: rgba(0, 102, 255, 0.08); border: 1px solid #0066FF; color: #0066FF; }
-    .type-badge.photocard { background: rgba(0, 102, 255, 0.08); border: 1px solid #0066FF; color: #0066FF; }
+    .type-badge.gacha { background: var(--fill-blue-16); border: 1px solid var(--primary-blue); color: var(--primary-blue); }
+    .type-badge.photocard { background: var(--fill-blue-16); border: 1px solid var(--primary-blue); color: var(--primary-blue); }
 
     @media (max-width: 640px) {
       .filter-bar { padding: 8px 12px 10px; gap: 6px; overflow-x: auto; }
@@ -151,46 +157,47 @@
 
     /* ===== Grid View ===== */
     #gridView {
-      width: 100%; height: 100%; overflow-y: auto; padding: 24px;
+      width: 100%; height: 100%; overflow-y: auto; padding: 24px 20px;
       display: none;
     }
     #gridView.active { display: block; }
     #gridView::-webkit-scrollbar { width: 5px; }
-    #gridView::-webkit-scrollbar-thumb { background: #00C2A8; border-radius: 4px; }
+    #gridView::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
+      gap: 20px;
     }
 
     /* ===== Grid cards ===== */
     .loc-card-grid {
-      background: rgba(0, 102, 255, 0.08);
-      border-radius: 14px;
-      border: 1px solid rgba(235,235,245,0.16);
+      background: var(--fill-blue-8);
+      border-radius: 16px;
+      border: 1px solid transparent;
       overflow: hidden;
       transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
       display: flex; flex-direction: column;
     }
     .loc-card-grid:hover {
-      border-color: #0066FF;
+      border-color: var(--primary-blue);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,102,255,0.24);
+      box-shadow: 0 8px 24px var(--fill-blue-16);
     }
+    
     .card-top { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .card-name { font-weight: 700; font-size: 16px; line-height: 1.35; color: #000000; }
-    .card-limited { font-size: 14px; color: #0066FF; font-weight: 500; }
+    .card-name { font-weight: 700; font-size: 16px; line-height: 1.35; color: var(--fill-black); }
+    .card-limited { font-size: 14px; color: var(--primary-blue); font-weight: 500; }
     .card-tags { display: flex; flex-wrap: wrap; gap: 12px; }
     .tag {
       font-size: 14px; padding: 2px 8px; border-radius: 20px;
-      background: rgba(60,60,67,0.08); color: #000000;
-      border: 1px solid rgba(60,60,67,0.8);
+      background: var(--fill-gray-8); color: var(--fill-black);
+      border: 1px solid var(--fill-gray-64);
     }
     .card-actions { padding: 0px 16px 16px; display: flex; align-items: center; gap: 8px; margin-top: auto; }
     .btn-gmaps {
       display: inline-flex; align-items: center; gap: 5px;
-      color: #0066FF; font-size: 14px; font-weight: 400;
+      color: var(--blue); font-size: 14px; font-weight: 400;
       font-family: 'Chiron GoRound TC', sans-serif;
       text-decoration: underline; text-underline-offset: 3px;
       background: none; border: none; padding: 0;
@@ -200,8 +207,8 @@
     .btn-expand {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 4px 8px;
-      background: #0066FF; border: none;
-      border-radius: 4px; color: #ffffff; font-size: 12px;
+      background: var(--primary-blue); border: none;
+      border-radius: 4px; color: var(--fill-white); font-size: 12px;
       font-family: 'Chiron GoRound TC', sans-serif; cursor: pointer;
       transition: opacity 0.2s;
       margin-left: auto;
@@ -211,15 +218,15 @@
     .chevron { display: inline-block; font-style: normal; }
 
     .card-detail { overflow: hidden; transition: max-height 0.35s ease; border-top: 1px solid transparent; }
-    .card-detail.open { border-top-color: rgba(255,255,255,0.06); }
+    .card-detail.open { border-top-color: var(--gray-16); }
     .card-detail-inner { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
     .detail-row { display: flex; gap: 8px; font-size: 13px; align-items: flex-start; }
     .detail-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
-    .detail-text { color: var(--grey); line-height: 1.5; }
+    .detail-text { color: var(--gray-64); line-height: 1.5; }
 
     /* Grid carousel */
-    .carousel-grid { margin-top: 4px; background: rgba(255,255,255,0.04); border-radius: 10px; overflow: hidden; }
-    .carousel-grid-img-wrap { width: 100%; background: #222; display: flex; align-items: center; justify-content: center; }
+    .carousel-grid { margin-top: 4px; background: var(--gray-8); border-radius: 10px; overflow: hidden; }
+    .carousel-grid-img-wrap { width: 100%; background: var(--gray-16); display: flex; align-items: center; justify-content: center; }
     .carousel-grid-img { width: 100%; height: auto; cursor: zoom-in; display: block; }
     .carousel-controls-grid { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px; }
     .single-img-wrap { margin-top: 4px; border-radius: 8px; overflow: hidden; }
@@ -229,37 +236,37 @@
     #mapView { width: 100%; height: 100%; display: none; }
     #mapView.active { display: flex; }
 
-    /* ===== Sidebar (原始版樣式) ===== */
+    /* ===== Sidebar ===== */
     .sidebar {
       width: 360px;
-      background: #F2F2F7;
-      border-right: 1px solid rgba(255,77,141,0.2);
+      background: var(--off-white);
+      border-right: 1px solid var(--gray-16);
       display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
     }
     .sidebar-header {
-      padding: 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 20px;
+      border-bottom: 1px solid var(--gray-16);
     }
     .sidebar-header h2 {
-      font-size: 13px; color: var(--grey);
+      font-size: 13px; color: var(--gray-64);
       text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
     }
-    .location-list { flex: 1; overflow-y: auto; padding: 12px; }
+    .location-list { flex: 1; overflow-y: auto; padding: 24px 20px; }
     .location-list::-webkit-scrollbar { width: 4px; }
     .location-list::-webkit-scrollbar-track { background: transparent; }
-    .location-list::-webkit-scrollbar-thumb { background: #0066FF; border-radius: 4px; }
+    .location-list::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
 
-    /* Sidebar card (原始版) */
+    /* Sidebar card */
     .loc-card {
-      background: rgba(0, 102, 255, 0.08);
-      border-radius: 10px; padding: 12px; margin-bottom: 16px;
-      cursor: pointer; border: 1px solid rgba(235,235,245,0.16);
+      background: var(--gray-8);
+      border-radius: 16px; padding: 16px; margin-bottom: 20px;
+      cursor: pointer; border: 1px solid var(--gray-16);
       transition: border-color 0.2s, transform 0.15s;
     }
-    .loc-card:hover { border-color: #0066FF; transform: translateX(3px); }
-    .loc-card.active { border-color: #0066FF; }
-    .loc-name { font-weight: 500; font-size: 16px; color: #000000; margin-top: 12px; margin-bottom: 12px; }
-    .loc-limited { font-size: 14px; color: #0066FF; font-weight: 500; margin-bottom: 12px; }
+    .loc-card:hover { border-color: var(--primary-blue); transform: translateX(3px); box-shadow: 0 8px 24px rgba(0,102,255,0.24); }
+    .loc-card.active { border-color: var(--primary-blue); }
+    .loc-name { font-weight: 500; font-size: 16px; color: var(--fill-black); margin-top: 12px; margin-bottom: 12px; }
+    .loc-limited { font-size: 14px; color: var(--primary-blue); font-weight: 500; margin-bottom: 12px; }
     .loc-tags { display: flex; flex-wrap: wrap; gap: 8px; }
     .loc-tags .tag { font-size: 14px; padding: 2px 8px; }
 
@@ -267,55 +274,55 @@
     #map { flex: 1; }
     .mobile-map-search { display: none; }
 
-    /* ===== Leaflet popup (原始版) ===== */
+    /* ===== Leaflet popup ===== */
     .leaflet-popup-content-wrapper {
-      background: #F2F2F7; color: var(--white);
-      border: 1px solid #0066FF; border-radius: 16px;
+      background: var(--background-off-white); color: var(--fill-black);
+      border: 1px solid var(--blue); border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     .leaflet-popup-content { margin: 16px !important; position: relative; max-height: 70vh; overflow-y: auto; }
     .popup-close-btn {
       position: absolute; top: -4px; right: -4px; z-index: 10;
       width: 24px; height: 24px;
-      background: none; border: none; color: #000000;
+      background: none; border: none; color: var(--fill-black);
       font-size: 18px; cursor: pointer; line-height: 1;
       display: flex; align-items: center; justify-content: center;
     }
-    .popup-close-btn:hover { color: #0066FF; }
-    .leaflet-popup-tip { background: var(--mid); }
-    .popup-title { font-weight: 700; font-size: 16px; margin-bottom: 0; color: #000000; flex: 1; }
-    .popup-addr { font-size: 14px; color: #000000; margin-bottom: 0; }
+    .popup-close-btn:hover { color: var(--blue); }
+    .leaflet-popup-tip { background: var(--off-white); }
+    .popup-title { font-weight: 700; font-size: 16px; margin-bottom: 0; color: var(--fill-black); flex: 1; }
+    .popup-addr { font-size: 14px; color: var(--fill-black); margin-bottom: 0; }
     .popup-limited {
       display: inline-block; padding: 4px 8px;
-      background: #0066FF; border: 1px ;
-      border-radius: 15px; color: #ffffff; font-size: 14px; font-weight: 400;
+      background: var(--primary-blue); border: 1px;
+      border-radius: 15px; color: var(--fill-white); font-size: 14px; font-weight: 400;
       margin-top: 8px;
     }
     .popup-img-wrap {
-      background: rgba(60,60,67,0.08); border-radius: 8px;
+      background: var(--fill-gray-8); border-radius: 8px;
       padding: 12px; margin-top: 12px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     .popup-img { width: 100%; height: auto; border-radius: 8px; display: block; cursor: zoom-in; }
     .popup-gmaps-link {
-      display: block; margin-top: 12px; color: #0066FF !important;
+      display: block; margin-top: 12px; color: var(--primary-blue) !important;
       font-size: 14px; font-weight: 400; text-decoration: underline; transition: opacity 0.2s;
     }
     .popup-gmaps-link:hover { opacity: 0.75; }
-    .leaflet-popup-content .popup-gmaps-link { color: #0066FF !important; text-decoration: underline !important; }
+    .leaflet-popup-content .popup-gmaps-link { color: var(--primary-blue) !important; text-decoration: underline !important; }
 
     /* Popup carousel */
     .carousel { margin-bottom: 4px; }
     .carousel-img-wrap { display: flex; align-items: center; justify-content: center; }
     .carousel-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
     .carousel-btn {
-      background: #0066FF; color: #ffffff; border: none; border-radius: 50%;
+      background: var(--primary-yellow); color: var(--fill-white); border: none; border-radius: 50%;
       width: 20px; height: 20px; min-width: 20px; font-size: 14px; font-weight: bold;
       line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
       transition: opacity 0.2s; padding: 0;
     }
     .carousel-btn:hover { opacity: 0.8; }
-    .carousel-counter { font-size: 12px; color: #000000; min-width: 32px; text-align: center; }
+    .carousel-counter { font-size: 12px; color: var(--fill-black); min-width: 32px; text-align: center; }
 
     /* ===== Lightbox ===== */
     .lightbox {
@@ -335,7 +342,7 @@
     }
     .grid-modal-overlay.show { display: flex; }
     .grid-modal-box {
-      background: #F2F2F7; border: 1px solid #0066FF;
+      background: var(--background-offwhite); border: 1px solid var(--primary-blue);
       border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       width: 100%; max-width: 400px; max-height: 90vh;
       position: relative; overflow: hidden;
@@ -344,19 +351,19 @@
     .grid-modal-close {
       position: absolute; top: 16px; right: 16px;
       width: 24px; height: 24px; flex-shrink: 0;
-      background: none; border: none; color: #000000;
+      background: none; border: none; color: var(--black);
       font-size: 18px; cursor: pointer; line-height: 1;
       display: flex; align-items: center; justify-content: center;
       z-index: 10;
     }
-    .grid-modal-close:hover { color: #0066FF; }
+    .grid-modal-close:hover { color: var(--primary-blue); }
     .grid-modal-content { padding: 0 16px 16px; overflow-y: auto; flex: 1; }
     .modal-header { display: flex; align-items: center; padding-right: 4px; margin-bottom: 8px; }
     .modal-info-section { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
     .modal-type-badge { margin: 16px 0 12px; }
 
     /* ===== Empty ===== */
-    .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--grey); font-size: 15px; }
+    .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--gray-64); font-size: 15px; }
 
     /* ===== Mobile ===== */
     @media (max-width: 640px) {
@@ -364,7 +371,8 @@
       .header-info { display: none; }
       #gridView { padding: 12px; }
       .grid { grid-template-columns: 1fr; gap: 12px; }
-      .toolbar { padding: 8px 12px; }
+      .toolbar { padding: 8px 20px; }
+      .search-box { width: 100%; flex-shrink: 1; }
       .view-btn .label { display: none; }
 
       /* 地圖模式：上地圖下列表 */
@@ -380,7 +388,7 @@
       .sidebar {
         width: 100%;
         border-right: none;
-        border-top: 1px solid rgba(242,242,247);
+        border-top: 1px solid var(--gray-16);
         height: 260px;
         flex-shrink: 0;
         flex-direction: column;
@@ -390,24 +398,24 @@
       .mobile-map-search {
         display: flex;
         align-items: center;
-        background: rgba(142,142,147,0.2);
+        background: var(--gray-16);
         border-radius: 8px;
         padding: 8px 16px; gap: 8px;
         margin: 12px 12px;
       }
       .mobile-map-search input {
         background: none; border: none; outline: none;
-        color: #000000; font-family: 'Chiron GoRound TC', sans-serif;
+        color: var(--fill-black); font-family: 'Chiron GoRound TC', sans-serif;
         font-size: 16px; width: 100%;
         transform: scale(0.875); transform-origin: left center;
       }
-      .mobile-map-search input::placeholder { color: var(--grey); }
+      .mobile-map-search input::placeholder { color: var(--gray-64); }
       .location-list { padding: 0 8px 8px; }
-      .mobile-count-badge { font-family: 'Space Mono', monospace; font-size: 12px; color: #000000; white-space: nowrap; }
-      .mobile-count-badge strong { color: #0066FF; font-size: 13px; }
-      .leaflet-popup-content { max-height: 260px !important; overflow-y: auto !important; }
-      body.map-view .toolbar { display: none; }
+      .mobile-count-badge { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--fill-black); white-space: nowrap; }
+      .mobile-count-badge strong { color: var(--primary-blue); font-size: 13px; }
+      .leaflet-popup-content { max-height: 40vh !important; overflow-y: auto !important; overflow-x: hidden !important; }      body.map-view .toolbar { display: none; }
     }
+
   </style>
 </head>
 <body>
@@ -428,8 +436,9 @@
 
   <div class="toolbar">
     <div class="search-box">
-      <span>🔍</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
       <input type="text" id="searchInput" placeholder="搜尋 IP、縣市、場地..." />
+      <button class="search-clear-btn" id="clearSearch"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
     </div>
     <div class="count-badge"><strong id="countBadge">0</strong> 個地點</div>
   </div>
@@ -452,8 +461,9 @@
     <div id="mapView">
       <aside class="sidebar">
         <div class="mobile-map-search">
-          <span>🔍</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
           <input type="text" id="mapSearchInput" placeholder="搜尋 IP 或縣市..." />
+          <button class="search-clear-btn" id="clearMapSearch"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
           <div class="mobile-count-badge"><strong id="mobileCountBadge">0</strong> 個地點</div>
         </div>
         <div class="location-list" id="locationList"></div>
@@ -587,7 +597,7 @@
             <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link">🗺️ 前往 Google Maps 查看 →</a>
             ${imgHtml}
           `, {
-            maxWidth: 300,
+            maxWidth: 320,
             autoPan: true,
             autoPanPaddingTopLeft: [10, 20],
             autoPanPaddingBottomRight: [10, 280],
@@ -821,10 +831,27 @@
     });
 
     document.getElementById('searchInput').addEventListener('input', function () {
+      document.getElementById('clearSearch').style.display = this.value ? 'block' : 'none';
       applyFilters();
     });
     document.getElementById('mapSearchInput').addEventListener('input', function () {
+      document.getElementById('clearMapSearch').style.display = this.value ? 'block' : 'none';
       document.getElementById('searchInput').value = this.value;
+      document.getElementById('clearSearch').style.display = this.value ? 'block' : 'none';
+      applyFilters();
+    });
+    document.getElementById('clearSearch').addEventListener('click', function () {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('mapSearchInput').value = '';
+      this.style.display = 'none';
+      document.getElementById('clearMapSearch').style.display = 'none';
+      applyFilters();
+    });
+    document.getElementById('clearMapSearch').addEventListener('click', function () {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('mapSearchInput').value = '';
+      this.style.display = 'none';
+      document.getElementById('clearSearch').style.display = 'none';
       applyFilters();
     });
 
