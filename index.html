@@ -53,7 +53,7 @@
     /* ===== Header ===== */
     header {
       background: var(--fill-gray6);
-      padding: 24px 20px;
+      padding: 20px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -95,8 +95,8 @@
 
     /* ===== Toolbar ===== */
     .toolbar {
-      padding: 24px 20px;
-      display: flex; align-items: center; gap: 24px;
+      padding: 20px 20px;
+      display: flex; align-items: center; gap: 16px;
       flex-shrink: 0;
       background: var(--fill-gray5);
     }
@@ -122,12 +122,12 @@
     .search-clear-btn { display: none; background: none; border: none; padding: 0; cursor: pointer; color: var(--fill-black); flex-shrink: 0; line-height: 0; }
     .search-clear-btn:hover { color: var(--fill-blue); }
     .count-badge { font-family: 'Chiron GoRound TC', sans-serif; font-size: 14px; color: var(--fill-black); white-space: nowrap; margin-left: auto; }
-    .count-badge strong { color: var(--fill-blue); font-size: 20px; font-weight: 700; }
+    .count-badge strong { color: var(--fill-blue); font-size: 16px; font-weight: 700; }
 
     /* ===== Filter Chips ===== */
     .filter-bar {
       background: var(--fill-gray5);
-      padding: 0px 20px 24px;
+      padding: 0px 20px 20px;
       display: flex; align-items: center; gap: 16px;
       flex-shrink: 0;
     }
@@ -166,7 +166,7 @@
     .type-badge.photocard { background: var(--fill-white); border: 1px solid var(--fill-green); color: var(--fill-green); }
 
     @media (max-width: 640px) {
-      .filter-bar { padding: 12px 20px 12px; gap: 8px; overflow-x: auto; }
+      .filter-bar { padding: 16px 20px 16px; gap: 8px; overflow-x: auto; }
       .filter-bar::-webkit-scrollbar { display: none; }
     }
 
@@ -175,7 +175,7 @@
 
     /* ===== Grid View ===== */
     #gridView {
-      width: 100%; height: 100%; overflow-y: auto; padding: 24px 20px;
+      width: 100%; height: 100%; overflow-y: auto; padding: 20px 20px;
       display: none;
     }
     #gridView.active { display: block; }
@@ -250,6 +250,10 @@
     .single-img-wrap { margin-top: 4px; border-radius: 8px; overflow: hidden; }
     .single-img-wrap img { width: 100%; height: auto; object-fit: unset; cursor: zoom-in; display: block; }
 
+    /* ===== Last Updated ===== */
+    .last-updated-list { display: none; }
+    .last-updated-map  { display: none; }
+
     /* ===== Map View ===== */
     #mapView { width: 100%; height: 100%; display: none; }
     #mapView.active { display: flex; }
@@ -269,10 +273,11 @@
       font-size: 13px; color: var(--gray-64);
       text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
     }
-    .location-list { flex: 1; overflow-y: auto; padding: 24px 20px; }
-    .location-list::-webkit-scrollbar { width: 4px; }
-    .location-list::-webkit-scrollbar-track { background: transparent; }
-    .location-list::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
+    .map-scroll-wrapper { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .location-list { padding: 20px 20px; }
+    .map-scroll-wrapper::-webkit-scrollbar { width: 4px; }
+    .map-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+    .map-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
 
     /* Sidebar card */
     .loc-card {
@@ -291,6 +296,7 @@
     /* Map */
     #map { flex: 1; }
     .mobile-map-search { display: none; }
+    .map-search-row { display: none; }
 
     /* ===== Leaflet popup ===== */
     .leaflet-popup-content-wrapper {
@@ -386,13 +392,19 @@
 
     /* ===== Mobile ===== */
     @media (max-width: 640px) {
-      .logo h1 { font-size: 16px; }
+      header { padding: 20px; justify-content: flex-start; gap: 16px; }
       .header-info { display: none; }
-      #gridView { padding: 20px; }
-      .grid { grid-template-columns: 1fr; gap: 20px; }
-      .toolbar { padding: 12px 20px; }
-      .search-box { width: 100%; flex-shrink: 1; }
+      .logo { flex: 1; min-width: 0; }
+      .logo h1 { font-size: 16px; }
+      .view-btn { padding: 8px 16px; }
       .view-btn .label { display: none; }
+      #gridView { padding: 20px; }
+      .grid { grid-template-columns: 1fr; gap: 16px; }
+      .toolbar { padding: 16px 20px 0px 20px; }
+      .search-box { width: 100%; flex-shrink: 1; }
+
+      /* 地圖模式：顯示 filter chips，隱藏搜尋框與地點數 */
+      body.map-view .toolbar { display: none; }
 
       /* 地圖模式：上地圖下列表 */
       #mapView {
@@ -414,25 +426,50 @@
         overflow: hidden;
       }
       .sidebar-header { padding: 10px 16px 6px; }
-      .mobile-map-search {
+      .map-search-row {
         display: flex;
         align-items: center;
-        background: var(--gray-16);
-        border-radius: 8px;
-        padding: 12px 0px; gap: 8px;
-        margin: 12px 20px;
+        gap: 16px;
+        padding: 16px 20px;
+        background: var(--fill-gray5);
+        flex-shrink: 0;
+      }
+      .mobile-map-search {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background: var(--fill-gray6);
+        border-radius: 999px;
+        padding: 16px 16px;
+        gap: 8px;
       }
       .mobile-map-search input {
         background: none; border: none; outline: none;
-        color: var(--fill-black); font-family: 'Chiron GoRound TC', sans-serif;
+        color: var(--fill-gray-64); font-family: 'Chiron GoRound TC', sans-serif;
         font-size: 16px; width: 100%;
         transform: scale(0.875); transform-origin: left center;
       }
       .mobile-map-search input::placeholder { color: var(--gray-64); }
       .location-list { padding: 20px 20px 20px; }
-      .mobile-count-badge { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--fill-black); white-space: nowrap; }
-      .mobile-count-badge strong { color: var(--fill-blue); font-size: 13px; }
-      .leaflet-popup-content { max-height: 40vh !important; overflow-y: auto !important; overflow-x: hidden !important; }      body.map-view .toolbar { display: none; }
+      .mobile-count-badge { font-family: 'Chiron GoRound TC', sans-serif; white-space: nowrap; }
+      .mobile-count-badge strong { color: var(--fill-blue); font-size: 16px; font-weight: 700; }
+      .mobile-count-badge span { color: var(--fill-black); font-size: 14px; }
+      .last-updated-list {
+        display: block;
+        position: static;
+        font-family: 'Space Mono', monospace;
+        font-size: 12px; font-weight: 400; color: var(--fill-black);
+        text-align: center; padding: 0px 0px 20px 0px;
+      }
+      body.map-view .last-updated-list { display: none; }
+      .last-updated-map {
+        display: block; flex-shrink: 0;
+        position: static;
+        font-family: 'Space Mono', monospace;
+        font-size: 12px; font-weight: 400; color: var(--fill-black);
+        text-align: center; padding: 20px 20px 0px 20px;
+      }
+      .leaflet-popup-content { max-height: 40vh !important; overflow-y: auto !important; overflow-x: hidden !important; }
     }
 
   </style>
@@ -445,7 +482,7 @@
       <h1>抽卡機在哪！<span>Card Radar</span></h1>
     </div>
     <div class="header-right">
-      <div class="header-info" id="lastUpdated">載入中...</div>
+      <div class="header-info" id="lastUpdated"></div>
       <div class="view-toggle">
         <button class="view-btn" id="btnGrid" onclick="setView('grid')"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M324-600q-15.3 0-25.65-10.29Q288-620.58 288-635.79t10.35-25.71Q308.7-672 324-672h456q15.3 0 25.65 10.29Q816-651.42 816-636.21t-10.35 25.71Q795.3-600 780-600H324Zm0 156q-15.3 0-25.65-10.29Q288-464.58 288-479.79t10.35-25.71Q308.7-516 324-516h456q15.3 0 25.65 10.29Q816-495.42 816-480.21t-10.35 25.71Q795.3-444 780-444H324Zm0 156q-15.3 0-25.65-10.29Q288-308.58 288-323.79t10.35-25.71Q308.7-360 324-360h456q15.3 0 25.65 10.29Q816-339.42 816-324.21t-10.35 25.71Q795.3-288 780-288H324ZM180-600q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-636q0 14-10.35 25T180-600Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-480q0 14-10.35 25T180-444Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-324q0 14-10.35 25T180-288Z"/></svg> <span class="label">列表</span></button>
         <button class="view-btn" id="btnMap" onclick="setView('map')">
@@ -471,10 +508,10 @@
     <button class="filter-chip" data-filter="抽卡機"><svg class="chip-icon-outline" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m612-404 31-107q3-11-1.05-21.88Q637.9-543.75 628-551l-93-63q-8-5-16.5-2T508-604l-31 107q-3 11 .5 22t13.5 18l93 63q8 5 17 2t11-12ZM168-222l-29.91-15.45Q110-250 100-277q-10-27 2.7-54.85L168-472v250Zm148 78q-31.35 0-53.67-20.5Q240-185 240-216v-288l134 360h-58Zm206-4q-31 11-56-1t-36-43L259-660q-11-31 .5-56.5T302-753l294-107q31-11 56 .5t36 42.5l172 472q11 31-.5 56T817-253L522-148Zm-24-68 294-105-171-471-294 107 171 469Zm62-288Z"/></svg><svg class="chip-icon-fill" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m612-404 31-107q3-11-1-22t-14-18l-93-63q-8-5-16.5-2T508-604l-31 107q-3 11 .5 22t13.5 18l93 63q8 5 17 2t11-12ZM168-222l-30-15q-28-13-38-40t3-55l65-140v250Zm148 78q-31 0-53.5-20.5T240-216v-288l134 360h-58Zm206-4q-31 11-56-1t-36-43L259-660q-11-31 .5-56.5T302-753l294-107q31-11 56 .5t36 42.5l172 472q11 31-.5 56T817-253L522-148Z"/></svg> 抽卡機</button>
     <button class="filter-chip" data-filter="相卡機"><svg class="chip-icon-outline" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-264q72 0 120-49t48-119q0-69-48-118.5T480-600q-72 0-120 49.5t-48 119q0 69.5 48 118.5t120 49Zm0-72q-42 0-69-28.13T384-433q0-39.9 27-67.45Q438-528 480-528t69 27.55q27 27.55 27 67.45 0 40.74-27 68.87Q522-336 480-336ZM168-144q-29 0-50.5-21.5T96-216v-432q0-29 21.5-50.5T168-720h120l50-67q11-14 26.18-21.5Q379.35-816 396-816h168.18q16.82 0 31.82 7.5t26 21.5l50 67h120q29.7 0 50.85 21.5Q864-677 864-648v432q0 29-21.15 50.5T792-144H168Zm0-72h624v-432H636l-72.1-96H396l-72 96H168v432Zm312-217Z"/></svg><svg class="chip-icon-fill" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-264q72 0 120-49t48-119q0-69-48-118.5T480-600q-72 0-120 49.5T312-432q0 70 48 119t120 49Zm0-72q-42 0-69-27t-27-68q0-40 27-68.5t69-28.5q42 0 69 28.5t27 68.5q0 41-27 68t-69 27ZM168-144q-29 0-50.5-21.5T96-216v-432q0-29 21.5-50.5T168-720h120l50-67q11-14 26-21.5t32-7.5h168q17 0 32 7.5t26 21.5l50 67h120q30 0 51 21.5t21 50.5v432q0 29-21 50.5T792-144H168Z"/></svg> 相卡機</button>
   </div>
-
   <div class="content">
     <!-- Grid View -->
     <div id="gridView">
+      <div class="last-updated-list" id="listLastUpdated"></div>
       <div class="grid" id="grid">
         <div class="empty-state">⏳ 載入資料中...</div>
       </div>
@@ -483,13 +520,18 @@
     <!-- Map View -->
     <div id="mapView">
       <aside class="sidebar">
-        <div class="mobile-map-search">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
-          <input type="text" id="mapSearchInput" placeholder="搜尋 IP 或縣市..." />
-          <button class="search-clear-btn" id="clearMapSearch"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
-          <div class="mobile-count-badge"><strong id="mobileCountBadge">0</strong> 個地點</div>
+        <div class="map-search-row">
+          <div class="mobile-map-search">
+            <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor" style="flex-shrink:0"><path d="M384.03-336Q284-336 214-406t-70-170q0-100 70-170t170-70q100 0 170 70t70 170.03q0 40.39-12.5 76.18Q599-464 577-434l214 214q11 11 11 25t-11 25q-11 11-25.5 11T740-170L526-383q-30 22-65.79 34.5-35.79 12.5-76.18 12.5Zm-.03-72q70 0 119-49t49-119q0-70-49-119t-119-49q-70 0-119 49t-49 119q0 70 49 119t119 49Z"/></svg>
+            <input type="text" id="mapSearchInput" placeholder="搜尋 IP、縣市、場地..." />
+            <button class="search-clear-btn" id="clearMapSearch"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
+          </div>
+          <div class="mobile-count-badge"><strong id="mobileCountBadge">0</strong><span> 個地點</span></div>
         </div>
-        <div class="location-list" id="locationList"></div>
+        <div class="map-scroll-wrapper">
+          <div class="last-updated-map" id="mapLastUpdated"></div>
+          <div class="location-list" id="locationList"></div>
+        </div>
       </aside>
       <div id="map"></div>
     </div>
@@ -518,7 +560,7 @@
 
     const customIcon = L.divIcon({
       html: '🎰', className: '',
-      iconSize: [52, 52], iconAnchor: [26, 26], popupAnchor: window.innerWidth <= 640 ? [0, 300] : [0, 200]
+      iconSize: [52, 52], iconAnchor: [26, 26], popupAnchor: [0, -26]
     });
 
     // =============================================
@@ -552,6 +594,24 @@
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
+      // 手動 pan-to-fit：Leaflet 原生 autoPan 在 max-height+overflow 下量不準
+      // 改在 popupopen 後用 rAF 拿到真實 render 尺寸再算位移
+      map.on('popupopen', function(e) {
+        const container = e.popup.getElement();
+        if (!container) return;
+        requestAnimationFrame(() => {
+          const mapRect = map.getContainer().getBoundingClientRect();
+          const popupRect = container.getBoundingClientRect();
+          const pad = 16;
+          let dx = 0, dy = 0;
+          if (popupRect.top    < mapRect.top    + pad) dy = popupRect.top    - mapRect.top    - pad;
+          if (popupRect.bottom > mapRect.bottom - pad) dy = popupRect.bottom - mapRect.bottom + pad;
+          if (popupRect.left   < mapRect.left   + pad) dx = popupRect.left   - mapRect.left   - pad;
+          if (popupRect.right  > mapRect.right  - pad) dx = popupRect.right  - mapRect.right  + pad;
+          if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { animate: true, duration: 0.25 });
+        });
+      });
+
       renderMapLocations(currentFiltered.length ? currentFiltered : allLocations);
     }
 
@@ -567,7 +627,7 @@
       list.innerHTML = '';
 
       if (data.length === 0) {
-        list.innerHTML = '<div style="padding:20px;color:var(--grey);text-align:center;">找不到符合的地點</div>';
+        list.innerHTML = '<div style="padding:20px;color:var(--grey);text-align:center;">找不到符合的地點 இдஇ</div>';
         return;
       }
 
@@ -621,9 +681,7 @@
             ${imgHtml}
           `, {
             maxWidth: 320,
-            autoPan: true,
-            autoPanPaddingTopLeft: [10, 20],
-            autoPanPaddingBottomRight: [10, 280],
+            autoPan: false,
             closeButton: false
           });
         markers.push(marker);
@@ -690,8 +748,11 @@
 
         const firstRow = parseCSVRow(rows[1] || '');
         const lastUpdated = firstRow[14] || '';
-        document.getElementById('lastUpdated').textContent =
-          lastUpdated ? '最後更新：' + lastUpdated : '社群共建 · 持續更新';
+        const lastUpdatedText = lastUpdated ? '最後更新：' + lastUpdated : '社群共建 · 持續更新';
+        ['lastUpdated', 'listLastUpdated', 'mapLastUpdated'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = lastUpdatedText;
+        });
 
         const locations = rows.slice(1).map(row => {
           const cols = parseCSVRow(row);
@@ -743,7 +804,7 @@
       document.getElementById('mobileCountBadge').textContent = data.length;
 
       if (data.length === 0) {
-        grid.innerHTML = '<div class="empty-state">找不到符合的地點 😢</div>';
+        grid.innerHTML = '<div class="empty-state">找不到符合的地點 இдஇ</div>';
         return;
       }
 
