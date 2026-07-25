@@ -7,7 +7,7 @@
 // 版本號 bump 時（CACHE_VERSION 改掉），install/activate 會自動清掉舊快取，
 // 不需要手動處理使用者端的快取殘留。
 
-const CACHE_VERSION = 'v28.2';
+const CACHE_VERSION = 'v28.3';
 const SHELL_CACHE = `cardradar-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `cardradar-data-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cardradar-images-${CACHE_VERSION}`;
@@ -62,9 +62,11 @@ function isImageRequest(url) {
 }
 
 // 每次都必須真的打網路、絕不能被快取的請求（例如訪客計數 API，
-// 每次呼叫都應該回傳最新的計數並讓伺服器累加一次，快取住會讓數字卡住不動）
+// 每次呼叫都應該回傳最新的計數並讓伺服器累加一次，快取住會讓數字卡住不動；
+// 以及自己的 /api/ serverless functions，例如 api/share.js 會依 id 動態回傳不同
+// 內容，被 SW 快取住會讓某些機台的分享卡片內容卡在舊的版本）
 function isNoCacheRequest(url) {
-  return url.hostname === 'api.counterapi.dev';
+  return url.hostname === 'api.counterapi.dev' || url.pathname.startsWith('/api/');
 }
 
 async function networkFirst(request, cacheName) {

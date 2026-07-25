@@ -118,7 +118,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
         const rows = csvText.trim().split('\n');
 
         const firstRow = parseCSVRow(rows[1] || '');
-        const lastUpdated = firstRow[15] || '';
+        const lastUpdated = firstRow[16] || '';
         const lastUpdatedText = lastUpdated ? '最後更新：' + to24Hour(lastUpdated) : '社群共建 · 持續更新';
         ['lastUpdated', 'listLastUpdated'].forEach(id => {
           const el = document.getElementById(id);
