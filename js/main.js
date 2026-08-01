@@ -472,7 +472,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       // GA: share_click
       gtag('event', 'share_click', { machine_id: id, source: source || 'unknown', device: getDeviceType() });
       if (navigator.share) {
-        navigator.share({ title: '抽卡機在哪！Card Radar', url });
+        navigator.share({ title: 'kado！抽卡機在哪r', url });
       } else {
         navigator.clipboard.writeText(url).then(() => showToast('已複製連結！'));
       }

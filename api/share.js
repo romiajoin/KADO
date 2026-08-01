@@ -6,10 +6,10 @@
 // 卡片內容固定：不管分享哪個機台，標題/描述/圖片都一樣，只有真人點進去
 // 跳轉的目標網址（/?id=xxx）會依機台不同。
 
-const SITE_URL = 'https://cardradartw.vercel.app';
+const SITE_URL = 'https://kadotw.vercel.app';
 const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`;
-const TITLE = '抽卡機在哪！Card Radar';
-const DESCRIPTION = '想找抽卡機 / 相卡機？到「抽卡機在哪！Card Radar」找找，快速掌握最新的機台資訊！';
+const TITLE = 'KADO！抽卡機在哪';
+const DESCRIPTION = '全台抽卡機／相卡機資訊持續更新中！';
 
 // 跟 js/main.js 的 SHEET_CSV_URL 是同一份，兩邊各自獨立宣告
 // （一個是 ES Module 給前端用，一個是這支 CommonJS serverless function，無法互相 import）
@@ -77,7 +77,7 @@ module.exports = async function handler(req, res) {
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="${targetUrl}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="抽卡機在哪！Card Radar">
+<meta property="og:site_name" content="KADO！抽卡機在哪">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${TITLE}">
 <meta name="twitter:description" content="${DESCRIPTION}">

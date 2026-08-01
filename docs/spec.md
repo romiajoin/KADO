@@ -1,8 +1,8 @@
-# 抽卡機在哪！Card Radar — 規格文件
+# KADO!抽卡機在哪 — 規格文件
 
-**網站網址：** https://cardradartw.vercel.app/  
+**網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/07/15（v28.2）
+**最後更新：** 2026/07/30（v29）
 
 ---
 
@@ -132,24 +132,24 @@
 詳細觸發規則與防誤觸機制見 `CLAUDE.md`。
 
 ### 分享單一地點
-- URL 格式：`cardradartw.vercel.app/api/share?id=<id>`（v20 改為經過 serverless function，見下方「分享連結 OG Meta」；不是直接指向 `?id=<id>` 了）；v24 起在地圖模式分享時額外帶上 `&view=map`
+- URL 格式：`kadotw.vercel.app/api/share?id=<id>`（v20 改為經過 serverless function，見下方「分享連結 OG Meta」；不是直接指向 `?id=<id>` 了）；v24 起在地圖模式分享時額外帶上 `&view=map`
 - 地圖 popup、詳情側邊欄/sheet、grid modal 各有一個分享按鈕
 - 手機：`navigator.share()` 跳出原生分享選單
 - 桌機：`clipboard.writeText()` + toast 提示「已複製連結！」
 - 真人點擊分享連結後會先短暫經過 `/api/share`，立刻被導回 `/?id=<id>`（地圖模式分享的連結則是 `/?id=<id>&view=map`），資料載入後偵測參數，view=map 時切換到地圖模式並直接展開該機台詳情（桌機側欄 / 手機 bottom sheet 以 preferFull 模式展開，高度貼合內容）；無 view 參數時行為同原本，自動開對應地點的 grid modal
 - 若 ?id= 指向的機台已不存在（下架/刪除），顯示 toast「這台機台的資訊已經下架囉」
 
-### 分享連結 OG Meta（v20 新增）
-- 社群平台（LINE / Threads / Discord / Facebook）的爬蟲不執行 JavaScript，只讀 `<head>` 裡的 `og:title`/`og:image`，所以分享連結改指向一支 serverless function（`api/share.js`），固定回傳同一組內容：
-  - 標題：「抽卡機在哪！Card Radar」
-  - 描述：「想找抽卡機 / 相卡機？來「抽卡機在哪！Card Radar」找找，快速掌握最新的機台資訊！」
-  - 圖片：固定 `/og.png`（1200×630），**不會**依機台換圖
+### 分享連結 OG Meta（v20 新增，v28.3 改為動態換圖）
+- 社群平台（LINE / Threads / Discord / Facebook）的爬蟲不執行 JavaScript，只讀 `<head>` 裡的 `og:title`/`og:image`，所以分享連結改指向一支 serverless function（`api/share.js`）：
+  - 標題：「kado！抽卡機在哪」
+  - 描述：「想找抽卡機 / 相卡機？到「kado！抽卡機在哪」找找，快速掌握最新的機台資訊！」
+  - 圖片：**依機台動態換圖（v28.3 起）**——依 `?id=` 到 Google Sheet CSV 找對應機台的專屬分享圖欄位，找不到該 id、欄位空白、或抓取失敗，都 fallback 回固定的 `/og.png`（1200×630）
 - 真人訪客會被 JS `location.replace()` 導回正常網站；**不用** `<meta http-equiv="refresh">`（Facebook 爬蟲會跟著跳走，抓到跳轉後頁面的 meta 而不是我們寫的內容）
 - 部署上需要專案根目錄有 `package.json`、`og.png` 放在根目錄（不是 `public/`），細節見 `CLAUDE.md`
 
 ### PWA / 加到主畫面（A2HS Banner，v21 新增）
 - **manifest.json**：`name`/`short_name`、`theme_color: #0066FF`、`background_color: #F2F2F7`、`display: standalone`；圖示 `icon-192.png`/`icon-512.png`/`icon-maskable-512.png`（maskable 沿用一般版本，logo 本身留白已在安全區內）、另加 `apple-touch-icon.png`
-- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v28.2'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
+- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v29'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
 - **自動刷新（v24 新增）**：回到前景（`visibilitychange`/`focus`）時，若距上次成功抓取超過 30 分鐘（`REFRESH_THROTTLE_MS`），靜默刷新資料（不清空列表、失敗只顯示 toast）；節流是為了避免短時間切來切去連打 API
 - **下拉刷新（v24 新增）**：列表模式（`#gridView`）捲到頂端時，往下拉超過 60px 放開即觸發刷新；繞過節流（使用者主動操作，應無條件給最新資料）；地圖模式不支援（手勢衝突）
   - v26.1 修正：spinner 曾因 CSS animation 起點跟殘留 inline transform 疊在一起，導致轉圈動畫視覺上卡住不動、體感是「卡一下就直接收回」，詳見 `CLAUDE.md`

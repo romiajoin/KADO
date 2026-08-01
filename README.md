@@ -1,9 +1,9 @@
-# 抽卡機在哪！Card Radar
+# KADO!抽卡機在哪
 
 社群共建的台灣 IP 抽卡機 / 快閃活動查詢網站，資料由管理者維護於 Google Sheet，網站自動讀取並顯示。
 
-**🔗 [查看網站](https://cardradartw.vercel.app/)**  
-**最後更新：** 2026/07/15（v28.2）
+**🔗 [查看網站](https://kadotw.vercel.app/)**  
+**最後更新：** 2026/07/30（v29）
 
 ---
 

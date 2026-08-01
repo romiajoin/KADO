@@ -2,9 +2,9 @@
 
 ## 專案概述
 
-Card Radar（抽卡機在哪！）— 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
+KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
-- 網站：https://cardradartw.vercel.app/
+- 網站：https://kadotw.vercel.app/
 - Repo：https://github.com/romiajoin/taiwan-gacha-map
 - Google Analytics：`G-1G91M8FLWQ`
 
@@ -230,7 +230,7 @@ function fitOptionsWidth(container) {
 
 **做法**：新增 `api/share.js`（Vercel Serverless Function，路徑用查詢字串 `?id=`，不是動態路由資料夾），流程：
 1. 讀 `req.query.id`
-2. 直接回傳一段固定內容的極簡 HTML：標題「抽卡機在哪！Card Radar」、描述「想找抽卡機 / 相卡機？來「抽卡機在哪！Card Radar」找找，快速掌握最新的機台資訊！」、圖片固定用網站根目錄的 `/og.png`（**不是**依機台動態換圖，每個機台分享出去縮圖都一樣）
+2. 依機台動態換圖（**v28.3 新增**）：`getShareImageUrl(id)` 打 Sheet CSV，逐列比對第 0 欄 `id`，命中就回傳第 15 欄（分享圖）的值；**找不到該 id、該欄空白、或抓取 CSV 失敗，都 fallback 回固定的 `/og.png`**（不讓分享頁面因為這支輔助邏輯掛掉）。標題／描述固定：「KADO！抽卡機在哪」、「想找抽卡機 / 相卡機？到「KADO！抽卡機在哪」找找，快速掌握最新的機台資訊！」
 3. `<script>location.replace('/?id=xxx')</script>` 把真人導回正常網站
 
 **幾個容易踩的坑（都是這次實際炸過的）**：
@@ -287,6 +287,8 @@ function fitOptionsWidth(container) {
 - **v28**：修正 search/filter/sort 連動失效、drag-to-full 高度異常三個 bug（見上方「跨檔案依賴要注意」的實際案例），動到 `main.js`／`sort.js`／`map.js`，`CACHE_VERSION` 從 `'v27'` bump 到 `'v28'`
 - **v28.1**：`v28` 已經 push 上線之後，才發現 `closeDesktopPanels` 沒有從 `filters.js` export 出去，導致 PC 排序按鈕丟 `ReferenceError`；補上 `export`/`import` 後，`CACHE_VERSION` 從 `'v28'` 改為 `'v28.1'`，讓已經快取住舊版 `sort.js`/`filters.js` 的使用者能拿到修好的檔案
 - **v28.2**：修好「內容 ≥ full 時，上滑拖曳卡在 mid 附近上不去 full」的問題，動到 `js/map.js`：(1) `touchend` 改成依放開瞬間實際量到的高度找最接近的一階，不再永遠只跳固定一階，長距離單次拖曳才能一次跨到 `full`；(2) 內容量測（`measureSheetContentHeight()`）改成先等內容裡的圖片 `load`/`error` 完才量 `scrollHeight`——`.popup-img` 沒有固定高度／`aspect-ratio`，圖片還沒載入完成前是 0px，量測沒等圖片就量會漏算圖片高度，把有圖片的長內容誤判成短內容，導致拖曳上限被鎖在太小的高度。`CACHE_VERSION` 從 `'v28.1'` 改為 `'v28.2'`
+- **v28.3**：`api/share.js` 分享圖從固定 `/og.png` 改為依機台動態抓取，新增 `getShareImageUrl(id)`，依 `?id=` 到 Google Sheet CSV 找對應列第 15 欄（分享圖），找不到/空白/抓取失敗一律 fallback 回 `/og.png`；只動到 `api/share.js`（不在 `SHELL_ASSETS` 清單、是 serverless function 不受 SW 快取影響），`CACHE_VERSION` 未變動
+- **v29**：網站更名為「KDAO！抽卡機在哪」、網域從 `cardradartw.vercel.app` 搬到 `kadotw.vercel.app`（舊網域設定 301 轉址保留舊分享連結）。動到 `index.html`（title、structured data、apple-mobile-web-app-title、A2HS banner 文案）、`manifest.json`、`api/share.js`（`SITE_URL`/`TITLE`/`DESCRIPTION`/`og:site_name`）、app icon 四個尺寸（同檔名覆蓋，`manifest.json`/`index.html` 路徑不用改）；`index.html` 在 `SHELL_ASSETS` 清單裡，`CACHE_VERSION` 從 `'v28.3'` bump 到 `'v29'`。`sitemap.xml`、`robots.txt` 網域同步更新；`counterapi.dev` 命名空間（`cardradartw`）與結構化資料 `alternateName`（`Card Radar TW`）刻意保留舊名字未跟著改——前者改了會讓累積訪客數歸零，後者是讓搜尋引擎知道舊站名也對應同一個網站
 - 純資料更新（Google Sheet 內容變動）不受影響，本來就是走 `DATA_CACHE` 的 network-first
 
 ### 倒數 Badge（v23 新增）
