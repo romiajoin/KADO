@@ -7,7 +7,7 @@
 // 版本號 bump 時（CACHE_VERSION 改掉），install/activate 會自動清掉舊快取，
 // 不需要手動處理使用者端的快取殘留。
 
-const CACHE_VERSION = 'v29';
+const CACHE_VERSION = 'v30';
 const SHELL_CACHE = `cardradar-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `cardradar-data-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cardradar-images-${CACHE_VERSION}`;
@@ -66,7 +66,7 @@ function isImageRequest(url) {
 // 以及自己的 /api/ serverless functions，例如 api/share.js 會依 id 動態回傳不同
 // 內容，被 SW 快取住會讓某些機台的分享卡片內容卡在舊的版本）
 function isNoCacheRequest(url) {
-  return url.hostname === 'api.counterapi.dev' || url.pathname.startsWith('/api/');
+  return url.hostname === 'visitor-counter.gillsponge-601.workers.dev' || url.pathname.startsWith('/api/');
 }
 
 async function networkFirst(request, cacheName) {

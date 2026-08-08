@@ -1,0 +1,8 @@
+name = "visitor-counter"
+main = "worker.js"
+compatibility_date = "2026-08-08"
+
+# 部署後，把下面的 id 換成你自己建立的 KV namespace id
+[[kv_namespaces]]
+binding = "VISITOR_KV"
+id = "d29af239a4e14cb199904a8671665e24"
