@@ -273,7 +273,7 @@ import { renderSortControl, closeDesktopSortPanel, closeMobileSortSheet } from '
     function toggleDesktopPanel(key) {
       const alreadyOpen = openPanelKey === key;
       closeDesktopPanels();
-      closeDesktopSortPanel();
+      closeDesktopSortPanel('switch_panel');
       if (alreadyOpen) return;
       const panel = document.querySelector(`.filter-panel[data-panel="${key}"]`);
       const pill = document.querySelector(`.filter-pill[data-key="${key}"]`);
@@ -301,12 +301,12 @@ import { renderSortControl, closeDesktopSortPanel, closeMobileSortSheet } from '
 
     document.addEventListener('click', function () {
       closeDesktopPanels();
-      closeDesktopSortPanel();
+      closeDesktopSortPanel('outside_click');
     });
 
 
     function openMobileFilterSheet(key) {
-      closeMobileSortSheet();
+      closeMobileSortSheet('switch_panel');
       const cfg = FILTER_CONFIG.find(c => c.key === key);
       document.getElementById('filterSheetTitle').textContent = cfg.key === 'ip' ? 'IP 篩選' : `${cfg.label}篩選`;
       const sheet = document.getElementById('filterSheet');

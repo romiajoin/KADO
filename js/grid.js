@@ -153,12 +153,14 @@ import { sortState, userCoords } from './sort.js';
         return list;
       }
 
-      // end_date_asc：有結束日期的排前面（近到遠），無期限的常態機永遠排最後，
-      // 常態機彼此之間依 IP 名稱排序（數字 → 筆畫 → 英文，跟篩選選項同一套慣例）
+      // end_date_asc/end_date_desc：有結束日期的依方向排序，無期限的常態機不管哪個方向都一律排最後
+      // （沒有結束日不代表「最遠」，是另一種狀態，兩個方向都不該把它排到日期區間裡），
+      // 常態機彼此之間依 IP 名稱排序（數字 → 筆畫 → 英文，跟篩選選項同一套慣例），這個順序不受方向影響
+      const dir = sortState === 'end_date_desc' ? -1 : 1;
       list.sort((a, b) => {
         const ea = getEndDate(a.limited);
         const eb = getEndDate(b.limited);
-        if (ea && eb) return ea - eb;
+        if (ea && eb) return (ea - eb) * dir;
         if (ea && !eb) return -1;
         if (!ea && eb) return 1;
         return (a.character || '').localeCompare(b.character || '', 'zh-Hant');

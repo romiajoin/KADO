@@ -19,7 +19,7 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 - 部署：Vercel（push 至 GitHub 後自動部署，約 1 分鐘生效）
 - Serverless Function：`api/share.js`（v20 新增，分享連結 OG meta 用，見下方「分享連結 OG Meta」）；專案根目錄需要有 `package.json`（哪怕內容幾乎是空的）Vercel 才會建置 `/api`
 - 字體：Chiron GoRound TC（400/500/700）、Space Mono（統計數字）
-- 訪客計數：counterapi.dev（`cardradartw/visits`，page view 計數）
+- 訪客計數：自架 Cloudflare Worker + KV（`visitor-counter.gillsponge-601.workers.dev`，page view 計數；v30 起取代原本的第三方 counterapi.dev，避免依賴的免費服務哪天被停用/改規則）
 - PWA：`manifest.json` + `sw.js`（v21 新增，見下方「PWA / 加到主畫面」）；圖示放在 `icons/`，路徑寫死在 `manifest.json` 跟 `index.html` 裡，改資料夾名稱要兩邊一起改
 
 ---
@@ -192,7 +192,7 @@ function fitOptionsWidth(container) {
 
 ### 排序系統（Sort，v22 新增）
 - 位於篩選 pill 列右側（`margin-left: 4px`，疊加 `.filter-bar` 原有的 `gap: 12px` 湊出 16px 間距），純文字＋chevron 樣式，跟 pill 外觀刻意做出區隔——排序永遠單選、沒有清除的概念，跟篩選的多選/可清除是不同的心智模型，用同一種 pill 樣式容易誤導使用者以為排序也能疊加
-- `SORT_OPTIONS` 固定三個選項：`end_date_asc`（default）、`distance_asc`、`distance_desc`；桌面版 `#sortPanel` dropdown、手機版共用 `.filter-sheet` 這組 bottom sheet DOM（跟篩選共用同一套元件與 class，`#sortSheetOverlay`/`#sortSheet`），兩者互斥——開排序會收篩選，開篩選會收排序，`toggleDesktopSortPanel()`/`toggleDesktopPanel()` 跟 `openMobileSortSheet()`/`openMobileFilterSheet()` 互相呼叫對方的 close function
+- `SORT_OPTIONS`（v30.2 新增 `end_date_desc`，共四個選項）：`end_date_asc`（default）、`end_date_desc`、`distance_asc`、`distance_desc`；桌面版 `#sortPanel` dropdown、手機版共用 `.filter-sheet` 這組 bottom sheet DOM（跟篩選共用同一套元件與 class，`#sortSheetOverlay`/`#sortSheet`），兩者互斥——開排序會收篩選，開篩選會收排序，`toggleDesktopSortPanel()`/`toggleDesktopPanel()` 跟 `openMobileSortSheet()`/`openMobileFilterSheet()` 互相呼叫對方的 close function
 - `sortLocations(arr)`：
   - `end_date_asc`：沿用 `limited` 欄位（`"2026/07/01～2026/07/20"` 格式，取「～」後半段當結束日）比較，**無期限的常態機一律排最後**，彼此之間用 IP 名稱（`character` 欄位）`localeCompare('zh-Hant')` 排序（跟篩選 IP 選項同一套規則）——舊版曾經用 `getEnd()` 回傳固定 `9999/12/31` 當佔位值，這個寫法「近到遠」時剛好把無期限排最後，但如果曾經想加「遠到近」方向，同一個佔位值會讓無期限機台變成排最前面，邏輯是巧合對、不是設計對，v22 改成明確判斷 `null` 才是對的做法
   - `distance_asc`/`distance_desc`：Haversine 公式算直線距離（台灣範圍不需要更複雜的橢球模型），需要 `userCoords`（使用者座標）才能排，沒有座標時直接回傳原陣列不排序（防呆，理論上選這個選項前一定已經觸發過定位流程）
@@ -289,6 +289,14 @@ function fitOptionsWidth(container) {
 - **v28.2**：修好「內容 ≥ full 時，上滑拖曳卡在 mid 附近上不去 full」的問題，動到 `js/map.js`：(1) `touchend` 改成依放開瞬間實際量到的高度找最接近的一階，不再永遠只跳固定一階，長距離單次拖曳才能一次跨到 `full`；(2) 內容量測（`measureSheetContentHeight()`）改成先等內容裡的圖片 `load`/`error` 完才量 `scrollHeight`——`.popup-img` 沒有固定高度／`aspect-ratio`，圖片還沒載入完成前是 0px，量測沒等圖片就量會漏算圖片高度，把有圖片的長內容誤判成短內容，導致拖曳上限被鎖在太小的高度。`CACHE_VERSION` 從 `'v28.1'` 改為 `'v28.2'`
 - **v28.3**：`api/share.js` 分享圖從固定 `/og.png` 改為依機台動態抓取，新增 `getShareImageUrl(id)`，依 `?id=` 到 Google Sheet CSV 找對應列第 15 欄（分享圖），找不到/空白/抓取失敗一律 fallback 回 `/og.png`；只動到 `api/share.js`（不在 `SHELL_ASSETS` 清單、是 serverless function 不受 SW 快取影響），`CACHE_VERSION` 未變動
 - **v29**：網站更名為「KDAO！抽卡機在哪」、網域從 `cardradartw.vercel.app` 搬到 `kadotw.vercel.app`（舊網域設定 301 轉址保留舊分享連結）。動到 `index.html`（title、structured data、apple-mobile-web-app-title、A2HS banner 文案）、`manifest.json`、`api/share.js`（`SITE_URL`/`TITLE`/`DESCRIPTION`/`og:site_name`）、app icon 四個尺寸（同檔名覆蓋，`manifest.json`/`index.html` 路徑不用改）；`index.html` 在 `SHELL_ASSETS` 清單裡，`CACHE_VERSION` 從 `'v28.3'` bump 到 `'v29'`。`sitemap.xml`、`robots.txt` 網域同步更新；`counterapi.dev` 命名空間（`cardradartw`）與結構化資料 `alternateName`（`Card Radar TW`）刻意保留舊名字未跟著改——前者改了會讓累積訪客數歸零，後者是讓搜尋引擎知道舊站名也對應同一個網站
+- **v30**：訪客計數改用自架 Cloudflare Worker + KV，取代第三方 `counterapi.dev`（見上方「訪客計數 Banner」）。新增 `worker.js`／`wrangler.toml`（不在 `SHELL_ASSETS`，獨立部署到 Cloudflare，不隨 Vercel 走）；動到 `visitor.js`（API 網址）、`sw.js`（`isNoCacheRequest` 判斷的網域），`CACHE_VERSION` 從 `'v29'` bump 到 `'v30'`，確保已快取住舊版 `visitor.js` 的使用者能拿到指向新 API 的版本。舊系統累積的訪客數（2000）用 Worker 的 `/reset` 端點手動接續，不從 0 重算
+- **v30.1**：埋碼稽核發現 `map_marker_click` 文件記錄的參數（`machine_type`）跟程式碼實際送出的參數（`machine_count`）對不上，回去看程式碼才發現這個事件原本就沒送 `machine_type`——單一機台點擊時其實拿得到 `locs[0].type`，只是當初沒補上。修正 `js/map.js` 的 `marker.on('click', ...)`，補上 `machine_type: locs.length === 1 ? locs[0].type : null`，讓地圖上直接點機台圖示也能在 GA4 拆分抽卡機／相卡機的點擊數據；`machine_count` 保留（cluster 時仍可用來知道涵蓋幾台）。只動到 `js/map.js`，`CACHE_VERSION` 從 `'v30'` bump 到 `'v30.1'`
+- **v30.2**：新增排序選項「結束日：遠到近」（`end_date_desc`）。動到 `js/sort.js`（`SORT_OPTIONS` 加入新選項）、`js/grid.js`（`sortLocations()` 改為依 `dir` 乘數決定方向；**無期限的常態機不管哪個方向都一律排最後**，不受 `dir` 影響，因為沒有結束日不等於「最遠」，是另一種狀態，兩個方向都不該把它排進日期區間裡）。`sort_change` 事件本身不用改程式碼就自動記錄新的 `sort_key` 值（`selectSortOption(key)` 沿用既有參數傳遞邏輯），但事件表裡列舉的 `sort_key` 可能值要記得同步補上 `end_date_desc`，不然回頭看報表會看到一個「文件沒寫過」的值感到困惑
+- **v30.3**：埋碼健檢（已經一段時間沒新增埋碼、但功能持續在加，回頭抓 repo 全面比對「有互動但沒埋碼」的地方）發現三個缺口，補上：
+  - `sort_panel_open`／`sort_panel_close`：排序面板/sheet 原本只追蹤「選了什麼」（`sort_change`），沒追蹤「打開來看但沒選」這個行為，跟篩選面板（有 `filter_panel_open`/`filter_panel_close`）不對稱。動到 `js/sort.js`（`closeDesktopSortPanel`/`closeMobileSortSheet` 改成吃 `method` 參數，只有真的傳了 method 字串才記錄，選排序導致的自動收合刻意不傳、避免跟 `sort_change` 重複記一次同個時間點）、`js/filters.js`（開篩選面板時關掉排序面板的呼叫點，標記 `switch_panel`）。**修正時順便抓到一個潛在 bug**：原本 `sortSheetClose`/`sortSheetOverlay` 的 `addEventListener` 直接把 `closeMobileSortSheet` 當 callback 傳進去，瀏覽器會把 click 的 `Event` 物件當第一個參數傳入；改成 `method` 參數後這樣寫會把 `Event` 物件誤當成 `method` 送進 GA4，已改成箭頭函式明確傳入 `method` 字串
+  - `search_clear`：搜尋框清除（X）按鈕原本完全沒追蹤，跟篩選 pill 的清除 icon（有 `filter_clear`）不對稱。動到 `js/main.js`，`source` 沿用 `search_box_focus` 既有的 `desktop_toolbar`/`mobile_toolbar` 慣例
+  - `grid_modal_close`：列表模式的機台詳情彈窗關閉原本完全沒追蹤，地圖模式的對應行為（`detail_panel_close`）卻有。動到 `js/main.js` 的 `closeGridModal(e)`，`method` 判斷邏輯直接比照 `changelog_close` 的既有寫法
+  - 只動到 `js/sort.js`／`js/filters.js`／`js/main.js`，`CACHE_VERSION` 從 `'v30.2'` bump 到 `'v30.3'`
 - 純資料更新（Google Sheet 內容變動）不受影響，本來就是走 `DATA_CACHE` 的 network-first
 
 ### 倒數 Badge（v23 新增）
@@ -315,7 +323,7 @@ function fitOptionsWidth(container) {
 | `filter_result` | `applyFilters()` 執行後（debounce 800ms，僅在有套用篩選時記錄） | `type`, `city`, `ip`（各自 join 成字串）, `result_count`, `device` |
 | `view_toggle` | 切換列表 / 地圖（跳過初始化那次） | `view_mode`, `device` |
 | `card_click` | 點擊機台卡片 | `machine_id`, `machine_name`, `machine_type`, `source`(map_sidebar_list/map_cluster_popup/grid), `device` |
-| `map_marker_click` | 直接點地圖上的機台圖示（跟透過清單點擊的 `card_click` 是不同路徑） | `machine_id`, `machine_type`, `device` |
+| `map_marker_click`（v30.1 修正參數） | 直接點地圖上的機台圖示（跟透過清單點擊的 `card_click` 是不同路徑）；點到的可能是單一機台，也可能是多台機台聚合成的 cluster 圖示 | `machine_id`（cluster 時為 null）, `machine_type`（單一機台時才有值，cluster 時為 null，因為裡面可能混著抽卡機/相卡機沒有單一值）, `machine_count`（這次點擊涵蓋幾台機台，可用來篩出 `=== 1` 的單一機台點擊）, `device` |
 | `gmaps_click` | 點擊「在 Google Maps 查看」連結 | `machine_id`, `source`(grid/map_popup/grid_modal/share_modal), `device` |
 | `share_click` | 點擊分享按鈕（v24 補上 `device`；v23 文件曾誤記 source 含 map_popup，實際值是 map_detail_panel） | `machine_id`, `source`(grid_modal/share_modal/map_detail_panel), `device` |
 | `lightbox_open` | 點圖放大 | `machine_id`, `device` |
@@ -335,10 +343,14 @@ function fitOptionsWidth(container) {
 | `a2hs_prompt_result`（v21） | Android 原生安裝視窗的使用者選擇 | `outcome`(accepted/dismissed), `platform`(固定 android) |
 | `pwa_installed`（v21） | `appinstalled` 觸發（PWA 安裝完成） | `platform`, `source`(a2hs_banner/native_browser_ui) |
 | `pwa_launch_mode`（v21） | 每次頁面載入判斷 standalone/browser 開啟 | `mode`(standalone/browser) |
-| `sort_change`（v22） | 選擇排序方式並實際套用（距離排序需等定位成功才觸發，選了但定位失敗不算） | `sort_key`(end_date_asc/distance_asc/distance_desc), `device` |
+| `sort_change`（v22，v30.2 新增 `end_date_desc` 選項值） | 選擇排序方式並實際套用（距離排序需等定位成功才觸發，選了但定位失敗不算） | `sort_key`(end_date_asc/end_date_desc/distance_asc/distance_desc), `device` |
 | `geo_permission_result`（v22） | 距離排序觸發 `navigator.geolocation` 定位請求後取得結果的當下 | `geo_result`(granted/denied/timeout/unavailable), `device` |
 | `changelog_open`（v27） | 打開更新日誌 modal/sheet | `source`(header_desktop/header_mobile_list), `device` |
 | `changelog_close`（v27） | 關閉更新日誌 modal/sheet | `method`(x_button/backdrop_click), `device` |
+| `sort_panel_open`（v30.3） | 打開排序 dropdown（桌機）或 bottom sheet（手機） | `device` |
+| `sort_panel_close`（v30.3） | 使用者主動關閉排序面板/sheet，且面板原本真的是開著的（`toggleDesktopSortPanel()`/`closeDesktopSortPanel(method)`/`closeMobileSortSheet(method)` 內部都會先檢查 `wasOpen`）；選了排序選項導致的自動收合**不算**，那個時間點已經有 `sort_change` 記錄，重複記一次沒有額外資訊 | `method`(toggle_button/outside_click/switch_panel/x_button/backdrop_click), `device` |
+| `search_clear`（v30.3） | 點擊搜尋框的清除（X）按鈕；桌機/手機兩個輸入框各自的清除鈕都會觸發（因為兩邊 value 是同步的，清一邊等於兩邊都清空，但只算使用者實際點擊的那一顆按鈕） | `source`(desktop_toolbar/mobile_toolbar), `device` |
+| `grid_modal_close`（v30.3） | 關閉列表模式的機台詳情彈窗（grid modal）；`method` 判斷邏輯比照 `changelog_close`：background 點擊時 `closeGridModal(event)` 有傳事件物件、X 按鈕 `closeGridModal()` 沒有傳 | `method`(x_button/backdrop_click), `device` |
 
 **追蹤時的保護機制**（避免程式自動觸發的行為污染數據）：
 - `filter_result` / `filter_clear`：沒有套用任何篩選時不記錄（純搜尋、初始狀態、清除已經是空的都不算）
@@ -347,10 +359,10 @@ function fitOptionsWidth(container) {
 - `sheet_auto_expand`（v23）：只在「原本在 peek、且這次篩選/搜尋有結果」這個分支觸發；已經在 mid/full 時篩選/搜尋不會觸發（維持原本高度，也不記錄）
 - `detail_panel_close`（v23）：`closeDetailPanel(forcePeek, method)` 只有在**沒有** `forcePeek`、**有** `method`、且 `sheetLoc` 非空（真的正在看某台機台詳情）時才記錄；篩選/搜尋改變觸發的 `forcePeek` 重置、或根本沒開任何東西時點空白處，都不算數，避免跟 `filter_result` 那類事件重複計數同一次操作
 - `geo_permission_result`（v22）：只有實際呼叫 `navigator.geolocation.getCurrentPosition()` 才會觸發。已知拒絕過（`localStorage` 的 `geo_permission_denied`）之後直接顯示提示、不再呼叫 API，這種情況不會產生事件——這代表這個事件反映的是「呼叫嘗試次數」的授權率，不是「不重複使用者」的授權率，兩者會有落差
-- 所有自訂參數（`filter_type`、`source`、`device`、`result_count` 等）要在 GA4 後台「管理 → 自訂定義 → 自訂維度」手動註冊，才能在標準報表/Explore 查詢；v23 新增的 `sheet_auto_expand`（無自訂參數，只有標準的 `device`）、`detail_panel_close` 的 `method` 都還沒註冊，見下方「待註冊清單」
+- 所有自訂參數（`filter_type`、`source`、`device`、`result_count` 等）要在 GA4 後台「管理 → 自訂定義 → 自訂維度」手動註冊，才能在標準報表/Explore 查詢；v23 新增的 `sheet_auto_expand`（無自訂參數，只有標準的 `device`）已註冊，`detail_panel_close` 的 `method`（維度名稱：「關閉方式」）**v30.3 稽核截圖確認已經註冊完成**，下方 v24 清單那條「尚未註冊」已過時，見 v30.3 章節更新
 
 **v24 待完成清單**（GA4 後台「管理 → 自訂定義 → 自訂維度」）：
-- `method`（`detail_panel_close` 專用，v23 起）：全新參數，尚未在 GA4 後台註冊
+- ~~`method`（`detail_panel_close` 專用，v23 起）：全新參數，尚未在 GA4 後台註冊~~ → **已於 v30.3 確認註冊完成**（維度名稱「關閉方式」），見下方 v30.3 章節
 - `view`（`share_link_opened` 專用）：全新參數，尚未在 GA4 後台註冊
 - `trigger`（`data_refresh_error` 專用）：全新參數，尚未在 GA4 後台註冊
 - `device` 維度說明文字待更新：v24 起值從 mobile/desktop 擴充為 mobile/mobile_pwa/desktop/desktop_pwa，GA4 後台自訂維度的說明文字需手動更新
@@ -361,7 +373,16 @@ function fitOptionsWidth(container) {
 - `觸發來源`（`source`）說明文字待更新：目前後台列出的 source 值有部分已過時（如 map_popup、map_list），需修正為實際值
 - 「GA4事件追蹤表」資料庫（v27）：`changelog_open`/`changelog_close` 已新增記錄，但「新增版本」跟「觸發位置」schema 選項裡還沒有「v27」跟「更新日誌 Modal/Sheet」，需手動到資料庫設定裡加選項（工具權限沒有 `update-data-source`，無法自動加）
 
+**v30.3 待完成清單**：
+- `sort_panel_open`／`sort_panel_close`／`search_clear`／`grid_modal_close` 這四個新事件**沒有引入任何全新的參數名稱**——都是沿用既有的 `method`、`source`、`device`，不用新增自訂維度。截圖核對 GA4 後台「自訂定義」後確認：`method`（關閉方式）、`source`（觸發來源）、`device`（裝置類型）都已經註冊過，四個新事件不用等任何維度註冊就能在報表上查得到
+- 但有 **3 個既有維度的「說明」欄位文字沒有跟著新值更新**，內容還停在舊版本，需要去 GA4 後台手動編輯：
+  - **排序方式**（`sort_key`）：目前只寫 `end_date_asc/distance_asc/distance_desc`，缺 v30.2 新增的 `end_date_desc`
+  - **觸發來源**（`source`）：截圖看不到完整內容，但至少缺 `search_clear` 沿用的 `desktop_toolbar`/`mobile_toolbar`（這兩個值其實 `search_box_focus` 早就在用，只是說明欄位本來就沒寫全，之前沒發現）
+  - **關閉方式**（`method`）：截圖顯示到 `x_button/backdrop_click/empty_map...` 就被截斷，缺 v30.3 新增的 `toggle_button`/`outside_click`/`switch_panel`
+- 「GA4 事件追蹤表」資料庫需要新增這四筆記錄（工具權限沒有新增資料庫 row 的操作，需人工在 Notion 裡加）——**已於 v30.3 完成**，四筆都已新增
+
 **⚠️ `addEventListener` 直接傳函式參照的坑**：`addEventListener('click', someFn)` 會把 `event` 物件當作 `someFn` 的第一個參數傳入。如果 `someFn` 的第一個參數是拿來控制邏輯用的（例如 `skipTracking`），會被 `event` 物件（永遠 truthy）誤判，導致邏輯整個相反卻不會報錯。要嘛改用箭頭函式包一層再傳（`addEventListener('click', () => someFn())`），要嘛該參數不要放在第一位。
+- **v30.3 實例**：補 `sort_panel_close` 埋碼時，`closeMobileSortSheet` 從無參數改成吃 `method` 參數，而 `sortSheetClose`/`sortSheetOverlay` 原本的寫法正好是 `addEventListener('click', closeMobileSortSheet)` 這種直接傳函式參照的寫法——改參數簽章前就先抓到、順手改成箭頭函式，沒有實際踩雷上線，但差一點就是本文件警告的那個坑
 
 **`data-machine-id` 屬性**：grid 卡片、地圖 popup、詳情 modal 的容器上都有這個屬性，`lightbox_open` 事件靠 `e.target.closest('[data-machine-id]')` 反查回是哪個機台，不用在每個開圖的地方各自傳一次 id。
 
@@ -372,10 +393,13 @@ function fitOptionsWidth(container) {
 
 ### 訪客計數 Banner
 - 位置：`#topBar` 內、header 正上方，全寬，文字置中；v26 起併入 `#topBar`，mobile 列表模式下跟 header/toolbar/filter-bar 一起滑動隱藏/顯示（見下方「#topBar 滑動隱藏（v26 新增）」）
-- API：`GET https://api.counterapi.dev/v1/cardradartw/visits/up`（每次載入 +1）
+- **v30 起改用自架 Cloudflare Worker + KV**，取代原本的第三方 `counterapi.dev`（免費服務沒有 SLA，隨時可能停用/改規則，換成自己架的服務完全掌控在自己手上）
+  - Worker 原始碼：`worker.js`；部署設定：`wrangler.toml`（KV binding `VISITOR_KV`）；不放在 `SHELL_ASSETS`，是獨立部署到 Cloudflare 的服務，不隨主站 Vercel 部署走
+  - API：`GET https://visitor-counter.gillsponge-601.workers.dev/`（每次載入累加 KV 裡的數字 +1 並回傳目前值），`visitor.js` 負責呼叫並寫進 DOM
+  - 手動改數字（例如接續舊系統累積的數字）：`GET /reset?value=N&secret=xxx`，`secret` 存在 Cloudflare Worker 的 Secret（`RESET_SECRET`），不寫死在程式碼或 git 裡；v30 上線時用這個端點把數字從 0 接續設回舊系統累積的 2000
 - 計數方式：page view（非 unique visitor）；曾討論過要不要用 `localStorage` 旗標做「同一瀏覽器不重複計」，結論是不做——現有語意就是「次數」而非嚴謹去重，真要看 unique visitor 直接查 GA4 後台的「使用者數」即可，不必為了公開 banner 多背一套邏輯
 - API 失敗時 banner 靜默隱藏，不影響其他功能
-- **⚠️ v22 修正：曾被 SW 誤快取導致數字凍結**——`sw.js` 的 `fetch` handler 裡，`isDataRequest`／`isImageRequest` 都判斷不到的請求會全部掉進最後的 catch-all，用 `cacheFirst(request, SHELL_CACHE)` 處理，counter API 也符合這個條件，導致第一次呼叫後就被快取住，之後每次 refresh 都拿到快取的舊回應，人數永遠不會增加。修法是新增 `isNoCacheRequest(url)`，判斷 `url.hostname === 'api.counterapi.dev'`，符合的請求直接 `fetch(request)` 繞過快取，不進 `cacheFirst`
+- **⚠️ v22 修正：曾被 SW 誤快取導致數字凍結**——`sw.js` 的 `fetch` handler 裡，`isDataRequest`／`isImageRequest` 都判斷不到的請求會全部掉進最後的 catch-all，用 `cacheFirst(request, SHELL_CACHE)` 處理，counter API 也符合這個條件，導致第一次呼叫後就被快取住，之後每次 refresh 都拿到快取的舊回應，人數永遠不會增加。修法是新增 `isNoCacheRequest(url)`，符合的請求直接 `fetch(request)` 繞過快取，不進 `cacheFirst`；v30 換 Worker 後，判斷式裡的網域同步從 `api.counterapi.dev` 改成 `visitor-counter.gillsponge-601.workers.dev`
 
 ### #topBar 滑動隱藏（v26 新增）
 - **範圍**：header + toolbar + `#filterBar` + 訪客計數 banner 包成 `#topBar` 一個 wrapper；只在 `max-width: 768px` **且** `body:not(.map-view)`（列表模式）生效——地圖模式下 `#topBar` 維持原本 static flow，`position`／高度完全不受影響，因為 `map.js` 的 mobile bottom sheet `full` 高度是動態貼齊 filter-bar 下緣算出來的（見「Mobile Map Bottom Sheet」），改動這個會牽一髮動全身

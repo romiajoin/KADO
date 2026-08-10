@@ -325,6 +325,8 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       this.style.display = 'none';
       document.getElementById('clearSearchMobile').style.display = 'none';
       applyFilters(); // sheet 層級的處理（還原搜尋前那一層）已經在 applyFilters 內部做了，這裡不用再另外蓋一次
+      // GA: search_clear
+      gtag('event', 'search_clear', { source: 'desktop_toolbar', device: getDeviceType() });
     });
     document.getElementById('clearSearchMobile').addEventListener('click', function () {
       document.getElementById('searchInputMobile').value = '';
@@ -332,6 +334,8 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       this.style.display = 'none';
       document.getElementById('clearSearch').style.display = 'none';
       applyFilters();
+      // GA: search_clear
+      gtag('event', 'search_clear', { source: 'mobile_toolbar', device: getDeviceType() });
     });
 
     // =============================================
@@ -451,6 +455,8 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       if (e && e.target !== document.getElementById('gridModal')) return;
       document.getElementById('gridModal').classList.remove('show');
       document.body.style.overflow = '';
+      // GA: grid_modal_close（method 判斷邏輯比照 changelog_close：e 有值代表背景點擊，undefined 代表 X 按鈕）
+      gtag('event', 'grid_modal_close', { method: e ? 'backdrop_click' : 'x_button', device: getDeviceType() });
     }
 
     function trackGmapsClick(id, source) {

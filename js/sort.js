@@ -16,6 +16,7 @@ import { map, renderMapLocations } from './map.js';
     // =============================================
     const SORT_OPTIONS = [
       { key: 'end_date_asc', label1: '結束日', label2: '近到遠', text: '結束日：近到遠' },
+      { key: 'end_date_desc', label1: '結束日', label2: '遠到近', text: '結束日：遠到近' },
       { key: 'distance_asc', label1: '距離',   label2: '近到遠', text: '距離：近到遠' },
       { key: 'distance_desc', label1: '距離',  label2: '遠到近', text: '距離：遠到近' },
     ];
@@ -83,19 +84,28 @@ import { map, renderMapLocations } from './map.js';
       const btn = document.getElementById('sortBtn');
       const wasOpen = panel.classList.contains('open');
       closeDesktopPanels();
-      closeDesktopSortPanel();
+      closeDesktopSortPanel('toggle_button');
       if (wasOpen) return;
       panel.classList.add('open');
       btn.classList.add('open');
+      // GA: sort_panel_open
+      gtag('event', 'sort_panel_open', { device: getDeviceType() });
     }
 
-    export function closeDesktopSortPanel() {
+    // method 有值才記錄（真的是使用者主動關閉）；未傳入時代表程式自動觸發的收合
+    // （例如選了排序選項後的自動收合、resize），不算一次使用者關閉動作，見下方各呼叫點
+    export function closeDesktopSortPanel(method) {
       const panel = document.getElementById('sortPanel');
       const btn = document.getElementById('sortBtn');
+      const wasOpen = panel && panel.classList.contains('open');
       if (panel) panel.classList.remove('open');
       if (btn) btn.classList.remove('open');
       const hint = document.getElementById('sortPanelHint');
       if (hint) hint.classList.remove('show');
+      // GA: sort_panel_close
+      if (wasOpen && method) {
+        gtag('event', 'sort_panel_close', { method, device: getDeviceType() });
+      }
     }
 
     function openMobileSortSheet() {
@@ -116,16 +126,28 @@ import { map, renderMapLocations } from './map.js';
       document.getElementById('sortSheetOverlay').classList.add('show');
       const sortBtn = document.getElementById('sortBtn');
       if (sortBtn) sortBtn.classList.add('open');
+      // GA: sort_panel_open
+      gtag('event', 'sort_panel_open', { device: getDeviceType() });
     }
 
-    export function closeMobileSortSheet() {
-      document.getElementById('sortSheetOverlay').classList.remove('show');
+    // method 有值才記錄，理由同 closeDesktopSortPanel
+    export function closeMobileSortSheet(method) {
+      const overlay = document.getElementById('sortSheetOverlay');
+      const wasShown = overlay.classList.contains('show');
+      overlay.classList.remove('show');
       const sortBtn = document.getElementById('sortBtn');
       if (sortBtn) sortBtn.classList.remove('open');
+      // GA: sort_panel_close
+      if (wasShown && method) {
+        gtag('event', 'sort_panel_close', { method, device: getDeviceType() });
+      }
     }
 
-    document.getElementById('sortSheetClose').addEventListener('click', closeMobileSortSheet);
-    document.getElementById('sortSheetOverlay').addEventListener('click', closeMobileSortSheet);
+    // 注意：不能直接把 closeMobileSortSheet 當 callback 傳給 addEventListener——
+    // 瀏覽器會把 click 的 Event 物件當成第一個參數傳進來，變成把 event 誤當 method 送進 GA4，
+    // 一定要包一層箭頭函式，明確指定 method 字串
+    document.getElementById('sortSheetClose').addEventListener('click', () => closeMobileSortSheet('x_button'));
+    document.getElementById('sortSheetOverlay').addEventListener('click', () => closeMobileSortSheet('backdrop_click'));
 
     function geoPermissionDenied() {
       return localStorage.getItem('geo_permission_denied') === 'true';
@@ -196,6 +218,8 @@ import { map, renderMapLocations } from './map.js';
     function applySortState(key) {
       sortState = key;
       updateSortDisplay();
+      // 這裡故意不傳 method：選了排序選項導致的自動收合，跟 sort_change 是同一個時間點的同一個動作，
+      // 重複記錄一次 sort_panel_close 沒有額外資訊、只會讓「面板真的被關掉但沒選」這個訊號被稀釋
       closeDesktopSortPanel();
       closeMobileSortSheet();
       setCurrentFiltered(sortLocations(currentFiltered));

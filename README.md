@@ -3,7 +3,7 @@
 社群共建的台灣 IP 抽卡機 / 快閃活動查詢網站，資料由管理者維護於 Google Sheet，網站自動讀取並顯示。
 
 **🔗 [查看網站](https://kadotw.vercel.app/)**  
-**最後更新：** 2026/07/30（v29）
+**最後更新：** 2026/08/09（v30.3）
 
 ---
 
@@ -17,7 +17,7 @@
 - 🗺️ 互動地圖，顯示全台抽卡機與 IP 快閃活動地點，自訂彩色圖示 + 同地點多機自動聚合
 - 📱 手機版響應式設計（地圖全螢幕 + 底部可拖拉、依內容自動調整高度的詳情面板）
 - 🗺️ 一鍵導航至 Google Maps
-- 📅 依期間限定結束日期排序，或授權定位後依「離我最近／最遠」排序
+- 📅 依期間限定結束日期排序（近到遠／遠到近），或授權定位後依「離我最近／最遠」排序
 - 🔗 分享單一地點連結，社群平台（LINE / Threads / Discord）預覽卡片有專屬標題與縮圖
 - 👣 顯示累計訪客人數
 - 📲 支援加入主畫面（PWA），可像 App 一樣從手機桌面開啟，離線時仍可查看上次載入的資料；回到前景自動刷新資料（節流 30 分鐘），列表模式支援下拉手動刷新
@@ -39,7 +39,7 @@
 | Serverless Function | `api/share.js`（分享連結 OG meta 用，Vercel 免費方案內） |
 | PWA | `manifest.json` + Service Worker（split caching，v21 新增） |
 | 字體 | Chiron GoRound TC（400/500/700）、Space Mono（統計數字）|
-| 訪客計數 | counterapi.dev |
+| 訪客計數 | 自架 Cloudflare Worker + KV |
 | 數據分析 | Google Analytics 4（GA4） |
 
 **不需要資料庫、不需要 API 金鑰。** 有一支極輕量的 serverless function（`api/share.js`）純粹是為了讓分享連結在 LINE/Threads 等平台顯示正確的預覽卡片，不涉及任何使用者資料或資料庫。
@@ -55,12 +55,15 @@ js/
   filters.js         # 篩選 UI
   sort.js            # 排序 UI + 定位權限
   grid.js            # 列表卡片渲染 + 排序邏輯
+  scroll.js          # mobile 列表模式：頂部工具列滑動隱藏/顯示（v26 新增）
   changelog.js       # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
   pwa.js             # A2HS banner／自動刷新／下拉刷新／SW 註冊
   utils.js           # 裝置/顯示模式判斷
   visitor.js         # 訪客計數
 api/share.js         # 分享連結 OG meta 用的 serverless function
 changelog.json       # 更新日誌內容（v27 新增，跟 manifest.json 同層）
+worker.js            # 訪客計數 Cloudflare Worker 原始碼（v30 新增，獨立部署到 Cloudflare，不隨 Vercel 走）
+wrangler.toml        # 上述 Worker 的部署設定（KV binding、Worker 名稱）
 ```
 
 ---

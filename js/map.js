@@ -150,6 +150,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
           // GA: map_marker_click
           gtag('event', 'map_marker_click', {
             machine_id: locs.length === 1 ? locs[0].id : null,
+            machine_type: locs.length === 1 ? locs[0].type : null,
             machine_count: locs.length,
             device: getDeviceType(),
           });

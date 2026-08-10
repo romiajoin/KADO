@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/07/30（v29）
+**最後更新：** 2026/08/09（v30.3）
 
 ---
 
@@ -23,7 +23,7 @@
 | 網站託管 | Vercel（免費） |
 | PWA | manifest.json + Service Worker（split caching，v21 新增） |
 | 字體 | Chiron GoRound TC（400/500/700）、Space Mono（統計數字）|
-| 訪客計數 | counterapi.dev |
+| 訪客計數 | 自架 Cloudflare Worker + KV |
 | 數據分析 | Google Analytics 4（GA4） |
 
 **不需要後端、不需要資料庫、不需要 API 金鑰。**
@@ -62,7 +62,7 @@
 - 文字：「已經有 N 人來找過抽卡機」，置中顯示
 - 數字樣式：Space Mono Bold
 - 顏色：`--fill-blue`（文字與數字）、`--fill-blue-8`（背景）
-- 資料來源：counterapi.dev（`cardradartw/visits`），page view 計數（每次載入 +1）
+- 資料來源：自架 Cloudflare Worker + KV（`visitor-counter.gillsponge-601.workers.dev`），page view 計數（每次載入 +1）；v30 起取代原本的第三方 counterapi.dev
 - API 失敗時靜默隱藏，不影響其他功能
 - v22 修正：曾被 Service Worker 誤快取導致數字凍結（`sw.js` catch-all 規則把 counter API 也當成殼層資源快取），改為指定該請求繞過快取、每次都真的打網路，詳見 `CLAUDE.md`
 - v26 起：mobile 列表模式下併入頂部工具列，跟 header/toolbar/filter-bar 一起滑動隱藏/顯示，見下方「列表模式（Grid View）」
@@ -75,23 +75,15 @@
 - 手機版列表模式：header 右側只留 icon toggle，「回報表單／更新日誌」連結改放在列表上方同一排 meta 資訊裡（跟最後更新時間同一行）
 
 ### 更新日誌（v27 新增）
-- 進入點：桌機 header「最後更新｜回報表單」右側新增「更新日誌」連結；手機列表模式同一排 meta 資訊也同步加上（避免跟桌機版連結在手機版重複顯示，需同時把 `.changelog-link` 列入手機隱藏清單）
-- 資料來源：根目錄 `changelog.json`（跟 `manifest.json` 同層），欄位為 `date`/`version`/`text` 三欄；`text` 可為單一字串，也可為陣列（同一天多筆更新，各自變成一個 bullet）；`version` 僅供內部對照，不顯示給使用者
-- 彈窗版位：**不共用**既有的 grid modal（機台詳情，寬度太窄）或 filter/sort sheet（多段拖曳手勢太複雜），另起一套簡單版：
+- **進入點**：桌機 header「最後更新｜回報表單」右側新增「更新日誌」連結；手機列表模式同一排 meta 資訊也同步加上（開發時發現 mobile 隱藏清單漏了新連結，已修正，詳見 `CLAUDE.md`）
+- **資料來源**：根目錄 `changelog.json`（跟 `manifest.json` 同層），欄位為 `date`/`version`/`text` 三欄；`text` 可為單一字串，也可為陣列（同一天多筆更新，各自變成一個 bullet）；`version` 僅供內部對照，不顯示給使用者
+- **顯示方式**：不共用既有的 `grid-modal`（機台詳情，寬度太窄）或 `filter-sheet`（篩選排序 bottom sheet，多段拖曳手勢太複雜），另起一套簡單版：
   - 桌機：置中 modal，`max-width: 480px; max-height: 80vh`
-  - 手機：純 CSS media query 切換為貼底單一高度 sheet，`max-height: 70vh`，**不做**拖曳/snap 手勢
+  - 手機：純 CSS media query 切成貼底單一高度 sheet，`max-height: 70vh`，**不做**拖曳/snap 手勢
 - 標題下方有一行署名「made by @yywggwyy」（Space Mono，灰字）
-- `z-index: 2300`，蓋過 A2HS banner（2100）與篩選/排序 sheet（2200/2201）
-- GA4 事件：`changelog_open`／`changelog_close`，詳見下方事件表
-
-### 更新日誌（v27 新增）
-- **進入點**：桌機 header「最後更新｜回報表單」後方；手機列表模式上方同一排 meta 資訊同步新增，避免重複顯示（開發時發現 mobile 隱藏清單漏了新連結，已修正，詳見 `CLAUDE.md`）
-- **資料來源**：根目錄 `changelog.json`（跟 `manifest.json` 同層），欄位為 `date`/`version`/`text`；`text` 可為字串（單筆）或陣列（同天多筆，各自變成一個 bullet）；`version` 純內部對照用，不顯示給使用者
-- **顯示方式**：不共用既有的 `grid-modal`（機台詳情，寬度太窄）或 `filter-sheet`（篩選排序 bottom sheet，多段拖曳過於複雜），另起一套簡單版
-  - 桌機：置中 modal，`max-width: 480px; max-height: 80vh`
-  - 手機：純 CSS media query 切成貼底單一高度 sheet，`max-height: 70vh`，不做拖曳/snap 手勢
-- **z-index**：2300，蓋過 A2HS banner（2100）與 filter/sort sheet（2200/2201）
+- **z-index**：2300，蓋過 A2HS banner（2100）與篩選/排序 sheet（2200/2201）
 - **快取策略**：`changelog.json` 走 network-first（跟 Google Sheet 資料一樣），不落入殼層 cache-first 規則，確保只更新內容不動殼層檔案時，已安裝 PWA 的使用者也能看到新條目
+- GA4 事件：`changelog_open`／`changelog_close`，詳見下方事件表
 
 ### GA4 自訂事件追蹤
 | 事件名稱 | 觸發時機 | 參數 |
@@ -104,7 +96,7 @@
 | `filter_result` | 篩選結果更新（debounce 800ms） | `type`, `city`, `ip`, `result_count`, `device` |
 | `view_toggle` | 切換列表 / 地圖 | `view_mode`, `device` |
 | `card_click` | 點擊機台卡片 | `machine_id`, `machine_name`, `machine_type`, `source`（v23 起補上 `device`；`source` 新增 `map_sidebar_list`，v23 前桌機側欄無列表可點，這條路徑是死的） |
-| `map_marker_click` | 直接點地圖圖示 | `machine_id`, `machine_type`, `device` |
+| `map_marker_click` | 直接點地圖圖示 | `machine_id`, `machine_type`（v30.1 新增，單一機台才有值）, `machine_count`, `device` |
 | `gmaps_click` | 點擊 Google Maps 連結 | `machine_id`, `source`, `device` |
 | `share_click` | 點擊分享按鈕（v24 補上 `device`） | `machine_id`, `source`（grid_modal/share_modal/map_detail_panel）, `device` |
 | `lightbox_open` | 點圖放大 | `machine_id`, `device` |
@@ -128,6 +120,10 @@
 | `geo_permission_result` | 距離排序觸發定位請求後取得結果（v22） | `geo_result`, `device` |
 | `changelog_open`（v27） | 打開更新日誌 modal/sheet | `source`（header_desktop/header_mobile_list）, `device` |
 | `changelog_close`（v27） | 關閉更新日誌 modal/sheet | `method`（x_button/backdrop_click）, `device` |
+| `sort_panel_open`（v30.3） | 打開排序 dropdown（桌機）或 bottom sheet（手機） | `device` |
+| `sort_panel_close`（v30.3） | 使用者主動關閉排序面板/sheet（選了排序選項導致的自動收合不算，見 `CLAUDE.md`） | `method`（toggle_button/outside_click/switch_panel/x_button/backdrop_click）, `device` |
+| `search_clear`（v30.3） | 點擊搜尋框的清除（X）按鈕 | `source`（desktop_toolbar/mobile_toolbar）, `device` |
+| `grid_modal_close`（v30.3） | 關閉列表模式的機台詳情彈窗 | `method`（x_button/backdrop_click）, `device` |
 
 詳細觸發規則與防誤觸機制見 `CLAUDE.md`。
 
@@ -224,8 +220,8 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 ### 排序（v22 新增）
 - 位於篩選 pill 列右側，與 pill 間隔 16px，純文字＋chevron（無 pill 外框），單選
 - **桌面版**：點擊展開錨定 dropdown；**手機版**：文字換行為兩行（類別／方向），點擊開 bottom sheet；兩者互斥，開一個會自動收合另一個以及篩選面板/sheet
-- 三個選項：結束日期近到遠（default）、距離近到遠、距離遠到近
-- **結束日期排序**：有結束日期的機台依日期排序，無期限的常態機一律排最後，彼此之間依 IP 名稱（`localeCompare('zh-Hant')`）排序
+- 四個選項：結束日期近到遠（default）、結束日期遠到近（v30.3 新增）、距離近到遠、距離遠到近
+- **結束日期排序**：有結束日期的機台依方向排序，無期限的常態機不管哪個方向都一律排最後（沒有結束日不算「最遠」，是另一種狀態），彼此之間依 IP 名稱（`localeCompare('zh-Hant')`）排序
 - **距離排序**：Haversine 公式計算直線距離，需先取得使用者定位（`navigator.geolocation`）；已拒絕過的授權狀態存 `localStorage`（`geo_permission_denied`），之後不會再重複觸發瀏覽器權限彈窗，直接顯示提示文字
 - 定位失敗時依原因顯示不同提示：已知拒絕過／本次拒絕／逾時／裝置不支援，四種文案分開，避免使用者誤判問題出在哪
 
