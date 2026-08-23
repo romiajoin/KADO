@@ -118,7 +118,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
         const rows = csvText.trim().split('\n');
 
         const firstRow = parseCSVRow(rows[1] || '');
-        const lastUpdated = firstRow[16] || '';
+        const lastUpdated = firstRow[17] || '';
         const lastUpdatedText = lastUpdated ? '最後更新：' + to24Hour(lastUpdated) : '社群共建 · 持續更新';
         ['lastUpdated', 'listLastUpdated'].forEach(id => {
           const el = document.getElementById(id);
@@ -131,18 +131,20 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
             id:        cols[0] || '',
             type:      (cols[1] || '抽卡機').trim(),
             name:      cols[2] || '',
-            venue:     cols[3] || '',
-            city:      cols[4] || '',
-            addr:      cols[5] || '',
-            lat:       parseFloat(cols[6]),
-            lng:       parseFloat(cols[7]),
-            character: cols[8] || '',
-            edition:   cols[9] || '',
-            perDraw:   cols[10] || '',
-            limited:   cols[11] || '',
-            hours:     cols[12] || '',
-            image:     cols[13] || '',
-            note:      cols[14] || '',
+            limited:   cols[3] || '',
+            venue:     cols[4] || '',
+            city:      cols[5] || '',
+            addr:      cols[6] || '',
+            lat:       parseFloat(cols[7]),
+            lng:       parseFloat(cols[8]),
+            character: cols[9] || '',
+            edition:   cols[10] || '',
+            perDraw:   cols[11] || '',
+            image:     cols[12] || '',
+            note:      cols[13] || '',
+            hours:     cols[14] || '',
+            // cols[15] 分享圖、cols[17] 最後更新時間，前端目前不需要，跳過不解析
+            permId:    cols[16] || '', // 永久ID（Q欄，Apps Script 自動產生），分享連結用，不隨 A 欄流水號變動
           };
         }).filter(loc => loc.name && !isNaN(loc.lat) && !isNaN(loc.lng));
 
@@ -159,7 +161,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
           const urlId = params.get('id');
           const urlView = params.get('view');
           if (urlId) {
-            const target = allLocations.find(l => l.id === urlId);
+            const target = allLocations.find(l => l.permId === urlId);
             if (target) {
               // GA: share_link_opened（分享連結被真的點開，跟 share_click 配對可以算轉換率）
               gtag('event', 'share_link_opened', {
@@ -215,7 +217,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       const kw = (document.getElementById('searchInput').value || '').trim().toLowerCase();
 
       // 偵測搜尋關鍵字「從無到有」／「從有到無」的轉折：只有這兩個時間點要記住／還原搜尋前的層級，
-      // 中途繼續打字、或機台/IP/縣市那些篩選 pill 變動，都走下面一般的「看這次變動前是哪一層」邏輯。
+      // 中途繼續打字、或機台/作品/縣市那些篩選 pill 變動，都走下面一般的「看這次變動前是哪一層」邏輯。
       const isMobile = isMobileMapLayout();
       let clearedSearch = false;
       if (isMobile) {
@@ -427,7 +429,10 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
 
       document.getElementById('gridModalContent').dataset.machineId = loc.id;
       document.getElementById('gridModalContent').innerHTML = `
-        <div class="type-badge ${loc.type === '相卡機' ? 'photocard' : 'gacha'}" style="margin-top:16px;margin-bottom:12px;">${loc.type === '相卡機' ? '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M480-264q72 0 120-49t48-119q0-69-48-118.5T480-600q-72 0-120 49.5T312-432q0 70 48 119t120 49Zm0-72q-42 0-69-27t-27-68q0-40 27-68.5t69-28.5q42 0 69 28.5t27 68.5q0 41-27 68t-69 27ZM168-144q-29 0-50.5-21.5T96-216v-432q0-29 21.5-50.5T168-720h120l50-67q11-14 26-21.5t32-7.5h168q17 0 32 7.5t26 21.5l50 67h120q30 0 51 21.5t21 50.5v432q0 29-21 50.5T792-144H168Z"/></svg> 相卡機' : '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="m612-404 31-107q3-11-1-22t-14-18l-93-63q-8-5-16.5-2T508-604l-31 107q-3 11 .5 22t13.5 18l93 63q8 5 17 2t11-12ZM168-222l-30-15q-28-13-38-40t3-55l65-140v250Zm148 78q-31 0-53.5-20.5T240-216v-288l134 360h-58Zm206-4q-31 11-56-1t-36-43L259-660q-11-31 .5-56.5T302-753l294-107q31-11 56 .5t36 42.5l172 472q11 31-.5 56T817-253L522-148Z"/></svg> 抽卡機'}</div>
+        <div class="modal-badge-row modal-type-badge">
+          <div class="type-badge ${loc.type === '相卡機' ? 'photocard' : 'gacha'}">${loc.type === '相卡機' ? '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M480-264q72 0 120-49t48-119q0-69-48-118.5T480-600q-72 0-120 49.5T312-432q0 70 48 119t120 49Zm0-72q-42 0-69-27t-27-68q0-40 27-68.5t69-28.5q42 0 69 28.5t27 68.5q0 41-27 68t-69 27ZM168-144q-29 0-50.5-21.5T96-216v-432q0-29 21.5-50.5T168-720h120l50-67q11-14 26-21.5t32-7.5h168q17 0 32 7.5t26 21.5l50 67h120q30 0 51 21.5t21 50.5v432q0 29-21 50.5T792-144H168Z"/></svg> 相卡機' : '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="m612-404 31-107q3-11-1-22t-14-18l-93-63q-8-5-16.5-2T508-604l-31 107q-3 11 .5 22t13.5 18l93 63q8 5 17 2t11-12ZM168-222l-30-15q-28-13-38-40t3-55l65-140v250Zm148 78q-31 0-53.5-20.5T240-216v-288l134 360h-58Zm206-4q-31 11-56-1t-36-43L259-660q-11-31 .5-56.5T302-753l294-107q31-11 56 .5t36 42.5l172 472q11 31-.5 56T817-253L522-148Z"/></svg> 抽卡機'}</div>
+          ${getEndingBadge(loc.limited) ? `<div class="ending-badge">${getEndingBadge(loc.limited)}</div>` : ''}
+        </div>
         <div class="modal-header">
           <div class="popup-title">${loc.name}</div>
         </div>
@@ -436,14 +441,14 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
           ${loc.venue ? `<div class="popup-addr">場地：${loc.venue}</div>` : ''}
           ${loc.addr ? `<div class="popup-addr">地址：${loc.addr}</div>` : ''}
           ${loc.hours ? `<div class="popup-addr">營業時間：${loc.hours}</div>` : ''}
-          ${loc.character ? `<div class="popup-addr">IP：${loc.character}</div>` : ''}
-          ${loc.edition ? `<div class="popup-addr">彈數：${loc.edition}</div>` : ''}
+          ${loc.character ? `<div class="popup-addr">作品：${loc.character}</div>` : ''}
+          ${loc.edition ? `<div class="popup-addr">系列：${loc.edition}</div>` : ''}
           ${loc.perDraw ? `<div class="popup-addr">價格與張數：${loc.perDraw}</div>` : ''}
           ${loc.note ? `<div class="popup-addr">備註：${loc.note}</div>` : ''}
         </div>
         <div class="popup-actions">
           <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link" onclick="trackGmapsClick('${loc.id}','${source}')"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-191q119-107 179.5-197T720-549q0-105-68.5-174T480-792q-103 0-171.5 69T240-549q0 71 60.5 161T480-191Zm-24.5 67.5Q444-128 433-137q-40-35-86.5-82T260-320q-40-54-66-112.5T168-549q0-134 89-224.5T480-864q133 0 222.5 90.5T792-549q0 58-26.5 117t-66 113q-39.5 54-86 100.5T527-137q-11 9-22.5 13.5T480-119q-13 0-24.5-4.5ZM480-552Zm0 164q62-56 88-81t41-44q14-17 20.5-35.5T636-587q0-35-25.5-60.5T550-673q-21 0-40 9t-30 23q-12-14-30.5-23t-39.5-9q-35 0-60.5 25.5T324-587q0 19 6.5 36t20.5 36q16 21 44 48.5t85 78.5Z"/></svg> 在 Google Maps 查看 →</a>
-          <button class="popup-share-btn" onclick="shareLocation('${loc.id}','${source}')">分享 <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M648-96q-50 0-85-35t-35-85q0-9 4-29L295-390q-16 14-36.05 22-20.04 8-42.95 8-50 0-85-35t-35-85q0-50 35-85t85-35q23 0 43 8t36 22l237-145q-2-7-3-13.81-1-6.81-1-15.19 0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-23 0-43-8t-36-22L332-509q2 7 3 13.81 1 6.81 1 15.19 0 8.38-1 15.19-1 6.81-3 13.81l237 145q16-14 36.05-22 20.04-8 42.95-8 50 0 85 35t35 85q0 50-35 85t-85 35Zm0-72q20.4 0 34.2-13.8Q696-195.6 696-216q0-20.4-13.8-34.2Q668.4-264 648-264q-20.4 0-34.2 13.8Q600-236.4 600-216q0 20.4 13.8 34.2Q627.6-168 648-168ZM216-432q20.4 0 34.2-14 13.8-14 13.8-34t-13.8-34q-13.8-14-34.2-14-20.4 0-34.2 14-13.8 14-13.8 34t13.8 34q13.8 14 34.2 14Zm466-277.8q14-13.8 14-34.2 0-20.4-13.8-34.2Q668.4-792 648-792q-20.4 0-34.2 13.8Q600-764.4 600-744q0 20.4 14 34.2 14 13.8 34 13.8t34-13.8ZM648-216ZM216-480Zm432-264Z"/></svg></button>
+          <button class="popup-share-btn" onclick="shareLocation('${loc.permId}','${loc.id}','${source}')">分享 <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M648-96q-50 0-85-35t-35-85q0-9 4-29L295-390q-16 14-36.05 22-20.04 8-42.95 8-50 0-85-35t-35-85q0-50 35-85t85-35q23 0 43 8t36 22l237-145q-2-7-3-13.81-1-6.81-1-15.19 0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-23 0-43-8t-36-22L332-509q2 7 3 13.81 1 6.81 1 15.19 0 8.38-1 15.19-1 6.81-3 13.81l237 145q16-14 36.05-22 20.04-8 42.95-8 50 0 85 35t35 85q0 50-35 85t-85 35Zm0-72q20.4 0 34.2-13.8Q696-195.6 696-216q0-20.4-13.8-34.2Q668.4-264 648-264q-20.4 0-34.2 13.8Q600-236.4 600-216q0 20.4 13.8 34.2Q627.6-168 648-168ZM216-432q20.4 0 34.2-14 13.8-14 13.8-34t-13.8-34q-13.8-14-34.2-14-20.4 0-34.2 14-13.8 14-13.8 34t13.8 34q13.8 14 34.2 14Zm466-277.8q14-13.8 14-34.2 0-20.4-13.8-34.2Q668.4-792 648-792q-20.4 0-34.2 13.8Q600-764.4 600-744q0 20.4 14 34.2 14 13.8 34 13.8t34-13.8ZM648-216ZM216-480Zm432-264Z"/></svg></button>
         </div>
         ${imgHtml}
       `;
@@ -467,16 +472,19 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       });
     }
 
-    function shareLocation(id, source) {
+    function shareLocation(permId, machineId, source) {
       // 分享出去的連結走 /api/share?id=xxx，讓 LINE/Threads 等平台的爬蟲能讀到
       // 這個機台對應的 og:title/og:description（見 api/share.js）；
       // 真人點進來後，那支 function 會立刻導回這裡（/?id=xxx），使用體驗不變。
       // 額外帶上 view=map（僅在地圖模式分享時），讓對方點開後回到地圖模式、直接看到這一台的詳情，
       // 而不是統一收斂成列表模式的彈窗。
+      // 注意：連結網址用 permId（永久不變，跨A欄重新編號依然有效），
+      // 但 GA 的 machine_id 維持用 A欄 id，這樣才跟 card_click／trackGmapsClick 等其他事件的
+      // machine_id 格式一致，才能在 GA 後台把同一台機台的完整路徑串起來。
       const isMapView = document.body.classList.contains('map-view');
-      const url = `${window.location.origin}/api/share?id=${id}${isMapView ? '&view=map' : ''}`;
+      const url = `${window.location.origin}/api/share?id=${permId}${isMapView ? '&view=map' : ''}`;
       // GA: share_click
-      gtag('event', 'share_click', { machine_id: id, source: source || 'unknown', device: getDeviceType() });
+      gtag('event', 'share_click', { machine_id: machineId, source: source || 'unknown', device: getDeviceType() });
       if (navigator.share) {
         navigator.share({ title: 'KADO！抽卡機在哪', url });
       } else {

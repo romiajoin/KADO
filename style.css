@@ -405,6 +405,9 @@
       background: #FFCF48; color: var(--fill-black);
       white-space: nowrap;
     }
+    /* modal/detail 頭部：type-badge 跟倒數 badge 緊鄰同一列，不做 space-between
+       （跟 .card-badge-row 不同用途：那個是整張卡片寬度兩端對齊，這個只是兩顆 badge 併排） */
+    .modal-badge-row { display: flex; align-items: center; gap: 8px; }
 
 
     .content { flex: 1; overflow: hidden; display: flex; }

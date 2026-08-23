@@ -16,8 +16,14 @@ const DESCRIPTION = '全台抽卡機／相卡機資訊持續更新中！';
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
 
 // 欄位索引跟 js/main.js 的 parseCSVRow 之後的 cols 對照要保持一致：
-// cols[0] id, ..., cols[13] image, cols[14] note, cols[15] 分享圖, cols[16] 最後更新時間
+// cols[0] id, cols[3] limited, ..., cols[12] image, cols[13] note, cols[14] hours,
+// cols[15] 分享圖, cols[16] 永久ID（Q欄，Apps Script 自動產生，一旦存在絕不改動/重複使用）,
+// cols[17] 最後更新時間
 const SHARE_IMAGE_COL = 15;
+const PERMANENT_ID_COL = 16;
+
+// 分享連結的 id 現在指的是「永久ID」，不是 A 欄流水號——這樣即使管理者事後
+// 重新整理 A 欄編號，舊的分享連結還是能對應到同一台機台，不會失效也不會顯示成別台。
 
 // 跟 js/main.js 同一套解析規則（CommonJS 環境無法 import 那邊的 function，故重複一份）
 function parseCSVRow(row) {
@@ -44,7 +50,7 @@ async function getShareImageUrl(id) {
     const rows = csvText.trim().split('\n');
     for (let i = 1; i < rows.length; i++) {
       const cols = parseCSVRow(rows[i]);
-      if (cols[0] === id) {
+      if (cols[PERMANENT_ID_COL] === id) {
         const shareImage = (cols[SHARE_IMAGE_COL] || '').trim();
         return shareImage || DEFAULT_OG_IMAGE_URL;
       }
