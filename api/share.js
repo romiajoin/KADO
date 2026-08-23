@@ -48,12 +48,17 @@ async function getShareImageUrl(id) {
     const response = await fetch(SHEET_CSV_URL);
     const csvText = await response.text();
     const rows = csvText.trim().split('\n');
+    const parsed = [];
     for (let i = 1; i < rows.length; i++) {
-      const cols = parseCSVRow(rows[i]);
-      if (cols[PERMANENT_ID_COL] === id) {
-        const shareImage = (cols[SHARE_IMAGE_COL] || '').trim();
-        return shareImage || DEFAULT_OG_IMAGE_URL;
-      }
+      parsed.push(parseCSVRow(rows[i]));
+    }
+    // 永久ID優先比對；找不到才 fallback 用 A 欄流水號比對（相容修正上線前
+    // 產生的舊格式分享連結，避免舊連結的預覽圖被誤判成「已下架」而變成預設圖）
+    let match = parsed.find(cols => cols[PERMANENT_ID_COL] === id);
+    if (!match) match = parsed.find(cols => cols[0] === id);
+    if (match) {
+      const shareImage = (match[SHARE_IMAGE_COL] || '').trim();
+      return shareImage || DEFAULT_OG_IMAGE_URL;
     }
     return DEFAULT_OG_IMAGE_URL;
   } catch (err) {

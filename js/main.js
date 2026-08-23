@@ -161,11 +161,18 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
           const urlId = params.get('id');
           const urlView = params.get('view');
           if (urlId) {
-            const target = allLocations.find(l => l.permId === urlId);
-            if (target) {
+            // 永久ID是唯一「保證不會連錯機台」的比對依據，只有它比對到才自動開彈窗。
+            // A 欄流水號 fallback 只用來判斷「這台機台是否還存在」，藉此避免舊格式連結
+            // 被誤判成已下架——但 fallback 找到的那一列不保證還是原本分享者指的那一台
+            // （A 欄之後可能被重新編號、指派給別的機台），所以 fallback 命中時不自動開彈窗，
+            // 只是安靜地正常顯示首頁，不做任何可能出錯的顯示。
+            const exactTarget = allLocations.find(l => l.permId === urlId);
+            const legacyTarget = exactTarget ? null : allLocations.find(l => l.id === urlId);
+
+            if (exactTarget) {
               // GA: share_link_opened（分享連結被真的點開，跟 share_click 配對可以算轉換率）
               gtag('event', 'share_link_opened', {
-                machine_id: target.id,
+                machine_id: exactTarget.id,
                 view: urlView === 'map' ? 'map' : 'grid',
                 device: getDeviceType(),
               });
@@ -173,17 +180,21 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
                 // 從地圖模式分享出去的連結：回到地圖模式，直接開那一台的詳情（桌機側欄／手機 bottom sheet）
                 setView('map');
                 if (isMobileMapLayout()) {
-                  openMobileSheetSummary(target, { preferFull: true });
+                  openMobileSheetSummary(exactTarget, { preferFull: true });
                 } else {
-                  openDesktopSidebar(target);
+                  openDesktopSidebar(exactTarget);
                 }
               } else {
-                const imgs = target.image ? target.image.split(',').map(u => driveUrlToImage(u.trim())).filter(Boolean) : [];
-                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${target.lat},${target.lng}`;
-                openGridModal(target, imgs, googleMapsUrl, 'share_modal');
+                const imgs = exactTarget.image ? exactTarget.image.split(',').map(u => driveUrlToImage(u.trim())).filter(Boolean) : [];
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${exactTarget.lat},${exactTarget.lng}`;
+                openGridModal(exactTarget, imgs, googleMapsUrl, 'share_modal');
               }
+            } else if (legacyTarget) {
+              // 舊格式連結、靠 A 欄 fallback 找到列，但無法確認是不是原本那一台，刻意不顯示任何內容。
+              // GA: share_link_legacy_fallback（追蹤還有多少舊連結落在這個曖昧地帶）
+              gtag('event', 'share_link_legacy_fallback', { machine_id: urlId, device: getDeviceType() });
             } else {
-              // 分享連結裡的機台已經不存在了（例如下架/被刪除），靜默失敗會讓使用者困惑點進來怎麼什麼都沒發生
+              // 永久ID、A 欄都完全找不到，代表這一列已經整個被刪除、真的下架了
               if (typeof showToast === 'function') showToast('這台機台的資訊已經下架囉');
               // GA: share_link_target_missing（抓多少舊分享連結正在失效）
               gtag('event', 'share_link_target_missing', { machine_id: urlId, device: getDeviceType() });
