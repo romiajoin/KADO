@@ -5,7 +5,7 @@
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
 - 網站：https://kadotw.vercel.app/
-- Repo：https://github.com/romiajoin/taiwan-gacha-map
+- Repo：https://github.com/romiajoin/KADO
 - Google Analytics：`G-1G91M8FLWQ`
 
 ---
@@ -43,6 +43,8 @@ js/
   changelog.js        # 更新日誌 modal/sheet：讀取 changelog.json、渲染、開關、GA event（v27 新增）
 api/share.js          # 不受影響,原本就是獨立檔案
 changelog.json        # 更新日誌內容（v27 新增，跟 manifest.json 同層）：date/version/text 三欄，text 可為字串或陣列（同天多筆）
+permanent-id.gs       # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，
+                       # 不在這個 repo 的 push.sh 流程裡，見「分享連結永久ID機制」）
 ```
 
 **跨檔案依賴要注意**：這幾個模組之間互相 `import`，部分是循環依賴（例如 `main.js` 跟 `map.js` 互相 import 對方的東西）——這是刻意設計，函式宣告在 ES Modules 裡會在模組載入時就先掛好，不會因為互相 import 而抓不到，但**新增跨檔案呼叫時要留意這個限制**：
@@ -213,16 +215,36 @@ function fitOptionsWidth(container) {
 - 兩個 input（`#searchInput`、`#searchInputMobile`）互相同步 value；`applyFilters()` 讀 `#searchInput` 的值
 - 對應清除按鈕：`#clearSearch`、`#clearSearchMobile`，clear 時兩個 input 與按鈕一起清除
 
-### Google Sheet 欄位（最新）
-- A 欄為 `id`（手動流水號，分享連結用），其餘欄位從 B 開始：type, name, venue, city, addr, lat, lng, character, edition, perDraw, limited, hours, image, note
-- lastUpdated 讀取位置：`firstRow[15]`（原為 `[14]`，id 欄加入後 +1）
-- 新增資料時 id 欄手動填入，接續最大值 +1（不用公式，避免刪列後 id 重新計算導致分享連結失效）
+### Google Sheet 欄位（v30.4 大改：欄位重新排序 + 新增永久ID）
+- A–R 共 18 欄：`id, type, name, limited, venue, city, addr, lat, lng, character, edition, perDraw, image, note, hours, shareImage, permId, lastUpdated`
+- **跟舊版排序差異很大**，`limited`（期間限定）從原本 K 移到 D、`image`/`note`/`hours` 順序也重排過，改動 `parseCSVRow` 之後的欄位對照時務必逐一核對，不要憑舊版記憶推算
+- `permId`（Q 欄，v30.4 新增）：**分享連結真正比對的依據**，取代原本用 A 欄流水號當識別碼的做法；新增資料時由 Apps Script（`permanent-id.gs`，見下方「分享連結永久ID機制」）自動產生，格式 `yyyyMMdd-HHmmss-列號`，一旦產生絕對不能手動修改或在該列刪除後重複使用給別的機台
+- `lastUpdated` 讀取位置：`firstRow[17]`（R 欄，只有第一列——標題列下方那一列——會填這格）
+- A 欄 `id` 現在**只是給管理者排序/整理用的流水號**，可以自由重新編號，不再是分享連結的依據；`main.js`/`map.js` 少數地方仍用它做 GA `machine_id`、DOM `data-machine-id`／marker 對照表的 key（跟分享連結無關，這些用途不受重新編號影響，因為只在單次頁面 session 內部使用，不需要跨時間穩定）
 
-### 分享單一地點（v20 大改：新增動態 OG Meta）
-- 分享出去的網址從 `?id=<id>` 改成 `/api/share?id=<id>`（一支 Vercel Serverless Function，見下方「分享連結 OG Meta」）
+### 分享連結永久ID機制（v30.4 新增）
+**問題根源**：早期分享連結（`?id=<A欄流水號>`）拿 A 欄當識別碼。A 欄同時也是管理者排序/整理用的欄位，只要活動下架被刪除、之後新增資料時剛好填到同一個編號，舊分享連結就會**沒有任何警告地**顯示成另一台機台的內容——`main.js`/`share.js` 的比對邏輯本身沒有 bug，單純是 A 欄的值不保證跨時間穩定對應同一台機台。
+
+**解法**：新增 Q 欄 `permId`，這欄的值一旦產生就絕對不能改、不能在該列被刪除後拿去用在別的地方，跟 A 欄的排序用途完全脫鉤。
+
+**實作**：
+- `permanent-id.gs`（Google Apps Script，**不在這個 repo 的 `push.sh` 流程裡**，需要另外貼到 Google Sheet 的「擴充功能 → Apps Script」手動設定，設定步驟見檔案內註解）：
+  - `onSheetEdit(e)`（installable trigger，`setupTrigger()` 建立）：偵測到有資料但 `permId` 欄還是空的列，自動補上 `yyyyMMdd-HHmmss-列號`格式的值；貼上多列資料時 `e.range` 涵蓋整個範圍，用迴圈逐列檢查，不會漏掉批次貼上的狀況
+  - `backfillExistingRows()`：一次性函式，幫現有資料補齊 `permId`（新機制上線時要先手動執行一次）
+  - 列號當保險尾綴：避免同一批次處理多列時，時間戳記秒級解析度剛好撞在同一秒
+- **分享連結產生**（`shareLocation(permId, machineId, source)`，`main.js`）：URL 帶 `permId`；GA `machine_id` 仍用 A 欄的 `machineId`（維持跟 `card_click`/`trackGmapsClick` 等其他事件的 `machine_id` 格式一致，方便在 GA4 後台串同一台機台的完整互動路徑，不要因為這次改動讓它跟著切成永久ID格式）
+- **分享連結解析（`main.js`，`?id=` 載入時）**：三段式判斷，**只有永久ID精準比對成功才自動開啟該機台詳情**：
+  1. `exactTarget = allLocations.find(l => l.permId === urlId)` 命中 → 正常開啟（`openGridModal`/`openDesktopSidebar`/`openMobileSheetSummary`），送 `share_link_opened`
+  2. 精準比對失敗，退回 `legacyTarget = allLocations.find(l => l.id === urlId)`（相容修正上線前產生的舊格式連結）命中 → **刻意不開啟任何內容**，安靜地正常顯示首頁，送 `share_link_legacy_fallback`——因為 A 欄的值可能事後被重新指派給別的機台，fallback 找到的那一列不保證是原本分享的那一台，寧可安靜地不顯示，也不要冒著顯示錯誤機台內容的風險
+  3. 兩者都找不到 → 顯示「已下架」toast，送 `share_link_target_missing`
+- **`api/share.js`（社群平台預覽圖）**：邏輯較寬鬆，**保留 A 欄 fallback 且會直接採用其結果**（永久ID優先比對，找不到才退回比對 A 欄，比對到就回傳對應的分享圖，不像 `main.js` 那樣刻意安靜處理）——這是刻意的不對稱設計：預覽縮圖顯示成別的機台的代價（使用者點進去之前，只是看到一張可能不準的縮圖）遠比「點進去後被誤導看到一個看似正常、其實是別台機台的完整詳情」小很多，而且使用者點進去後 `main.js` 那邊的三段式判斷會擋住錯誤內容的顯示，最壞情況只是連結「沒有生效」，不會誤導
+- 這個機制**只保護修正上線後產生的新連結**；上線前已經流出去的舊連結，只能靠 fallback 機制盡量還原（機台還在且 A 欄沒被重新指派時能正常運作），沒辦法完全消除「A 欄被重新指派後舊連結失效」的風險
+
+### 分享單一地點（v20 大改：新增動態 OG Meta；v30.4 改用永久ID）
+- 分享出去的網址從 `?id=<id>` 改成 `/api/share?id=<id>`（一支 Vercel Serverless Function，見下方「分享連結 OG Meta」）；**v30.4 起 `<id>` 是 `permId`（永久ID），不是 A 欄流水號**，詳見上方「分享連結永久ID機制」
 - v24 起：在地圖模式分享時，`shareLocation()` 額外帶上 `&view=map`；`api/share.js` 白名單轉發 `view=map`（其他 query 參數一律丟棄）；頁面載入後若偵測到 `?id=` + `view=map`，切換到地圖模式並直接展開該機台詳情（desktop: `openDesktopSidebar`，mobile: `openMobileSheetSummary({ preferFull: true })`），不走原本的 `openGridModal()`
 - **`?id=` 只在初次載入時處理一次**（`!silent` guard）：背景刷新/下拉刷新重複呼叫 `loadFromSheet()` 不會重跑這段邏輯，避免使用者關閉詳情後背景刷新又把它彈回來
-- 找不到對應機台（已下架/刪除）時顯示 toast「這台機台的資訊已經下架囉」，並送出 `share_link_target_missing` GA 事件
+- 找不到對應機台（永久ID跟 A 欄流水號都比對不到，代表真的整列被刪除下架）時顯示 toast「這台機台的資訊已經下架囉」，並送出 `share_link_target_missing` GA 事件；只比對到 A 欄流水號（舊格式連結，機台可能還在但不確定是不是原本那一台）則安靜不顯示，送 `share_link_legacy_fallback`
 - `showToast(msg)`：fixed 定位，bottom 80px，2 秒後自動消失
 
 ### 分享連結 OG Meta（v20 新增，`api/share.js`）
@@ -230,7 +252,7 @@ function fitOptionsWidth(container) {
 
 **做法**：新增 `api/share.js`（Vercel Serverless Function，路徑用查詢字串 `?id=`，不是動態路由資料夾），流程：
 1. 讀 `req.query.id`
-2. 依機台動態換圖（**v28.3 新增**）：`getShareImageUrl(id)` 打 Sheet CSV，逐列比對第 0 欄 `id`，命中就回傳第 15 欄（分享圖）的值；**找不到該 id、該欄空白、或抓取 CSV 失敗，都 fallback 回固定的 `/og.png`**（不讓分享頁面因為這支輔助邏輯掛掉）。標題／描述固定：「KADO！抽卡機在哪」、「想找抽卡機 / 相卡機？到「KADO！抽卡機在哪」找找，快速掌握最新的機台資訊！」
+2. 依機台動態換圖（**v28.3 新增，v30.4 改為 permId 優先比對**）：`getShareImageUrl(id)` 打 Sheet CSV，先比對 `permId`（Q 欄），找不到才退回比對第 0 欄 `id`（A 欄流水號，相容修正上線前的舊格式連結），命中就回傳第 15 欄（分享圖）的值；**找不到、該欄空白、或抓取 CSV 失敗，都 fallback 回固定的 `/og.png`**（不讓分享頁面因為這支輔助邏輯掛掉）。標題／描述固定：「KADO！抽卡機在哪」、「想找抽卡機 / 相卡機？到「KADO！抽卡機在哪」找找，快速掌握最新的機台資訊！」
 3. `<script>location.replace('/?id=xxx')</script>` 把真人導回正常網站
 
 **幾個容易踩的坑（都是這次實際炸過的）**：
@@ -298,12 +320,17 @@ function fitOptionsWidth(container) {
   - `grid_modal_close`：列表模式的機台詳情彈窗關閉原本完全沒追蹤，地圖模式的對應行為（`detail_panel_close`）卻有。動到 `js/main.js` 的 `closeGridModal(e)`，`method` 判斷邏輯直接比照 `changelog_close` 的既有寫法
   - 只動到 `js/sort.js`／`js/filters.js`／`js/main.js`，`CACHE_VERSION` 從 `'v30.2'` bump 到 `'v30.3'`
 - 純資料更新（Google Sheet 內容變動）不受影響，本來就是走 `DATA_CACHE` 的 network-first
+- **v30.4**：分享連結改用永久ID（`permId`，Q 欄），見上方「分享連結永久ID機制」。動到 `js/main.js`（`shareLocation()`/`?id=` 解析邏輯/parseCSVRow 欄位對照全部重排）、`js/map.js`（分享按鈕改帶 `permId`）、`api/share.js`（`getShareImageUrl()` 改用 `PERMANENT_ID_COL`）；`main.js`/`map.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.3'` bump 到 `'v30.4'`。`api/share.js` 本身不受 SW 快取影響（serverless function，`isNoCacheRequest` 排除），這部分改動不需要靠 bump 觸發更新
+- **v30.5**：倒數 badge 擴及 grid modal／地圖詳情面板（見上方「倒數 Badge」）。動到 `js/main.js`／`js/map.js`，`CACHE_VERSION` 從 `'v30.4'` bump 到 `'v30.5'`
+- **v30.6**：`v30.4` 上線後發現舊格式分享連結（A 欄流水號）被誤判成「已下架」——原本只比對 `permId`，沒有 fallback 機制，導致修正上線前產生、機台其實還在的舊連結全部顯示已下架 toast。補上三段式判斷（永久ID精準比對才自動開啟／A 欄 fallback 比對到但刻意不開啟／兩者都找不到才顯示已下架），新增 `share_link_legacy_fallback` GA 事件；`api/share.js` 也補上同樣的 fallback（但保留採用 fallback 結果，跟 `main.js` 刻意安靜處理不同，見上方「分享連結永久ID機制」的不對稱設計說明）。動到 `js/main.js`、`api/share.js`；`main.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.5'` bump 到 `'v30.6'`
 
-### 倒數 Badge（v23 新增）
+### 倒數 Badge（v23 新增，v30.5 擴及詳情彈窗）
 - `getEndingBadge(loc)`/`getEndDate(loc)`：解析 `limited` 欄位（`"2026/06/24～2026/07/12"` 格式，取「～」後半段）算出結束日，跟今天比較天數差
 - 只在結束日 3 天內顯示：今天結束 → 「最後一天」，明天 → 「倒數 2 天」，後天 → 「倒數 3 天」；超過 3 天或沒有 `limited` 欄位都不顯示（回傳 null，呼叫端直接不渲染）
-- 顯示於 `.card-badge-row`，跟既有的 type-badge 同一個 flex row：type-badge 靠左、`.ending-badge` 靠右（`justify-content: space-between`）
+- **卡片**：顯示於 `.card-badge-row`，跟既有的 type-badge 同一個 flex row：type-badge 靠左、`.ending-badge` 靠右（`justify-content: space-between`）
+- **詳情彈窗（v30.5 新增）**：grid modal（`main.js` `openGridModal()`）、地圖詳情面板（`map.js` `buildDetailContentHtml()`，桌機側邊欄／mobile bottom sheet／cluster popup 選項後的詳情三處共用同一個函式）都補上了，用新的 `.modal-badge-row`（`display:flex; gap:8px`，**不做** `space-between`）把 type-badge 跟 ending-badge 緊鄰排在一起——跟卡片版的「兩端對齊」是刻意不同的版型，因為 modal 裡沒有第三個元素需要撐開對齊；`main.js` 用 `.modal-type-badge` class 控制外層 margin（原本就有這個 class 但沒接上，這次順便接起來取代原本的 inline style），`map.js` 則是把 badge 群組包在 headerRow 內，跟關閉鈕維持原本的 `space-between`
 - 背景 `#FFCF48`、黑字；中途討論過用紅色，最後定案黃色
+- 動到 `main.js`／`map.js`，`CACHE_VERSION` 從 `'v30.4'` bump 到 `'v30.5'`（見「Service Worker 快取版本管理」）
 
 ### Icon 系統
 - 全站使用 Material Symbols inline SVG（從 Google Fonts 下載 SVG 檔，`fill="#000000"` 改為 `fill="currentColor"`）
@@ -335,8 +362,9 @@ function fitOptionsWidth(container) {
 | `auto_refresh`（v24） | 回到前景後通過節流門檻（距上次抓取超過 30 分鐘）、真的觸發背景刷新 | `device` |
 | `pull_to_refresh`（v24） | 列表模式下拉超過 60px 放開手指、真的觸發刷新 | `device` |
 | `data_refresh_error`（v24） | 靜默刷新失敗（auto 或 pull 觸發，初次載入失敗走另一套流程，不算） | `trigger`(auto/pull), `device` |
-| `share_link_opened`（v24） | 分享連結的 `?id=` 成功對應到真實機台 | `machine_id`, `view`(map/grid), `device` |
-| `share_link_target_missing`（v24） | 分享連結的 `?id=` 找不到對應機台（已下架/刪除） | `machine_id`, `device` |
+| `share_link_opened`（v24；v30.4 起限定永久ID精準比對成功） | 分享連結的 `?id=` 精準比對到 `permId` | `machine_id`, `view`(map/grid), `device` |
+| `share_link_legacy_fallback`（v30.6 新增） | 永久ID比對失敗，退回比對 A 欄流水號有找到列（舊格式連結，機台可能還在但無法確認是不是原本那一台）；此時**不會**自動開啟任何內容 | `machine_id`(連結裡的 A 欄值), `device` |
+| `share_link_target_missing`（v24） | 分享連結的 `?id=` 永久ID跟 A 欄流水號都找不到對應機台（已下架/刪除） | `machine_id`, `device` |
 | `a2hs_engagement_met`（v21） | 累計查看詳情達 3 次，或單次停留超過 20 秒（兩者擇一） | `reason`(cumulative_views/dwell_time), `platform` |
 | `a2hs_banner_shown`（v21） | 加到主畫面 banner 實際顯示 | `platform`(android/ios_safari/ios_in_app) |
 | `a2hs_banner_dismissed`（v21） | 使用者關閉 banner | `reason`(close_x/ack) |
@@ -380,6 +408,9 @@ function fitOptionsWidth(container) {
   - **觸發來源**（`source`）：截圖看不到完整內容，但至少缺 `search_clear` 沿用的 `desktop_toolbar`/`mobile_toolbar`（這兩個值其實 `search_box_focus` 早就在用，只是說明欄位本來就沒寫全，之前沒發現）
   - **關閉方式**（`method`）：截圖顯示到 `x_button/backdrop_click/empty_map...` 就被截斷，缺 v30.3 新增的 `toggle_button`/`outside_click`/`switch_panel`
 - 「GA4 事件追蹤表」資料庫需要新增這四筆記錄（工具權限沒有新增資料庫 row 的操作，需人工在 Notion 裡加）——**已於 v30.3 完成**，四筆都已新增
+
+**v30.6 待完成清單**：
+- `share_link_legacy_fallback` 沒有引入新的參數名稱（沿用既有的 `machine_id`、`device`），不用新增自訂維度，但「GA4 事件追蹤表」資料庫需要新增這筆記錄（工具權限沒有新增資料庫 row 的操作，需人工在 Notion 裡加）
 
 **⚠️ `addEventListener` 直接傳函式參照的坑**：`addEventListener('click', someFn)` 會把 `event` 物件當作 `someFn` 的第一個參數傳入。如果 `someFn` 的第一個參數是拿來控制邏輯用的（例如 `skipTracking`），會被 `event` 物件（永遠 truthy）誤判，導致邏輯整個相反卻不會報錯。要嘛改用箭頭函式包一層再傳（`addEventListener('click', () => someFn())`），要嘛該參數不要放在第一位。
 - **v30.3 實例**：補 `sort_panel_close` 埋碼時，`closeMobileSortSheet` 從無參數改成吃 `method` 參數，而 `sortSheetClose`/`sortSheetOverlay` 原本的寫法正好是 `addEventListener('click', closeMobileSortSheet)` 這種直接傳函式參照的寫法——改參數簽章前就先抓到、順手改成箭頭函式，沒有實際踩雷上線，但差一點就是本文件警告的那個坑

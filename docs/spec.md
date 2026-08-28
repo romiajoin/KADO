@@ -34,24 +34,28 @@
 
 | 欄 | 欄位 | 說明 | 必填 |
 |----|------|------|------|
-| A | id | 流水號，分享連結用（手動填入，勿用公式） | ✅ |
+| A | id | 流水號，僅供 Sheet 內部排序/管理，不再是分享連結的依據（手動填入，勿用公式） | ✅ |
 | B | 類型 | 機台類型（抽卡機 / 相卡機） | ✅ |
 | C | 店名 | 活動或地點名稱 | ✅ |
-| D | 場地 | 所在建築或商場（如：三創生活 7F） | ❌ |
-| E | 縣市 | 縣市名稱（如：台北市） | ❌ |
-| F | 地址 | 詳細地址（含縣市） | ✅ |
-| G | 緯度 | 數字，用於地圖定位 | ✅ |
-| H | 經度 | 數字，用於地圖定位 | ✅ |
-| I | 期間限定 | 活動日期（如：2026/05/29～2026/07/23） | ❌ |
-| J | IP | 熱門角色或 IP 名稱 | ❌ |
-| K | 圖片 | Cloudinary 網址（多張用逗號分隔） | ❌ |
-| L | 彈數 | 如：第一彈,第二彈 | ❌ |
-| M | 一抽張數 | 如：2張 | ❌ |
+| D | 期間限定 | 活動日期（如：2026/05/29～2026/07/23） | ❌ |
+| E | 場地 | 所在建築或商場（如：三創生活 7F） | ❌ |
+| F | 縣市 | 縣市名稱（如：台北市） | ❌ |
+| G | 地址 | 詳細地址（含縣市） | ✅ |
+| H | 緯度 | 數字，用於地圖定位 | ✅ |
+| I | 經度 | 數字，用於地圖定位 | ✅ |
+| J | 作品 | 熱門角色或 IP 名稱 | ❌ |
+| K | 系列 | 如：第一彈,第二彈 | ❌ |
+| L | 價格與張數 | 如：50元/2張 | ❌ |
+| M | 圖片 | Cloudinary 網址（多張用逗號分隔） | ❌ |
 | N | 備註 | 補充說明 | ❌ |
 | O | 營業時間 | 如：週一至週日 11:00–22:00 | ❌ |
+| P | 分享圖 | 社群平台分享預覽用的專屬縮圖，Cloudinary 網址（v28 新增） | ❌ |
+| Q | 永久ID | 分享連結真正比對的依據，新增資料時由 Apps Script（`permanent-id.gs`）自動產生，一旦產生絕對不能手動修改或重複使用（v30.4 新增） | 系統自動填入 |
+| R | 最後更新時間 | 只有第一列（標題列下方那一列）會填，網站抓這一格顯示「最後更新：」文字 | 僅第一列 |
 
 > 緯度經度可以用 Google Maps 點地點後取得。  
 > 欄位為空時，對應資訊不顯示，不影響版面。
+> **v30.4 起欄位順序大幅調整**（期間限定從 K 移到 D），且新增 P/Q/R 三欄；程式碼相關細節（`parseCSVRow` 欄位對照、永久ID機制原理）見 `CLAUDE.md`。
 
 ---
 
@@ -108,8 +112,9 @@
 | `auto_refresh`（v24） | 回到前景後，通過節流門檻（距上次抓取超過 30 分鐘）、真的觸發背景刷新 | `device` |
 | `pull_to_refresh`（v24） | 列表模式下拉手勢超過觸發門檻（60px）放開 | `device` |
 | `data_refresh_error`（v24） | 靜默刷新失敗（auto 或 pull 觸發的刷新，初次載入失敗不算） | `trigger`（auto/pull）, `device` |
-| `share_link_opened`（v24） | 分享連結的 `?id=` 對應到真實機台，成功解析 | `machine_id`, `view`（map/grid）, `device` |
-| `share_link_target_missing`（v24） | 分享連結的 `?id=` 找不到對應機台（已下架/刪除） | `machine_id`, `device` |
+| `share_link_opened`（v24；v30.4 起限定永久ID精準比對成功） | 分享連結的 `?id=` 精準比對到永久ID | `machine_id`, `view`（map/grid）, `device` |
+| `share_link_legacy_fallback`（v30.6） | 永久ID比對失敗，退回比對 A 欄流水號有找到（舊格式連結），此時不自動開啟任何內容 | `machine_id`, `device` |
+| `share_link_target_missing`（v24） | 分享連結的 `?id=` 永久ID跟 A 欄流水號都找不到對應機台（已下架/刪除） | `machine_id`, `device` |
 | `a2hs_engagement_met` | 累計查看詳情達 3 次，或單次停留超過 20 秒（v21） | `reason`, `platform` |
 | `a2hs_banner_shown` | 加到主畫面 banner 顯示（v21） | `platform` |
 | `a2hs_banner_dismissed` | 關閉加到主畫面 banner（v21） | `reason` |
@@ -127,25 +132,25 @@
 
 詳細觸發規則與防誤觸機制見 `CLAUDE.md`。
 
-### 分享單一地點
-- URL 格式：`kadotw.vercel.app/api/share?id=<id>`（v20 改為經過 serverless function，見下方「分享連結 OG Meta」；不是直接指向 `?id=<id>` 了）；v24 起在地圖模式分享時額外帶上 `&view=map`
+### 分享單一地點（v30.4 起改用永久ID）
+- URL 格式：`kadotw.vercel.app/api/share?id=<permId>`（v20 改為經過 serverless function，見下方「分享連結 OG Meta」；**v30.4 起 `<id>` 是永久ID，不是 A 欄流水號**，原因與機制見 `CLAUDE.md`「分享連結永久ID機制」）；v24 起在地圖模式分享時額外帶上 `&view=map`
 - 地圖 popup、詳情側邊欄/sheet、grid modal 各有一個分享按鈕
 - 手機：`navigator.share()` 跳出原生分享選單
 - 桌機：`clipboard.writeText()` + toast 提示「已複製連結！」
-- 真人點擊分享連結後會先短暫經過 `/api/share`，立刻被導回 `/?id=<id>`（地圖模式分享的連結則是 `/?id=<id>&view=map`），資料載入後偵測參數，view=map 時切換到地圖模式並直接展開該機台詳情（桌機側欄 / 手機 bottom sheet 以 preferFull 模式展開，高度貼合內容）；無 view 參數時行為同原本，自動開對應地點的 grid modal
-- 若 ?id= 指向的機台已不存在（下架/刪除），顯示 toast「這台機台的資訊已經下架囉」
+- 真人點擊分享連結後會先短暫經過 `/api/share`，立刻被導回 `/?id=<permId>`（地圖模式分享的連結則是 `/?id=<permId>&view=map`），資料載入後偵測參數，view=map 時切換到地圖模式並直接展開該機台詳情（桌機側欄 / 手機 bottom sheet 以 preferFull 模式展開，高度貼合內容）；無 view 參數時行為同原本，自動開對應地點的 grid modal
+- **三段式判斷**（v30.6）：永久ID精準比對成功才自動開啟詳情；比對失敗但 A 欄流水號比對到（修正上線前的舊格式連結，機台可能還在但不確定是不是原本那一台）則安靜不顯示任何內容；兩者都找不到才顯示 toast「這台機台的資訊已經下架囉」
 
-### 分享連結 OG Meta（v20 新增，v28.3 改為動態換圖）
+### 分享連結 OG Meta（v20 新增，v28.3 改為動態換圖，v30.4 改用永久ID優先比對）
 - 社群平台（LINE / Threads / Discord / Facebook）的爬蟲不執行 JavaScript，只讀 `<head>` 裡的 `og:title`/`og:image`，所以分享連結改指向一支 serverless function（`api/share.js`）：
   - 標題：「kado！抽卡機在哪」
   - 描述：「想找抽卡機 / 相卡機？到「kado！抽卡機在哪」找找，快速掌握最新的機台資訊！」
-  - 圖片：**依機台動態換圖（v28.3 起）**——依 `?id=` 到 Google Sheet CSV 找對應機台的專屬分享圖欄位，找不到該 id、欄位空白、或抓取失敗，都 fallback 回固定的 `/og.png`（1200×630）
+  - 圖片：**依機台動態換圖（v28.3 起）**——依 `?id=` 到 Google Sheet CSV 找對應機台的專屬分享圖欄位，**v30.4 起優先比對永久ID，找不到才退回比對 A 欄流水號**（相容修正上線前的舊格式連結），找不到該 id、欄位空白、或抓取失敗，都 fallback 回固定的 `/og.png`（1200×630）
 - 真人訪客會被 JS `location.replace()` 導回正常網站；**不用** `<meta http-equiv="refresh">`（Facebook 爬蟲會跟著跳走，抓到跳轉後頁面的 meta 而不是我們寫的內容）
 - 部署上需要專案根目錄有 `package.json`、`og.png` 放在根目錄（不是 `public/`），細節見 `CLAUDE.md`
 
 ### PWA / 加到主畫面（A2HS Banner，v21 新增）
 - **manifest.json**：`name`/`short_name`、`theme_color: #0066FF`、`background_color: #F2F2F7`、`display: standalone`；圖示 `icon-192.png`/`icon-512.png`/`icon-maskable-512.png`（maskable 沿用一般版本，logo 本身留白已在安全區內）、另加 `apple-touch-icon.png`
-- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v29'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
+- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v30.6'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
 - **自動刷新（v24 新增）**：回到前景（`visibilitychange`/`focus`）時，若距上次成功抓取超過 30 分鐘（`REFRESH_THROTTLE_MS`），靜默刷新資料（不清空列表、失敗只顯示 toast）；節流是為了避免短時間切來切去連打 API
 - **下拉刷新（v24 新增）**：列表模式（`#gridView`）捲到頂端時，往下拉超過 60px 放開即觸發刷新；繞過節流（使用者主動操作，應無條件給最新資料）；地圖模式不支援（手勢衝突）
   - v26.1 修正：spinner 曾因 CSS animation 起點跟殘留 inline transform 疊在一起，導致轉圈動畫視覺上卡住不動、體感是「卡一下就直接收回」，詳見 `CLAUDE.md`
@@ -163,7 +168,8 @@
 
 ### 彈窗（cluster popup、地圖側邊欄/sheet 詳情、列表模式詳情彈窗）
 內容一致，顯示以下資訊（有資料才顯示）：
-1. 店名（粗體標題，右上角固定 ✕ 關閉按鈕，跟 badge 同一個 flex row 垂直置中）
+1. 店名（粗體標題，右上角固定 ✕ 關閉按鈕，跟 badge 群組同一個 flex row 垂直置中）
+   - **badge 群組（v30.5 新增倒數 badge）**：type-badge（抽卡機/相卡機）跟倒數 badge（即將結束才顯示，見下方「倒數 Badge」）用 `.modal-badge-row` 緊鄰排在一起（`gap:8px`，不做兩端對齊），這組再跟關閉鈕維持原本的 `space-between`
 2. 期間限定（圓角框）
 3. 資訊欄（純文字標籤，無 icon）：場地、地址、IP、彈數、一抽張數、營業時間、備註
 4. 前往 Google Maps 查看 →（藍色連結）
@@ -212,8 +218,9 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
   - 抽卡機：背景 `#00c2a8`，黑字，`border-radius: 4px`，icon：Material Symbols playing_cards（FILL1）
   - 相卡機：背景 `#ffcf48`，黑字，`border-radius: 4px`，icon：Material Symbols photo_camera（FILL1）
 
-### 倒數 Badge（v23 新增）
+### 倒數 Badge（v23 新增，v30.5 擴及詳情彈窗）
 - 顯示於列表卡片，跟類型 badge 同一個 row（`.card-badge-row`），類型 badge 靠左、倒數 badge 靠右
+- **v30.5 起，grid modal、地圖側邊欄/sheet 詳情、cluster popup 選項後的詳情也會顯示**（跟卡片版共用同一個判斷函式，版型改用 `.modal-badge-row` 緊鄰排列，不做兩端對齊，見上方「彈窗」段落）
 - 只在期間限定活動結束日 3 天內顯示：今天結束顯示「最後一天」，明天結束顯示「倒數 2 天」，後天結束顯示「倒數 3 天」；超過 3 天，或機台沒有期間限定日期，都不顯示
 - 背景 `#FFCF48`，黑字
 

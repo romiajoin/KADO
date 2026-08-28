@@ -7,7 +7,7 @@
 // 版本號 bump 時（CACHE_VERSION 改掉），install/activate 會自動清掉舊快取，
 // 不需要手動處理使用者端的快取殘留。
 
-const CACHE_VERSION = 'v30.6';
+const CACHE_VERSION = 'v30.7';
 const SHELL_CACHE = `cardradar-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `cardradar-data-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cardradar-images-${CACHE_VERSION}`;
@@ -65,8 +65,16 @@ function isImageRequest(url) {
 // 每次呼叫都應該回傳最新的計數並讓伺服器累加一次，快取住會讓數字卡住不動；
 // 以及自己的 /api/ serverless functions，例如 api/share.js 會依 id 動態回傳不同
 // 內容，被 SW 快取住會讓某些機台的分享卡片內容卡在舊的版本）
+//
+// 首頁帶 ?id= 時（/api/index.js 透過 rewrite 處理）也是同樣道理：內容會依當下
+// Google Sheet 的分享圖動態產生，不能被當成一般靜態殼層 cache-first 快取住，
+// 不然使用者點過一次分享連結後，就算之後 Sheet 上那台機器的分享圖換了，
+// 已安裝 PWA 的使用者還是會一直看到當初快取住的舊版本。
 function isNoCacheRequest(url) {
-  return url.hostname === 'visitor-counter.gillsponge-601.workers.dev' || url.pathname.startsWith('/api/');
+  if (url.hostname === 'visitor-counter.gillsponge-601.workers.dev') return true;
+  if (url.pathname.startsWith('/api/')) return true;
+  if (url.pathname === '/' && url.searchParams.has('id')) return true;
+  return false;
 }
 
 async function networkFirst(request, cacheName) {
