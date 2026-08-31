@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/08/09（v30.3）
+**最後更新：** 2026/08/31（v30.8）
 
 ---
 
@@ -129,6 +129,7 @@
 | `sort_panel_close`（v30.3） | 使用者主動關閉排序面板/sheet（選了排序選項導致的自動收合不算，見 `CLAUDE.md`） | `method`（toggle_button/outside_click/switch_panel/x_button/backdrop_click）, `device` |
 | `search_clear`（v30.3） | 點擊搜尋框的清除（X）按鈕 | `source`（desktop_toolbar/mobile_toolbar）, `device` |
 | `grid_modal_close`（v30.3） | 關閉列表模式的機台詳情彈窗 | `method`（x_button/backdrop_click）, `device` |
+| `search_url_restored`（v30.8） | 帶著搜尋/篩選參數（`?q=`/`?type=`/`?city=`/`?ip=`）的網址被打開、狀態被還原的那一刻 | `has_keyword`, `has_filter`, `view`（map/grid）, `device` |
 
 詳細觸發規則與防誤觸機制見 `CLAUDE.md`。
 
@@ -140,17 +141,32 @@
 - 真人點擊分享連結後會先短暫經過 `/api/share`，立刻被導回 `/?id=<permId>`（地圖模式分享的連結則是 `/?id=<permId>&view=map`），資料載入後偵測參數，view=map 時切換到地圖模式並直接展開該機台詳情（桌機側欄 / 手機 bottom sheet 以 preferFull 模式展開，高度貼合內容）；無 view 參數時行為同原本，自動開對應地點的 grid modal
 - **三段式判斷**（v30.6）：永久ID精準比對成功才自動開啟詳情；比對失敗但 A 欄流水號比對到（修正上線前的舊格式連結，機台可能還在但不確定是不是原本那一台）則安靜不顯示任何內容；兩者都找不到才顯示 toast「這台機台的資訊已經下架囉」
 
-### 分享連結 OG Meta（v20 新增，v28.3 改為動態換圖，v30.4 改用永久ID優先比對）
+### 分享連結 OG Meta（v20 新增，v28.3 改為動態換圖，v30.4 改用永久ID優先比對，v30.7 拿掉 A 欄 fallback）
 - 社群平台（LINE / Threads / Discord / Facebook）的爬蟲不執行 JavaScript，只讀 `<head>` 裡的 `og:title`/`og:image`，所以分享連結改指向一支 serverless function（`api/share.js`）：
   - 標題：「kado！抽卡機在哪」
   - 描述：「想找抽卡機 / 相卡機？到「kado！抽卡機在哪」找找，快速掌握最新的機台資訊！」
-  - 圖片：**依機台動態換圖（v28.3 起）**——依 `?id=` 到 Google Sheet CSV 找對應機台的專屬分享圖欄位，**v30.4 起優先比對永久ID，找不到才退回比對 A 欄流水號**（相容修正上線前的舊格式連結），找不到該 id、欄位空白、或抓取失敗，都 fallback 回固定的 `/og.png`（1200×630）
+  - 圖片：**依機台動態換圖（v28.3 起）**——依 `?id=` 到 Google Sheet CSV 找對應機台的專屬分享圖欄位，**v30.4 起優先比對永久ID**；**v30.7 起拿掉「找不到才退回比對 A 欄流水號」的 fallback，統一只認永久ID**——找不到該 id（含舊格式 A 欄連結）、欄位空白、或抓取失敗，都 fallback 回固定的 `/og.png`（1200×630）
+- **導回目標（v30.7 調整）**：永久ID比對成功、或 Sheet 一時抓取失敗無法確定時，導去 `/?id=<id>`（地圖分享額外帶 `&view=map`）；確定找不到對應機台時改導去首頁 `/`，不再嘗試導去可能對應到別台機器的機台頁
 - 真人訪客會被 JS `location.replace()` 導回正常網站；**不用** `<meta http-equiv="refresh">`（Facebook 爬蟲會跟著跳走，抓到跳轉後頁面的 meta 而不是我們寫的內容）
 - 部署上需要專案根目錄有 `package.json`、`og.png` 放在根目錄（不是 `public/`），細節見 `CLAUDE.md`
 
+### 首頁 /?id= 動態 OG Meta（v30.7 新增，`api/index.js`）
+- 先前只有走 `/api/share?id=xxx` 才有依機台換圖的 OG 標籤；若使用者把（真人點擊分享連結後跳轉到的）`/?id=xxx` 網址列直接複製再分享一次，爬蟲抓到的是純靜態頁面，完全沒有 OG 標籤
+- 透過 `vercel.json` 的 rewrite 把 `/` 導去新增的 `api/index.js` 處理：依 `id` 查永久ID對應的分享圖，動態塞進 `index.html` 的 `<head>` 再回傳完整 SPA 內容（不是導轉頁），`js/main.js` 讀取 URL 參數顯示機台的邏輯不受影響
+- 只有帶 `id` 時才會打 Google Sheet，一般首頁流量不受影響
+- `sw.js` 同步調整：`/` 帶 `id` 參數的請求視為 no-cache（內容依 Sheet 資料動態變化，不能被殼層快取卡住舊版縮圖）
+
+### 搜尋結果網址即時同步（v30.8 新增）
+- **不是分享按鈕，是網址列本身就是分享連結**：使用者搜尋或套用篩選時，網址列即時同步更新（`history.replaceState`，不新增瀏覽紀錄、不觸發真正的頁面跳轉），複製網址列貼給別人，對方點開就會看到同樣的搜尋結果，不需要額外點擊任何東西產生連結
+- **URL 格式**：`?q=關鍵字&type=..&city=..&ip=..&view=map`——`q` 是搜尋關鍵字；`type`/`city`/`ip` 對應三個篩選維度目前選中的值，多選用逗號分隔（如 `city=臺北市,新北市`）；`view=map` 沿用單一機台分享連結已在用的同一個參數，代表分享當下是地圖模式
+- **跟單一機台分享連結（`?id=`）是兩種獨立、互斥的機制**：`?id=` 存在時一律走單一機台那條路徑，完全不看 `q`/`type`/`city`/`ip`；`?id=` 不存在時才檢查這組參數
+- **不涉及 serverless function**：直接指回網站本身，用網站預設的 OG 圖，不像單一機台分享需要動態換圖（搜尋結果沒有「這一筆專屬圖片」可換）
+- **刻意不含排序狀態**：距離排序依賴分享者當下的定位座標，帶進連結對收件人沒有意義
+- 落地時（帶著上述參數開啟網址）會還原搜尋框內容與篩選 pill 選中狀態，並依 `view` 參數切換列表/地圖模式
+
 ### PWA / 加到主畫面（A2HS Banner，v21 新增）
 - **manifest.json**：`name`/`short_name`、`theme_color: #0066FF`、`background_color: #F2F2F7`、`display: standalone`；圖示 `icon-192.png`/`icon-512.png`/`icon-maskable-512.png`（maskable 沿用一般版本，logo 本身留白已在安全區內）、另加 `apple-touch-icon.png`
-- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v30.6'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
+- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v30.7'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
 - **自動刷新（v24 新增）**：回到前景（`visibilitychange`/`focus`）時，若距上次成功抓取超過 30 分鐘（`REFRESH_THROTTLE_MS`），靜默刷新資料（不清空列表、失敗只顯示 toast）；節流是為了避免短時間切來切去連打 API
 - **下拉刷新（v24 新增）**：列表模式（`#gridView`）捲到頂端時，往下拉超過 60px 放開即觸發刷新；繞過節流（使用者主動操作，應無條件給最新資料）；地圖模式不支援（手勢衝突）
   - v26.1 修正：spinner 曾因 CSS animation 起點跟殘留 inline transform 疊在一起，導致轉圈動畫視覺上卡住不動、體感是「卡一下就直接收回」，詳見 `CLAUDE.md`

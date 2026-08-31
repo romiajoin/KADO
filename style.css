@@ -34,16 +34,16 @@
     }
     header {
       background: var(--fill-gray6);
-      padding: 20px 20px;
+      padding: 20px 20px 20px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
       z-index: 200;
     }
-    .logo { display: flex; align-items: center; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 8px; }
     .logo-icon {
-      width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
+      width: 92px; height: 64px; overflow: hidden;
       flex-shrink: 0; object-fit: cover;
     }
     .logo h1 { font-size: 24px; font-weight: 700; letter-spacing: 1px; color: var(--fill-black); }

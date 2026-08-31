@@ -56,6 +56,28 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       }
     }
 
+    // 讓網址列本身就是「目前搜尋結果」的分享連結：搜尋關鍵字／篩選條件／檢視模式（地圖或列表）
+    // 一有變動就同步寫回網址列（history.replaceState，不新增瀏覽紀錄、不觸發真正的頁面跳轉），
+    // 使用者不用另外點分享按鈕，直接複製網址列就是當下這個搜尋結果的連結。
+    // 只從 applyFilters() 呼叫（見下方），刻意不放進 setView()：setView() 在頁面初始化時
+    // （setView('grid') 早於 loadFromSheet() 解析網址參數）跟單一機台分享連結落地時
+    // （?id= 分支會呼叫 setView('map')，但不會呼叫 applyFilters()）都會被呼叫到，
+    // 如果在這裡同步網址，會在網址列的 ?id= 或原始查詢字串還沒被讀取前就把它洗掉。
+    // applyFilters() 只在使用者真的搜尋/篩選，或還原搜尋分享連結時才會被呼叫，時機才安全。
+    function syncSearchUrl() {
+      const kw = (document.getElementById('searchInput').value || '').trim();
+      const params = new URLSearchParams();
+      if (kw) params.set('q', kw);
+      FILTER_CONFIG.forEach(cfg => {
+        if (filterState[cfg.key].length > 0) params.set(cfg.key, filterState[cfg.key].join(','));
+      });
+      if (document.body.classList.contains('map-view')) params.set('view', 'map');
+
+      const query = params.toString();
+      const newUrl = window.location.pathname + (query ? `?${query}` : '');
+      history.replaceState(null, '', newUrl);
+    }
+
     let prevSearchKw = '';          // 上一次的搜尋關鍵字，用來偵測「從無到有」／「從有到無」這兩個轉折
     let sheetLevelBeforeSearch = null; // 搜尋開始那一刻，sheet 原本停在哪一層；清空搜尋時要還原成這個值，
                                         // 而不是看清空當下 sheet 剛好停在哪（那可能是搜尋自己展開的 mid，不是使用者手動拉的）
@@ -161,6 +183,8 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
           const urlId = params.get('id');
           const urlView = params.get('view');
           if (urlId) {
+            // 有 ?id= 時走原本「單一機台分享連結」的邏輯（下方），
+            // 跟「搜尋結果分享連結」互斥——一個連結只會是其中一種分享類型。
             // 永久ID是唯一「保證不會連錯機台」的比對依據，只有它比對到才自動開彈窗。
             // A 欄流水號 fallback 只用來判斷「這台機台是否還存在」，藉此避免舊格式連結
             // 被誤判成已下架——但 fallback 找到的那一列不保證還是原本分享者指的那一台
@@ -198,6 +222,35 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
               if (typeof showToast === 'function') showToast('這台機台的資訊已經下架囉');
               // GA: share_link_target_missing（抓多少舊分享連結正在失效）
               gtag('event', 'share_link_target_missing', { machine_id: urlId, device: getDeviceType() });
+            }
+          } else {
+            // 沒有 ?id=，改偵測「搜尋結果」狀態：?q=關鍵字&type=..&city=..&ip=..&view=map
+            // 這些參數是使用者搜尋/篩選時由 syncSearchUrl() 即時寫回網址列的（不用點分享按鈕，
+            // 複製網址列本身就是分享連結），這裡負責在對方打開連結時把狀態原樣還原。
+            // type/city/ip 各自用逗號分隔多選值，key 沿用 FILTER_CONFIG 的 key，不用額外對照表。
+            const q = params.get('q');
+            const hasFilterParams = FILTER_CONFIG.some(cfg => params.get(cfg.key));
+            if (q || hasFilterParams) {
+              if (q) {
+                document.getElementById('searchInput').value = q;
+                document.getElementById('searchInputMobile').value = q;
+                document.getElementById('clearSearch').style.display = 'block';
+                document.getElementById('clearSearchMobile').style.display = 'block';
+              }
+              FILTER_CONFIG.forEach(cfg => {
+                const val = params.get(cfg.key);
+                if (val) filterState[cfg.key] = val.split(',').filter(Boolean);
+              });
+              renderFilterBar(); // 依還原後的 filterState 重新畫 pill 選中狀態
+              if (urlView === 'map') setView('map');
+              applyFilters();
+              // GA: search_url_restored（帶著搜尋/篩選參數的網址被打開，狀態被還原）
+              gtag('event', 'search_url_restored', {
+                has_keyword: !!q,
+                has_filter: hasFilterParams,
+                view: urlView === 'map' ? 'map' : 'grid',
+                device: getDeviceType(),
+              });
             }
           }
         }
@@ -257,6 +310,8 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       currentFiltered = sortLocations(currentFiltered);
       renderGrid(currentFiltered);
       syncCount(currentFiltered.length);
+      syncSearchUrl(); // 網址列即時反映目前的搜尋/篩選狀態，複製網址列就等於分享這個結果
+
       if (map) {
         const priorLevel = clearedSearch ? sheetLevelBeforeSearch : sheetLevel; // 篩選前使用者原本停留的層級；renderMapLocations 內部會強制收到 peek，這裡要先記住才能決定要不要復原
         renderMapLocations(currentFiltered);

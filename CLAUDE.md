@@ -247,6 +247,24 @@ function fitOptionsWidth(container) {
 - 找不到對應機台（永久ID跟 A 欄流水號都比對不到，代表真的整列被刪除下架）時顯示 toast「這台機台的資訊已經下架囉」，並送出 `share_link_target_missing` GA 事件；只比對到 A 欄流水號（舊格式連結，機台可能還在但不確定是不是原本那一台）則安靜不顯示，送 `share_link_legacy_fallback`
 - `showToast(msg)`：fixed 定位，bottom 80px，2 秒後自動消失
 
+### 搜尋結果網址即時同步（v30.8 新增）
+**不是一個「分享按鈕」，是網址列本身就是分享連結**：使用者搜尋或套用篩選時，網址列會即時同步更新（`history.replaceState`，不新增瀏覽紀錄、不觸發真正的頁面跳轉），複製網址列貼給別人，對方點開就會看到同樣的搜尋結果，不需要額外點擊任何東西產生連結。
+
+**跟單一機台分享連結（見上方「分享連結永久ID機制」）是兩種獨立的分享類型，互斥**：`?id=` 存在時一律走單一機台那條路徑，完全不看 `q`/`type`/`city`/`ip` 這幾個參數；`?id=` 不存在時才檢查後面這組。
+
+**URL 參數設計**：不新增 serverless function，直接用 query string 表達當下的搜尋 + 篩選狀態，指向網站本身（不像單一機台分享要繞過 `api/share.js` 換 OG 圖，因為搜尋結果沒有「這一筆專屬圖片」可換，用網站預設的 OG 圖即可）：
+- `q`：搜尋關鍵字（`#searchInput` 的 value，原文不特別編碼，交給 `URLSearchParams` 處理）
+- `type`／`city`／`ip`：對應 `FILTER_CONFIG` 三個維度目前選中的值，多選用逗號分隔（例如 `city=臺北市,新北市`），key 名稱直接沿用 `FILTER_CONFIG[].key`，不用額外對照表，之後篩選維度增減也不用同步改這裡
+- `view`：沿用單一機台分享連結已經在用的同一個參數，`map` 代表分享當下是地圖模式，對方點開後會 `setView('map')`
+
+**同步網址**（`syncSearchUrl()`，`js/main.js`）：只從 `applyFilters()` 呼叫，沒有任何關鍵字／篩選條件時網址會乾淨地回到 `pathname`（不留空的 `?`）。**刻意不放進 `setView()`**：`setView()` 在頁面初始化時（`setView('grid')` 早於 `loadFromSheet()` 解析網址參數）跟單一機台分享連結落地時（`?id=` 分支會呼叫 `setView('map')`，但不會呼叫 `applyFilters()`）都會被呼叫到，如果在 `setView()` 裡同步網址，會在網址列的 `?id=` 或原始查詢字串還沒被讀取前、或單一機台深連結落地後，就把它洗掉。`applyFilters()` 只在使用者真的搜尋/篩選，或還原搜尋分享連結時才會被呼叫，時機才安全。**刻意不帶排序狀態**：距離排序（`distance_asc`/`distance_desc`）依賴分享者當下的定位座標，帶到連結裡對方點開套用分享者的座標沒有意義；結束日排序理論上可以帶，但目前先不做，維持跟排序無關的單純度。
+
+**還原連結**（`loadFromSheet()` 的 `?id=` 判斷 `else` 分支，`js/main.js`）：讀到 `q`/`type`/`city`/`ip` 任一參數就代表是搜尋結果連結，寫回兩個搜尋框 value、直接對 `filterState[cfg.key]` 賦值（`filterState` 物件屬性可以直接改，見上方「跨檔案依賴要注意」），呼叫 `renderFilterBar()` 重新畫 pill 選中狀態，再呼叫 `applyFilters()` 套用（這次呼叫會連帶觸發 `syncSearchUrl()`，把網址正規化成跟還原後狀態一致，屬於良性的冪等行為）。跟 `?id=` 判斷共用同一個 `!silent` guard，只在真正的初次載入處理一次。
+
+**GA4 事件**：`search_url_restored`（帶著搜尋/篩選參數的網址被打開、狀態被還原的那一刻；`has_keyword`, `has_filter`, `view`(map/grid), `device`）；全新事件，尚未在 GA4 後台的「GA4 事件追蹤表」資料庫登記，也還沒在「自訂定義」註冊 `has_keyword`/`has_filter` 這兩個新參數（`view`/`device` 都是既有維度，不用重新註冊）。沒有對應的「點擊分享」事件，因為沒有分享按鈕可以點——分享動作本身（複製網址列）發生在瀏覽器層級，前端偵測不到。
+
+**跟 `sw.js` 的關係**：只動到 `index.html`／`js/main.js`／`style.css`，`index.html` 在 `SHELL_ASSETS` 清單裡，`CACHE_VERSION` 從 `'v30.7'` bump 到 `'v30.8'`。
+
 ### 分享連結 OG Meta（v20 新增，`api/share.js`）
 **為什麼需要**：LINE / Threads / Discord / Facebook 的爬蟲不會執行 JavaScript，只讀 HTML `<head>` 裡寫死的 `og:title`/`og:image`。原本分享連結直接指向 `index.html?id=xxx`，不管哪個機台，社群平台抓到的都是同一份寫死的預設 meta（網站 logo），縮圖永遠一樣。
 
@@ -323,6 +341,7 @@ function fitOptionsWidth(container) {
 - **v30.4**：分享連結改用永久ID（`permId`，Q 欄），見上方「分享連結永久ID機制」。動到 `js/main.js`（`shareLocation()`/`?id=` 解析邏輯/parseCSVRow 欄位對照全部重排）、`js/map.js`（分享按鈕改帶 `permId`）、`api/share.js`（`getShareImageUrl()` 改用 `PERMANENT_ID_COL`）；`main.js`/`map.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.3'` bump 到 `'v30.4'`。`api/share.js` 本身不受 SW 快取影響（serverless function，`isNoCacheRequest` 排除），這部分改動不需要靠 bump 觸發更新
 - **v30.5**：倒數 badge 擴及 grid modal／地圖詳情面板（見上方「倒數 Badge」）。動到 `js/main.js`／`js/map.js`，`CACHE_VERSION` 從 `'v30.4'` bump 到 `'v30.5'`
 - **v30.6**：`v30.4` 上線後發現舊格式分享連結（A 欄流水號）被誤判成「已下架」——原本只比對 `permId`，沒有 fallback 機制，導致修正上線前產生、機台其實還在的舊連結全部顯示已下架 toast。補上三段式判斷（永久ID精準比對才自動開啟／A 欄 fallback 比對到但刻意不開啟／兩者都找不到才顯示已下架），新增 `share_link_legacy_fallback` GA 事件；`api/share.js` 也補上同樣的 fallback（但保留採用 fallback 結果，跟 `main.js` 刻意安靜處理不同，見上方「分享連結永久ID機制」的不對稱設計說明）。動到 `js/main.js`、`api/share.js`；`main.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.5'` bump 到 `'v30.6'`
+- **v30.8**：搜尋結果的網址列即時同步，見上方「搜尋結果網址即時同步」章節。只動到 `js/main.js`（`syncSearchUrl()`／`applyFilters()` 內呼叫／`?id=` 判斷的 `else` 分支還原邏輯），不涉及任何新 UI 元素，`index.html`／`style.css` 沒有變動；`main.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.7'` bump 到 `'v30.8'`
 
 ### 倒數 Badge（v23 新增，v30.5 擴及詳情彈窗）
 - `getEndingBadge(loc)`/`getEndDate(loc)`：解析 `limited` 欄位（`"2026/06/24～2026/07/12"` 格式，取「～」後半段）算出結束日，跟今天比較天數差
@@ -363,6 +382,7 @@ function fitOptionsWidth(container) {
 | `pull_to_refresh`（v24） | 列表模式下拉超過 60px 放開手指、真的觸發刷新 | `device` |
 | `data_refresh_error`（v24） | 靜默刷新失敗（auto 或 pull 觸發，初次載入失敗走另一套流程，不算） | `trigger`(auto/pull), `device` |
 | `share_link_opened`（v24；v30.4 起限定永久ID精準比對成功） | 分享連結的 `?id=` 精準比對到 `permId` | `machine_id`, `view`(map/grid), `device` |
+| `search_url_restored`（v30.8） | 讀到 `?q=`/`?type=`/`?city=`/`?ip=` 任一參數並還原成搜尋/篩選狀態的那一刻（帶搜尋條件的網址被打開） | `has_keyword`, `has_filter`, `view`(map/grid), `device` |
 | `share_link_legacy_fallback`（v30.6 新增） | 永久ID比對失敗，退回比對 A 欄流水號有找到列（舊格式連結，機台可能還在但無法確認是不是原本那一台）；此時**不會**自動開啟任何內容 | `machine_id`(連結裡的 A 欄值), `device` |
 | `share_link_target_missing`（v24） | 分享連結的 `?id=` 永久ID跟 A 欄流水號都找不到對應機台（已下架/刪除） | `machine_id`, `device` |
 | `a2hs_engagement_met`（v21） | 累計查看詳情達 3 次，或單次停留超過 20 秒（兩者擇一） | `reason`(cumulative_views/dwell_time), `platform` |
@@ -411,6 +431,10 @@ function fitOptionsWidth(container) {
 
 **v30.6 待完成清單**：
 - `share_link_legacy_fallback` 沒有引入新的參數名稱（沿用既有的 `machine_id`、`device`），不用新增自訂維度，但「GA4 事件追蹤表」資料庫需要新增這筆記錄（工具權限沒有新增資料庫 row 的操作，需人工在 Notion 裡加）
+
+**v30.8 待完成清單**：
+- `search_url_restored` 這個全新事件需要到 GA4 後台「管理 → 自訂定義 → 自訂維度」註冊 `has_keyword`／`has_filter`（`view`/`device` 都是既有維度）
+- 「GA4 事件追蹤表」資料庫需要新增這兩筆記錄（工具權限沒有新增資料庫 row 的操作，需人工在 Notion 裡加）
 
 **⚠️ `addEventListener` 直接傳函式參照的坑**：`addEventListener('click', someFn)` 會把 `event` 物件當作 `someFn` 的第一個參數傳入。如果 `someFn` 的第一個參數是拿來控制邏輯用的（例如 `skipTracking`），會被 `event` 物件（永遠 truthy）誤判，導致邏輯整個相反卻不會報錯。要嘛改用箭頭函式包一層再傳（`addEventListener('click', () => someFn())`），要嘛該參數不要放在第一位。
 - **v30.3 實例**：補 `sort_panel_close` 埋碼時，`closeMobileSortSheet` 從無參數改成吃 `method` 參數，而 `sortSheetClose`/`sortSheetOverlay` 原本的寫法正好是 `addEventListener('click', closeMobileSortSheet)` 這種直接傳函式參照的寫法——改參數簽章前就先抓到、順手改成箭頭函式，沒有實際踩雷上線，但差一點就是本文件警告的那個坑
