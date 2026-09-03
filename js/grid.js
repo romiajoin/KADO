@@ -98,7 +98,6 @@ import { sortState, userCoords } from './sort.js';
               source: 'grid',
               device: getDeviceType(),
             });
-            window.a2hsRecordCardView && window.a2hsRecordCardView();
             openGridModal(loc, imgs, googleMapsUrl, 'grid_modal');
           });
         }

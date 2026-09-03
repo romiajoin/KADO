@@ -5,7 +5,7 @@
 // 同時同步 grid 跟地圖」的協調中心。
 // =============================================
 
-import { isStandaloneMode, getDeviceType } from './utils.js';
+import { getDeviceType } from './utils.js';
 import { renderGrid, sortLocations, getEndingBadge } from './grid.js';
 import { renderSortControl, closeDesktopSortPanel, closeMobileSortSheet } from './sort.js';
 import { buildFilterOptions, renderFilterBar, FILTER_CONFIG, filterState } from './filters.js';
@@ -14,7 +14,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
 
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
 
-    // PWA 回到前景自動刷新的節流門檻：距上次抓取超過這個時間才真的打 API
+    // 回到前景自動刷新的節流門檻：距上次抓取超過這個時間才真的打 API
     export const REFRESH_THROTTLE_MS = 30 * 60 * 1000; // 30 分鐘
     export let lastFetchTime = 0;
 
@@ -607,6 +607,87 @@ window.closeLightbox = closeLightbox;
 window.closeGridModal = closeGridModal;
 window.trackGmapsClick = trackGmapsClick;
 window.shareLocation = shareLocation;
+
+// =============================================
+// 🔄 回到前景自動刷新（節流）
+// 從 pwa.js 搬過來——這兩塊（自動刷新／下拉刷新）跟「有沒有安裝成 PWA」無關，
+// 一般瀏覽器分頁開著也會作用，PWA 功能移除時特意保留。
+// =============================================
+function maybeAutoRefresh() {
+  if (document.visibilityState !== 'visible') return;
+  if (Date.now() - lastFetchTime < REFRESH_THROTTLE_MS) return;
+  // GA: auto_refresh（通過節流門檻、真的觸發背景刷新）
+  gtag('event', 'auto_refresh', { device: getDeviceType() });
+  loadFromSheet({ silent: true, trigger: 'auto' });
+}
+document.addEventListener('visibilitychange', maybeAutoRefresh);
+// 部分瀏覽器（尤其是舊版 iOS Safari／某些 in-app browser）visibilitychange 不夠可靠，focus 當備援
+window.addEventListener('focus', maybeAutoRefresh);
+
+// =============================================
+// 👇 下拉刷新（僅列表模式，#gridView 捲到頂時才觸發）
+// =============================================
+(function initPullToRefresh() {
+  const container = document.getElementById('gridView');
+  const indicator = document.getElementById('ptrIndicator');
+  const spinner = indicator.querySelector('.ptr-spinner');
+  const PULL_TRIGGER_PX = 60;   // 拉到這個高度放開才觸發刷新
+  const PULL_MAX_PX = 90;       // 視覺上限（rubber-band）
+  const DAMPING = 0.5;          // 手指移動距離的實際反映比例
+
+  let startY = 0;
+  let pulling = false;   // 這次觸控是否正在做下拉手勢
+  let dragY = 0;
+  let refreshing = false;
+
+  function setIndicatorHeight(px) {
+    indicator.style.height = px + 'px';
+    spinner.style.transform = `rotate(${Math.min(px / PULL_TRIGGER_PX, 1) * 360}deg)`;
+  }
+
+  container.addEventListener('touchstart', (e) => {
+    if (refreshing) return;
+    if (container.scrollTop > 0) { pulling = false; return; }
+    startY = e.touches[0].clientY;
+    pulling = true;
+    dragY = 0;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (!pulling || refreshing) return;
+    const diff = e.touches[0].clientY - startY;
+    if (diff <= 0 || container.scrollTop > 0) { pulling = false; setIndicatorHeight(0); return; }
+    dragY = Math.min(diff * DAMPING, PULL_MAX_PX);
+    setIndicatorHeight(dragY);
+    e.preventDefault();
+  }, { passive: false });
+
+  container.addEventListener('touchend', () => {
+    if (!pulling) return;
+    pulling = false;
+    if (dragY >= PULL_TRIGGER_PX) {
+      refreshing = true;
+      indicator.classList.add('loading');
+      indicator.style.height = PULL_TRIGGER_PX + 'px';
+      spinner.style.transform = '';
+      gtag('event', 'pull_to_refresh', { device: getDeviceType() });
+      loadFromSheet({ silent: true, trigger: 'pull' }).finally(() => {
+        refreshing = false;
+        indicator.classList.remove('loading');
+        setIndicatorHeight(0);
+      });
+    } else {
+      setIndicatorHeight(0);
+    }
+  });
+
+  container.addEventListener('touchcancel', () => {
+    if (refreshing) return;
+    pulling = false;
+    setIndicatorHeight(0);
+  });
+})();
+
 
     // 初始化
     initTopBarScroll();

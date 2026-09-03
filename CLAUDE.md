@@ -20,7 +20,7 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 - Serverless Function：`api/share.js`（v20 新增，分享連結 OG meta 用，見下方「分享連結 OG Meta」）；專案根目錄需要有 `package.json`（哪怕內容幾乎是空的）Vercel 才會建置 `/api`
 - 字體：Chiron GoRound TC（400/500/700）、Space Mono（統計數字）
 - 訪客計數：自架 Cloudflare Worker + KV（`visitor-counter.gillsponge-601.workers.dev`，page view 計數；v30 起取代原本的第三方 counterapi.dev，避免依賴的免費服務哪天被停用/改規則）
-- PWA：`manifest.json` + `sw.js`（v21 新增，見下方「PWA / 加到主畫面」）；圖示放在 `icons/`，路徑寫死在 `manifest.json` 跟 `index.html` 裡，改資料夾名稱要兩邊一起改
+- PWA：**v31 起功能已移除**（見下方「PWA / 加到主畫面（v21 新增，v31 移除）」）。`manifest.json`／`icons/` 保留但未連結，`sw.js` 只剩自我卸載用途，不再有任何快取邏輯，也不再需要 bump 任何版本號
 
 ---
 
@@ -30,14 +30,13 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 index.html          # 進入點,<script type="module" src="js/xxx.js"> 依序載入
 style.css            # 全部樣式,留在根目錄
 js/
-  main.js            # 核心協調：loadFromSheet／setView／applyFilters
+  main.js            # 核心協調：loadFromSheet／setView／applyFilters／回到前景自動刷新／下拉刷新（v31 起，原本在 pwa.js，PWA 移除時搬過來）
   map.js             # 地圖核心：Leaflet／marker／cluster popup／桌面側邊欄／mobile bottom sheet(最大的模組)
   filters.js         # 篩選 UI：pill／dropdown／bottom sheet
   sort.js             # 排序 UI：按鈕／dropdown／bottom sheet + 定位權限
   grid.js             # 列表卡片渲染 + 排序邏輯（getEndDate/getEndingBadge/sortLocations）
   scroll.js           # #topBar（header/toolbar/filter-bar/訪客 banner）mobile 列表模式滑動隱藏/顯示（v26 新增）
   changelog.js        # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
-  pwa.js              # A2HS banner／自動刷新／下拉刷新／Service Worker 註冊
   utils.js            # isStandaloneMode／getDeviceType（零依賴）
   visitor.js          # 訪客計數（零依賴）
   changelog.js        # 更新日誌 modal/sheet：讀取 changelog.json、渲染、開關、GA event（v27 新增）
@@ -206,8 +205,8 @@ function fitOptionsWidth(container) {
 ### 裝置類型判斷：排版 vs 分析用途要分開
 - `isMobileFilterLayout()`：`matchMedia('(max-width: 768px)')`，純粹決定「篩選要顯示 dropdown 還是 bottom sheet」，跟裝置無關，縮小桌面視窗也會觸發 mobile 排版（這是刻意的，排版本來就該跟著視窗寬度走）
 - `isMobileMapLayout()`：`matchMedia('(max-width: 768px)')`，決定地圖模式要顯示桌機常駐側欄還是手機 bottom sheet；v23 起跟 `isMobileFilterLayout()` 統一使用同一個 768px 斷點（原本地圖是 640px、篩選是 768px 兩組不同斷點，各自獨立判斷，v23 合併成一組，同時刪除所有 640px 相關的 CSS media query）
-- `getDeviceType()`：`matchMedia('(pointer: coarse)')`，判斷輸入裝置是否為觸控；v24 起同時結合 `isStandaloneMode()` 判斷是否為已安裝的 PWA，回傳四種值：`mobile`/`mobile_pwa`/`desktop`/`desktop_pwa`，給 GA 事件的 `device` 參數用。用寬度判斷裝置類型在分析上不準（縮小桌面視窗會被誤記為 mobile），所以 GA 相關的 `device` 一律用這個，不要沿用 `isMobileFilterLayout()`/`isMobileMapLayout()`
-- `isStandaloneMode()`（v24 新增）：`matchMedia('(display-mode: standalone)').matches || navigator.standalone === true`，是唯一的 standalone 判斷來源，`getDeviceType()` 與 A2HS banner 的 `isStandalone()`、`pwa_launch_mode` 事件都呼叫這一個，不要各自重複寫
+- `getDeviceType()`：`matchMedia('(pointer: coarse)')`，判斷輸入裝置是否為觸控；v24 起同時結合 `isStandaloneMode()` 判斷是否為已安裝的 PWA，回傳四種值：`mobile`/`mobile_pwa`/`desktop`/`desktop_pwa`，給 GA 事件的 `device` 參數用。用寬度判斷裝置類型在分析上不準（縮小桌面視窗會被誤記為 mobile），所以 GA 相關的 `device` 一律用這個，不要沿用 `isMobileFilterLayout()`/`isMobileMapLayout()`（**v31 起**：PWA 功能移除後不再主動導引安裝，新造訪理論上不會再產生 `mobile_pwa`/`desktop_pwa`，這兩個值只會在尚未被 `sw.js` 自我卸載清乾淨的舊安裝使用者身上短暫出現，函式本身沒有刪除，不影響既有邏輯）
+- `isStandaloneMode()`（v24 新增）：`matchMedia('(display-mode: standalone)').matches || navigator.standalone === true`，是唯一的 standalone 判斷來源，`getDeviceType()` 呼叫這一個（v31 起 A2HS banner 的 `isStandalone()`／`pwa_launch_mode` 事件已隨 `js/pwa.js` 一起移除，不要再找這兩個）
 
 
 - `#searchInput`（`.search-box-desktop`）：桌機列表模式，mobile 隱藏（`display: none`）
@@ -282,8 +281,9 @@ function fitOptionsWidth(container) {
 - **`public/` 資料夾會讓 Vercel 誤判「這就是整個網站」**：如果 `index.html` 放在專案根目錄、`public/` 只是拿來放額外的靜態檔案（例如 `og.png`），Vercel 零設定判斷會把 `public/` 當成唯一輸出目錄，導致 `index.html` 完全消失、首頁變 404。必須到 Project Settings → Build and Deployment → Output Directory，手動 override 設成 `.`（代表專案根目錄）。**目前 `og.png` 已經搬到專案根目錄（不在 `public/` 裡）**，直接對應 `/og.png`，不要再放回 `public/`
 - `vercel deploy --prebuilt --prod` 能跳過雲端建置、直接部署本機建置結果，除錯時很好用（能鎖定「是本機建置的問題還是雲端部署設定的問題」），但如果本機建置本身依賴的專案設定是錯的（例如上面 Output Directory 那個問題還沒修），會直接把錯的結果推上正式站，比正常的 GitHub 自動部署更危險——不需要深度除錯時盡量用 `git push` 走 GitHub 自動部署，不要習慣性用這個指令
 
-### PWA 自動刷新 + 下拉刷新（v24 新增）
-- **問題背景**：PWA standalone 模式沒有瀏覽器重整按鈕，使用者無法主動更新資料，只能 force quit 重開
+### 自動刷新 + 下拉刷新（v24 新增，v31 起與 PWA 脫鉤）
+- **問題背景**：PWA standalone 模式沒有瀏覽器重整按鈕，使用者無法主動更新資料，只能 force quit 重開（這是當初新增這兩個功能的起因，但功能本身跟裝置有沒有安裝成 PWA 無關，一般瀏覽器分頁開著一樣會作用）
+- **v31**：PWA 功能整體移除，這兩個功能從 `js/pwa.js` 搬進 `js/main.js`，邏輯完全沒變，純粹是檔案搬家
 - **自動刷新**：監聽 `document.visibilitychange` 與 `window.focus`（focus 當 iOS/in-app browser 的備援），回到前景時若距上次成功抓取（`lastFetchTime`）超過 `REFRESH_THROTTLE_MS`（30 分鐘）才真的打 API；`loadFromSheet({ silent: true, trigger: 'auto' })`
 - **下拉刷新**：touch 手勢掛在 `#gridView`（列表模式的捲動容器），`scrollTop === 0` + 往下拉超過 60px（`PULL_TRIGGER_PX`）放開才觸發；視覺上用 `.ptr-indicator` / `.ptr-spinner` 顯示進度；`loadFromSheet({ silent: true, trigger: 'pull' })`，繞過節流（使用者主動操作不應被擋）
 - **`silent` 模式**：不清空列表成「載入中」畫面，失敗時只用 toast 提示「更新失敗，請稍後再試」，不覆蓋使用者正在看的內容；初次載入不屬於 silent（`trigger: 'initial'`）
@@ -297,7 +297,12 @@ function fitOptionsWidth(container) {
 - 補上所有純圖示按鈕的 `aria-label`：`#btnGrid`/`#btnMap`（手機版文字被 CSS 隱藏）、`#clearSearch`/`#clearSearchMobile`、`.grid-modal-close`、兩個 `.popup-close-btn`（原本用裸 `✕` 字元）、三組情境的 carousel prev/next（各 2 個，共 6 個）
 - 不影響任何邏輯或視覺；focus-visible 樣式留待後續補
 
-### PWA / 加到主畫面（A2HS Banner，v21 新增）
+### PWA / 加到主畫面（A2HS Banner，v21 新增，⚠️ v31 起功能已移除）
+
+**⚠️ v31：這個功能已經整個移除，以下是移除前的歷史記錄，留著是為了之後如果想重新啟用，不用重新設計一次。實際程式碼已經不存在了，不要照著下面的描述去找檔案。**
+
+**移除方式**（詳見「Service Worker 快取版本管理」v31 條目）：`js/pwa.js` 整個刪除；`app.html`／`events.html` 拿掉 `<link rel="manifest">`／`apple-touch-icon`／`theme-color`／`apple-mobile-web-app-*` meta／A2HS banner 的 HTML／CSS；`sw.js` 改寫成自我卸載版本。`manifest.json`／`icons/` 資料夾原封不動保留（只是沒有任何地方連結它們），復原時直接把連結加回去就好，不用重新產生圖示。
+
 - 檔案結構：`manifest.json`、`sw.js` 都要放**專案根目錄**（不能放子資料夾），因為 service worker 的作用範圍是它所在路徑以下，`register('/sw.js')` 預期它在根目錄；圖示放 `icons/`，路徑寫死在 `manifest.json` 跟 `index.html` 兩處，改資料夾名稱要兩邊一起改
 - Maskable icon 安全區檢查：用 PIL 抓非背景色像素的 bounding box，確認四邊 margin 都 ≥ 畫布寬度的 10%（512px 畫布要 ≥51px）就算落在安全區內；這個專案的 logo 本身留白已經足夠，maskable 版直接沿用一般版本，沒有額外重新排版
 - SVG 轉 PNG 工具選擇：環境內建的 `convert`（ImageMagick）沒有 `rsvg-convert` delegate 會直接失敗；改用 `pip install cairosvg --break-system-packages`可行，但**濾鏡效果支援不完整**（`feGaussianBlur`/`feColorMatrix` 這類陰影效果會被忽略），如果 icon 有陰影一定要保留，改用 Figma 直接 export PNG（Figma 會完整算 filter），不要用 SVG 原始檔轉
@@ -351,6 +356,16 @@ function fitOptionsWidth(container) {
   - `vercel.json`：拿掉多餘的 `/index.html` header 規則（檔案已不存在），新增 `/index.html -> /` 的 301 redirect 相容舊的直接連結
   - `README.md`／`docs/spec.md` 同步更新
   - `main.js`／`app.html` 本身沒有變動，但 `sw.js`／`vercel.json` 都動了，屬於殼層層級的修正，`CACHE_VERSION` 從 `'v30.8'` bump 到 `'v30.9'`
+- **v31：PWA 功能整體移除**（Gill 決定的產品方向調整，不是 bug 修正）。移除範圍：
+  - `js/pwa.js` 整個刪除（A2HS 安裝提示 banner + Service Worker 註冊）
+  - `app.html`／`events.html`：拿掉 `<link rel="manifest">`、`apple-touch-icon`、`theme-color`、`apple-mobile-web-app-*` meta
+  - `app.html`：拿掉 A2HS banner 的 HTML；`style.css`：拿掉對應的整塊 CSS
+  - `js/grid.js`／`js/map.js`：拿掉 3 處呼叫已不存在的 `window.a2hsRecordCardView` 的死代碼
+  - **保留並搬家**：「回到前景自動刷新」「下拉刷新」這兩個跟安裝與否無關的功能，搬進 `js/main.js`（見「自動刷新 + 下拉刷新」章節）
+  - **`sw.js` 沒有刪除，改寫成自我卸載版本**：已經安裝過 PWA 的舊使用者裝置上還留著舊版 `sw.js` 在背景運作，直接砍掉這個檔案的話，那些人的瀏覽器抓 `sw.js` 會拿到 404，既有的 SW 不會被自動卸載、會繼續套用舊的離線快取邏輯，永遠看不到新內容。新版 `sw.js` 的 `activate` 階段做的事：清空所有快取（`caches.keys()` 全部 `delete`）、呼叫 `self.registration.unregister()`、把當下開著的 client 視窗 `navigate` 一次讓它們立刻改用一般網路請求。已安裝使用者下次連網開啟 App 時會自動跑完這個流程、退回一般網頁模式
+  - **`CACHE_VERSION` 機制隨之整個作廢**：新版 `sw.js` 已經沒有版本字串、沒有任何 `cache-first` 邏輯，「動到 `SHELL_ASSETS` 就要 bump」這條規則的存在理由（強迫瀏覽器重新抓被快取住的殼層檔案）不再成立。**之後任何新功能都不用再 bump 任何東西**——這不是「這次剛好不用 bump」，是這個機制已經永久消失了
+  - **`manifest.json`／`icons/` 保留原檔案，只是拿掉連結**：不刪除，方便之後如果想重新啟用 PWA，直接把連結加回去即可，不用重新產生圖示
+  - 動到 `app.html`／`events.html`／`style.css`／`js/main.js`／`js/grid.js`／`js/map.js`／`js/utils.js`／`sw.js`；`js/pwa.js` 刪除
 
 ### 倒數 Badge（v23 新增，v30.5 擴及詳情彈窗）
 - `getEndingBadge(loc)`/`getEndDate(loc)`：解析 `limited` 欄位（`"2026/06/24～2026/07/12"` 格式，取「～」後半段）算出結束日，跟今天比較天數差
@@ -366,7 +381,7 @@ function fitOptionsWidth(container) {
 - Filter pill 的展開/收合用同一顆 `arrow_drop_down` icon + CSS `transform: rotate(180deg)` 切換，不是切換兩顆 icon（v18 以前的 filter chip 用兩顆 icon 切換 active 狀態，v19 改版後已不適用）
 - 彈窗（地圖 popup / grid modal）資訊欄不使用 icon，純文字標籤
 
-### GA4 自訂事件（v19 起，v21 新增 PWA / 加到主畫面相關事件，v22 新增排序/定位相關事件，v23 新增 sheet 自動展開／關閉方式追蹤，v24 新增 PWA 刷新/分享連結追蹤、getDeviceType 擴充為 PWA 感知）
+### GA4 自訂事件（v19 起，v21 新增 PWA / 加到主畫面相關事件，v22 新增排序/定位相關事件，v23 新增 sheet 自動展開／關閉方式追蹤，v24 新增 PWA 刷新/分享連結追蹤、getDeviceType 擴充為 PWA 感知，v31 起 PWA 相關事件停用）
 | 事件名稱 | 觸發時機 | 參數 |
 |---|---|---|
 | `search_box_focus` | 點擊搜尋框（兩個 input 各自觸發） | `source`（desktop_toolbar/mobile_toolbar；v23 文件曾誤記 map 這個值，程式碼中實際不存在，v24 已修正）, `device` |
@@ -394,12 +409,12 @@ function fitOptionsWidth(container) {
 | `search_url_restored`（v30.8） | 讀到 `?q=`/`?type=`/`?city=`/`?ip=` 任一參數並還原成搜尋/篩選狀態的那一刻（帶搜尋條件的網址被打開） | `has_keyword`, `has_filter`, `view`(map/grid), `device` |
 | `share_link_legacy_fallback`（v30.6 新增） | 永久ID比對失敗，退回比對 A 欄流水號有找到列（舊格式連結，機台可能還在但無法確認是不是原本那一台）；此時**不會**自動開啟任何內容 | `machine_id`(連結裡的 A 欄值), `device` |
 | `share_link_target_missing`（v24） | 分享連結的 `?id=` 永久ID跟 A 欄流水號都找不到對應機台（已下架/刪除） | `machine_id`, `device` |
-| `a2hs_engagement_met`（v21） | 累計查看詳情達 3 次，或單次停留超過 20 秒（兩者擇一） | `reason`(cumulative_views/dwell_time), `platform` |
-| `a2hs_banner_shown`（v21） | 加到主畫面 banner 實際顯示 | `platform`(android/ios_safari/ios_in_app) |
-| `a2hs_banner_dismissed`（v21） | 使用者關閉 banner | `reason`(close_x/ack) |
-| `a2hs_prompt_result`（v21） | Android 原生安裝視窗的使用者選擇 | `outcome`(accepted/dismissed), `platform`(固定 android) |
-| `pwa_installed`（v21） | `appinstalled` 觸發（PWA 安裝完成） | `platform`, `source`(a2hs_banner/native_browser_ui) |
-| `pwa_launch_mode`（v21） | 每次頁面載入判斷 standalone/browser 開啟 | `mode`(standalone/browser) |
+| `a2hs_engagement_met`（v21，⚠️ v31 停用） | ~~累計查看詳情達 3 次，或單次停留超過 20 秒（兩者擇一）~~——PWA 移除後不再觸發，僅供查歷史資料 | `reason`(cumulative_views/dwell_time), `platform` |
+| `a2hs_banner_shown`（v21，⚠️ v31 停用） | ~~加到主畫面 banner 實際顯示~~——PWA 移除後不再觸發，僅供查歷史資料 | `platform`(android/ios_safari/ios_in_app) |
+| `a2hs_banner_dismissed`（v21，⚠️ v31 停用） | ~~使用者關閉 banner~~——PWA 移除後不再觸發，僅供查歷史資料 | `reason`(close_x/ack) |
+| `a2hs_prompt_result`（v21，⚠️ v31 停用） | ~~Android 原生安裝視窗的使用者選擇~~——PWA 移除後不再觸發，僅供查歷史資料 | `outcome`(accepted/dismissed), `platform`(固定 android) |
+| `pwa_installed`（v21，⚠️ v31 停用） | ~~`appinstalled` 觸發（PWA 安裝完成）~~——PWA 移除後不再觸發，僅供查歷史資料 | `platform`, `source`(a2hs_banner/native_browser_ui) |
+| `pwa_launch_mode`（v21，⚠️ v31 停用） | ~~每次頁面載入判斷 standalone/browser 開啟~~——PWA 移除後不再觸發，僅供查歷史資料 | `mode`(standalone/browser) |
 | `sort_change`（v22，v30.2 新增 `end_date_desc` 選項值） | 選擇排序方式並實際套用（距離排序需等定位成功才觸發，選了但定位失敗不算） | `sort_key`(end_date_asc/end_date_desc/distance_asc/distance_desc), `device` |
 | `geo_permission_result`（v22） | 距離排序觸發 `navigator.geolocation` 定位請求後取得結果的當下 | `geo_result`(granted/denied/timeout/unavailable), `device` |
 | `changelog_open`（v27） | 打開更新日誌 modal/sheet | `source`(header_desktop/header_mobile_list), `device` |
@@ -487,7 +502,7 @@ function fitOptionsWidth(container) {
 - `changelog.json`（根目錄，跟 `manifest.json` 同層）：`date`/`version`/`text` 三欄，`text` 可為字串（單筆）或陣列（同天多筆，各自變成一個 bullet），`version` 純內部對照用、不顯示給使用者
 - `index.html`：桌機 header 的「最後更新｜回報表單」後方新增「更新日誌」連結；手機列表模式上方同一排的 meta 資訊也同步加上；新增獨立的 `changelog-overlay`/`changelog-panel` 彈窗結構——刻意不共用既有的 `grid-modal`（機台詳情，寬度太窄）跟 `filter-sheet`（篩選排序 bottom sheet，多段拖曳太複雜），另起一套簡單版：桌機置中 modal（`max-width: 480px; max-height: 80vh`）、手機純 CSS media query 切成貼底單一高度 sheet（`max-height: 70vh`），不做拖曳/snap 手勢
 - 標題下方加一行 `made by @yywggwyy` 署名（Space Mono，灰字）
-- **z-index**：2300，蓋過 A2HS banner（2100）與 filter/sort sheet（2200/2201）
+- **z-index**：2300，蓋過 filter/sort sheet（2200/2201）（v31 起 A2HS banner 已移除，不再是排序考量之一）
 - **⚠️ 開發時踩過的坑**：mobile 版原本只把 `.header-right .report-link` 跟 `.header-divider` 列入隱藏清單，沒把新的 `.changelog-link` 也列進去，導致桌機那顆連結在手機 header 上跟著跑出來、跟手機列表列的那顆重複——已補上隱藏規則
 - `sw.js`：新增 `isChangelogRequest()` 判斷，讓 `changelog.json` 走 network-first（見「Service Worker 快取版本管理」v27 條目）
 - GA4 事件：`changelog_open`（`source`: header_desktop/header_mobile_list，`device`）、`changelog_close`（`method`: x_button/backdrop_click，`device`）；GA4 後台「新增版本」跟「觸發位置」schema 選項還沒有「v27」跟「更新日誌 Modal/Sheet」，需手動到資料庫設定加選項（工具權限沒有 `update-data-source`，無法自動加）

@@ -2,7 +2,7 @@
 // 🧩 共用小工具：裝置 / 顯示模式判斷
 // 這兩個函式互相呼叫（getDeviceType 依賴 isStandaloneMode），
 // 但不依賴任何其他模組或全域狀態，所以獨立成一個零依賴的 utils 模組，
-// main.js 跟 pwa.js 都直接從這裡 import，不用互相牽扯。
+// main.js 直接從這裡 import，不用互相牽扯。
 // =============================================
 
 // 是不是已安裝的 PWA（standalone 模式）在打開；跟 getDeviceType() 共用同一個判斷準則，

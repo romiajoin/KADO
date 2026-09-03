@@ -2,9 +2,6 @@
 <html lang="zh-TW">
 <head>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#0066FF">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KADO！抽卡機在哪</title>
@@ -46,9 +43,6 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="KADO">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
@@ -187,26 +181,12 @@
 
   <div id="share-toast"></div>
 
-  <!-- A2HS（加到主畫面）Banner -->
-  <div class="a2hs-banner" id="a2hsBanner">
-    <div class="a2hs-top-row">
-      <svg class="a2hs-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M444-444v120q0 15.3 10.29 25.65Q464.58-288 479.79-288t25.71-10.35Q516-308.7 516-324v-120h120q15.3 0 25.65-10.29Q672-464.58 672-479.79t-10.35-25.71Q651.3-516 636-516H516v-120q0-15.3-10.29-25.65Q495.42-672 480.21-672t-25.71 10.35Q444-651.3 444-636v120H324q-15.3 0-25.65 10.29Q288-495.42 288-480.21t10.35 25.71Q308.7-444 324-444h120Zm48 348q-81 0-153-30t-126-81.66q-54-51.66-85.5-121.5T96-478.81q0-79.81 30-150T208.5-751q52.5-52 122.31-82.5T480-864q81 0 150.84 31.68 69.84 31.69 121.5 86Q804-692 834-619.64q30 72.36 30 154.64v297q0 29.7-21.15 50.85Q821.7-96 792-96H492Z"/></svg>
-      <span class="a2hs-title">把 KADO！抽卡機在哪 加到主畫面</span>
-      <button class="a2hs-close" id="a2hsClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    </div>
-    <div class="a2hs-bottom-row">
-      <p class="a2hs-desc" id="a2hsDesc"></p>
-      <button class="a2hs-action" id="a2hsAction"></button>
-    </div>
-  </div>
-
   <script type="module" src="js/main.js"></script>
   <script type="module" src="js/changelog.js"></script>
   <script type="module" src="js/grid.js"></script>
   <script type="module" src="js/sort.js"></script>
   <script type="module" src="js/map.js"></script>
   <script type="module" src="js/filters.js"></script>
-  <script type="module" src="js/pwa.js"></script>
   <script type="module" src="js/visitor.js"></script>
   <script type="module" src="js/scroll.js"></script>
 </body>

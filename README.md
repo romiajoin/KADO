@@ -3,7 +3,7 @@
 社群共建的台灣 IP 抽卡機 / 快閃活動查詢網站，資料由管理者維護於 Google Sheet，網站自動讀取並顯示。
 
 **🔗 [查看網站](https://kadotw.vercel.app/)**  
-**最後更新：** 2026/09/03（v30.9）
+**最後更新：** 2026/09/03（v31）
 
 ---
 
@@ -20,7 +20,7 @@
 - 📅 依期間限定結束日期排序（近到遠／遠到近），或授權定位後依「離我最近／最遠」排序
 - 🔗 分享單一地點連結，社群平台（LINE / Threads / Discord）預覽卡片有專屬標題與縮圖
 - 👣 顯示累計訪客人數
-- 📲 支援加入主畫面（PWA），可像 App 一樣從手機桌面開啟，離線時仍可查看上次載入的資料；回到前景自動刷新資料（節流 30 分鐘），列表模式支援下拉手動刷新
+- 🔄 回到前景自動刷新資料（節流 30 分鐘），列表模式支援下拉手動刷新
 - 🔗 分享單一地點連結，社群平台（LINE / Threads / Discord）預覽卡片有專屬標題與縮圖；地圖模式分享的連結，收到方點開後會直接回到地圖模式並展開該機台詳情
 - 🔍🔗 搜尋或篩選機台時，網址列會即時同步當下的條件，複製網址列就能分享這個搜尋結果，對方點開會直接看到同樣的結果，不用另外點分享按鈕（v30.8 新增）
 - 📋 回報表單，讓社群協助新增地點或回報錯誤
@@ -38,7 +38,7 @@
 | 圖片託管 | Cloudinary |
 | 網站託管 | Vercel（免費） |
 | Serverless Function | `api/share.js`／`api/index.js`（分享連結與首頁 OG meta 用，Vercel 免費方案內；`api/index.js` v30.7 新增） |
-| PWA | `manifest.json` + Service Worker（split caching，v21 新增） |
+| PWA | 已於 v31 移除；`sw.js` 保留自我卸載用途（清乾淨舊安裝使用者的離線快取），詳見 `CLAUDE.md` |
 | 字體 | Chiron GoRound TC（400/500/700）、Space Mono（統計數字）|
 | 訪客計數 | 自架 Cloudflare Worker + KV |
 | 數據分析 | Google Analytics 4（GA4） |
@@ -51,14 +51,13 @@
 app.html            # 進入點（SPA 殼層，刻意不叫 index.html——見下方 rewrite 說明）
 style.css            # 全部樣式
 js/
-  main.js            # 資料載入／view 切換／篩選＋排序協調
+  main.js            # 資料載入／view 切換／篩選＋排序協調／回到前景自動刷新／下拉刷新（v31 起，原本在 pwa.js）
   map.js             # 地圖／marker／側邊欄／mobile bottom sheet
   filters.js         # 篩選 UI
   sort.js            # 排序 UI + 定位權限
   grid.js            # 列表卡片渲染 + 排序邏輯
   scroll.js          # mobile 列表模式：頂部工具列滑動隱藏/顯示（v26 新增）
   changelog.js       # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
-  pwa.js             # A2HS banner／自動刷新／下拉刷新／SW 註冊
   utils.js           # 裝置/顯示模式判斷
   visitor.js         # 訪客計數
 api/share.js         # 分享連結 OG meta 用的 serverless function

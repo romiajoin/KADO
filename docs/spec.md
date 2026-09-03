@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/08/31（v30.8）
+**最後更新：** 2026/09/03（v31）
 
 ---
 
@@ -21,7 +21,7 @@
 | 資料來源 | Google Sheet（發布為公開 CSV） |
 | 圖片託管 | Cloudinary |
 | 網站託管 | Vercel（免費） |
-| PWA | manifest.json + Service Worker（split caching，v21 新增） |
+| PWA | 已於 v31 移除；`sw.js` 保留自我卸載用途，見下方「PWA / 加到主畫面」 |
 | 字體 | Chiron GoRound TC（400/500/700）、Space Mono（統計數字）|
 | 訪客計數 | 自架 Cloudflare Worker + KV |
 | 數據分析 | Google Analytics 4（GA4） |
@@ -85,7 +85,7 @@
   - 桌機：置中 modal，`max-width: 480px; max-height: 80vh`
   - 手機：純 CSS media query 切成貼底單一高度 sheet，`max-height: 70vh`，**不做**拖曳/snap 手勢
 - 標題下方有一行署名「made by @yywggwyy」（Space Mono，灰字）
-- **z-index**：2300，蓋過 A2HS banner（2100）與篩選/排序 sheet（2200/2201）
+- **z-index**：2300，蓋過篩選/排序 sheet（2200/2201）（v31 起 A2HS banner 已移除，不再是這個排序考量的一部分）
 - **快取策略**：`changelog.json` 走 network-first（跟 Google Sheet 資料一樣），不落入殼層 cache-first 規則，確保只更新內容不動殼層檔案時，已安裝 PWA 的使用者也能看到新條目
 - GA4 事件：`changelog_open`／`changelog_close`，詳見下方事件表
 
@@ -115,12 +115,12 @@
 | `share_link_opened`（v24；v30.4 起限定永久ID精準比對成功） | 分享連結的 `?id=` 精準比對到永久ID | `machine_id`, `view`（map/grid）, `device` |
 | `share_link_legacy_fallback`（v30.6） | 永久ID比對失敗，退回比對 A 欄流水號有找到（舊格式連結），此時不自動開啟任何內容 | `machine_id`, `device` |
 | `share_link_target_missing`（v24） | 分享連結的 `?id=` 永久ID跟 A 欄流水號都找不到對應機台（已下架/刪除） | `machine_id`, `device` |
-| `a2hs_engagement_met` | 累計查看詳情達 3 次，或單次停留超過 20 秒（v21） | `reason`, `platform` |
-| `a2hs_banner_shown` | 加到主畫面 banner 顯示（v21） | `platform` |
-| `a2hs_banner_dismissed` | 關閉加到主畫面 banner（v21） | `reason` |
-| `a2hs_prompt_result` | Android 原生安裝視窗的使用者選擇（v21） | `outcome`, `platform` |
-| `pwa_installed` | PWA 安裝完成（v21） | `platform`, `source` |
-| `pwa_launch_mode` | 每次載入判斷 standalone/browser 開啟（v21） | `mode` |
+| `a2hs_engagement_met`（v21，⚠️ v31 停用） | ~~累計查看詳情達 3 次，或單次停留超過 20 秒~~——不再觸發 | `reason`, `platform` |
+| `a2hs_banner_shown`（v21，⚠️ v31 停用） | ~~加到主畫面 banner 顯示~~——不再觸發 | `platform` |
+| `a2hs_banner_dismissed`（v21，⚠️ v31 停用） | ~~關閉加到主畫面 banner~~——不再觸發 | `reason` |
+| `a2hs_prompt_result`（v21，⚠️ v31 停用） | ~~Android 原生安裝視窗的使用者選擇~~——不再觸發 | `outcome`, `platform` |
+| `pwa_installed`（v21，⚠️ v31 停用） | ~~PWA 安裝完成~~——不再觸發 | `platform`, `source` |
+| `pwa_launch_mode`（v21，⚠️ v31 停用） | ~~每次載入判斷 standalone/browser 開啟~~——不再觸發 | `mode` |
 | `sort_change` | 選擇排序方式並實際套用（v22） | `sort_key`, `device` |
 | `geo_permission_result` | 距離排序觸發定位請求後取得結果（v22） | `geo_result`, `device` |
 | `changelog_open`（v27） | 打開更新日誌 modal/sheet | `source`（header_desktop/header_mobile_list）, `device` |
@@ -165,16 +165,13 @@
 - **刻意不含排序狀態**：距離排序依賴分享者當下的定位座標，帶進連結對收件人沒有意義
 - 落地時（帶著上述參數開啟網址）會還原搜尋框內容與篩選 pill 選中狀態，並依 `view` 參數切換列表/地圖模式
 
-### PWA / 加到主畫面（A2HS Banner，v21 新增）
-- **manifest.json**：`name`/`short_name`、`theme_color: #0066FF`、`background_color: #F2F2F7`、`display: standalone`；圖示 `icon-192.png`/`icon-512.png`/`icon-maskable-512.png`（maskable 沿用一般版本，logo 本身留白已在安全區內）、另加 `apple-touch-icon.png`
-- **Service Worker（`sw.js`）**：靜態殼層 cache-first、Google Sheets CSV network-first（離線時 fallback 快取）、Cloudinary 圖片與地圖圖磚 cache-first，用版本號 cache name 管理更新；v22 修正 `CACHE_VERSION` 長期卡在 `v1` 未更新的問題（改版後需清瀏覽記錄才看得到最新內容），改為對齊 release 版號並搭配 `vercel.json` 的 no-cache header，詳見 `CLAUDE.md`；`CACHE_VERSION` 現為 `'v30.7'`，版本歷程詳見 `CLAUDE.md`「Service Worker 快取版本管理」
-- **自動刷新（v24 新增）**：回到前景（`visibilitychange`/`focus`）時，若距上次成功抓取超過 30 分鐘（`REFRESH_THROTTLE_MS`），靜默刷新資料（不清空列表、失敗只顯示 toast）；節流是為了避免短時間切來切去連打 API
-- **下拉刷新（v24 新增）**：列表模式（`#gridView`）捲到頂端時，往下拉超過 60px 放開即觸發刷新；繞過節流（使用者主動操作，應無條件給最新資料）；地圖模式不支援（手勢衝突）
-  - v26.1 修正：spinner 曾因 CSS animation 起點跟殘留 inline transform 疊在一起，導致轉圈動畫視覺上卡住不動、體感是「卡一下就直接收回」，詳見 `CLAUDE.md`
-- **顯示時機**：累計「查看詳情」次數（grid 詳情 + 地圖單一 marker）達 3 次（跨造訪永久累計，存 `localStorage`），或單次瀏覽停留超過 20 秒，兩者擇一觸發；不依賴瀏覽器自身的 `beforeinstallprompt` 時機判斷或 iOS 固定延遲
-- **平台差異**：Android 按鈕觸發原生安裝流程（仍受限於瀏覽器何時發出 `beforeinstallprompt`）；iOS + Safari 顯示教學文案；iOS + 非 Safari（LINE/IG/FB 內嵌瀏覽器）先引導「用 Safari 開啟」
-- **關閉退避**：關過 3 次永久不再顯示，每次關閉後間隔 14 天才再問一次
-- **版位**：手機 `bottom: 12px`、左右各留 10px；平板（≥768px）固定寬 400px 置中；`z-index: 2100`，蓋過手機地圖模式 bottom sheet（`2000`）
+### PWA / 加到主畫面（v21 新增，v31 移除）
+**已於 v31 移除**：不再支援加到主畫面／離線快取／安裝提示 banner。移除原因與細節見 `CLAUDE.md`「PWA / 加到主畫面」章節（保留完整歷史記錄，方便之後想重新啟用時參考）。`manifest.json`／`icons/` 資料夾原檔案保留但未連結；`sw.js` 改寫成自我卸載版本，讓已經安裝過的舊使用者下次連網時自動清乾淨、退回一般網頁模式。
+
+### 自動刷新 + 下拉刷新（v24 新增，v31 起與 PWA 脫鉤）
+這兩個功能原本因為「PWA standalone 模式沒有瀏覽器重整按鈕」而生，但功能本身跟裝置是否安裝成 PWA 無關，一般瀏覽器分頁開著一樣作用；v31 PWA 功能移除時保留，程式碼從 `js/pwa.js` 搬進 `js/main.js`，邏輯未變。
+- **自動刷新**：回到前景（`visibilitychange`/`focus`）時，若距上次成功抓取超過 30 分鐘（`REFRESH_THROTTLE_MS`），靜默刷新資料（不清空列表、失敗只顯示 toast）；節流是為了避免短時間切來切去連打 API
+- **下拉刷新**：列表模式（`#gridView`）捲到頂端時，往下拉超過 60px 放開即觸發刷新；繞過節流（使用者主動操作，應無條件給最新資料）；地圖模式不支援（手勢衝突）
 
 ### 地圖（23.6N, 121.0E），預設縮放層級 8
 - 地標圖示（v20 重做）：自訂圓形 `L.divIcon`，抽卡機橘色、相卡機綠色，圖示沿用 type-badge 同一套 SVG；不再是 🎰 emoji

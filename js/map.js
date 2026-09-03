@@ -156,7 +156,6 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
           });
 
           if (locs.length === 1) {
-            window.a2hsRecordCardView && window.a2hsRecordCardView();
             if (isMobileMapLayout()) {
               map.closePopup(); // 關掉任何還留著的 cluster popup，不然它會卡在「已開啟」狀態，之後點回去沒反應
               openMobileSheetSummary(locs[0]);
@@ -619,7 +618,6 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
             source: 'map_sidebar_list',
             device: getDeviceType(),
           });
-          window.a2hsRecordCardView && window.a2hsRecordCardView();
           if (isMobileMapLayout()) {
             openMobileSheetSummary(loc, { fromListLevel: sheetLevel });
           } else {
