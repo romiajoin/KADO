@@ -152,9 +152,10 @@
 
 ### 首頁 /?id= 動態 OG Meta（v30.7 新增，`api/index.js`）
 - 先前只有走 `/api/share?id=xxx` 才有依機台換圖的 OG 標籤；若使用者把（真人點擊分享連結後跳轉到的）`/?id=xxx` 網址列直接複製再分享一次，爬蟲抓到的是純靜態頁面，完全沒有 OG 標籤
-- 透過 `vercel.json` 的 rewrite 把 `/` 導去新增的 `api/index.js` 處理：依 `id` 查永久ID對應的分享圖，動態塞進 `index.html` 的 `<head>` 再回傳完整 SPA 內容（不是導轉頁），`js/main.js` 讀取 URL 參數顯示機台的邏輯不受影響
+- 透過 `vercel.json` 的 rewrite 把 `/` 導去新增的 `api/index.js` 處理：依 `id` 查永久ID對應的分享圖，動態塞進 SPA 殼層的 `<head>` 再回傳完整 SPA 內容（不是導轉頁），`js/main.js` 讀取 URL 參數顯示機台的邏輯不受影響
 - 只有帶 `id` 時才會打 Google Sheet，一般首頁流量不受影響
 - `sw.js` 同步調整：`/` 帶 `id` 參數的請求視為 no-cache（內容依 Sheet 資料動態變化，不能被殼層快取卡住舊版縮圖）
+- **⚠️ 這支自 v30.7 上線後其實從未真的生效過，直到 v30.9 才修好**：Vercel 的路由優先權是「同路徑的靜態檔案 > `vercel.json` 的 rewrites」；當時專案根目錄的 SPA 殼層仍叫 `index.html`，`/` 這個請求會直接命中這個靜態檔案，`"/" -> "/api/index"` 的 rewrite 規則永遠排不到、`api/index.js` 形同虛設——不管是 `/?id=` 分享連結，還是後面 v30.8 的「搜尋結果分享連結」，社群平台爬蟲抓到的其實一直是完全沒有 og:image 的空殼。修法：把 SPA 殼層檔案改名成 `app.html`（`api/index.js` 改讀這個檔名），讓 `/` 不再對應任何實體檔案，rewrite 才會真的接手；`events.html` 裡原本寫死的 `href="index.html"` 一併改成 `href="/"`，`sw.js` 的 `SHELL_ASSETS` 移除已經不存在的 `/index.html`（否則 `cache.addAll()` 會因為抓不到而讓整個 SW 安裝失敗），`vercel.json` 新增 `/index.html -> /` 的 301 redirect 相容舊的直接連結
 
 ### 搜尋結果網址即時同步（v30.8 新增）
 - **不是分享按鈕，是網址列本身就是分享連結**：使用者搜尋或套用篩選時，網址列即時同步更新（`history.replaceState`，不新增瀏覽紀錄、不觸發真正的頁面跳轉），複製網址列貼給別人，對方點開就會看到同樣的搜尋結果，不需要額外點擊任何東西產生連結

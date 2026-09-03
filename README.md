@@ -3,7 +3,7 @@
 社群共建的台灣 IP 抽卡機 / 快閃活動查詢網站，資料由管理者維護於 Google Sheet，網站自動讀取並顯示。
 
 **🔗 [查看網站](https://kadotw.vercel.app/)**  
-**最後更新：** 2026/08/31（v30.8）
+**最後更新：** 2026/09/03（v30.9）
 
 ---
 
@@ -48,7 +48,7 @@
 ### 檔案結構
 
 ```
-index.html          # 進入點
+app.html            # 進入點（SPA 殼層，刻意不叫 index.html——見下方 rewrite 說明）
 style.css            # 全部樣式
 js/
   main.js            # 資料載入／view 切換／篩選＋排序協調
@@ -62,7 +62,7 @@ js/
   utils.js           # 裝置/顯示模式判斷
   visitor.js         # 訪客計數
 api/share.js         # 分享連結 OG meta 用的 serverless function
-api/index.js          # 首頁 /?id= 動態 OG meta 用的 serverless function（v30.7 新增，透過 vercel.json rewrite 攔截 /）
+api/index.js          # 首頁 / 動態 OG meta 用的 serverless function（v30.7 新增，透過 vercel.json rewrite 攔截 /；讀取 app.html 塞入 og 標籤後回傳）
 changelog.json       # 更新日誌內容（v27 新增，跟 manifest.json 同層）
 worker.js            # 訪客計數 Cloudflare Worker 原始碼（v30 新增，獨立部署到 Cloudflare，不隨 Vercel 走）
 wrangler.toml        # 上述 Worker 的部署設定（KV binding、Worker 名稱）

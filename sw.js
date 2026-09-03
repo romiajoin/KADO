@@ -7,14 +7,19 @@
 // 版本號 bump 時（CACHE_VERSION 改掉），install/activate 會自動清掉舊快取，
 // 不需要手動處理使用者端的快取殘留。
 
-const CACHE_VERSION = 'v30.8';
+const CACHE_VERSION = 'v30.9';
 const SHELL_CACHE = `cardradar-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `cardradar-data-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cardradar-images-${CACHE_VERSION}`;
 
+// SPA 殼層檔案已改名 app.html，拿掉清單裡的 '/index.html'——這個路徑不再對應
+// 任何實體檔案（也沒有 rewrite 接住它，只有一條 redirect 導回 '/'），若還留著，
+// install 階段的 cache.addAll() 打到這個路徑只會拿到 3xx/404，導致整個
+// SHELL_CACHE 安裝失敗。'/' 本身維持在清單內，經 vercel.json 的 rewrite 導去
+// api/index.js 動態產生內容，一樣可以被 cache-first 正常快取。
+// （CACHE_VERSION 本身依你們規則先不動，等你們自己決定何時 bump）
 const SHELL_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/favicon.svg',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -49,7 +54,7 @@ function isDataRequest(url) {
 
 // changelog.json 內容會不定期增加新條目，但改動它通常不會跟著 bump CACHE_VERSION
 // （不是shell殼層檔案的改版），所以要跟 Google Sheet 資料一樣走 network-first，
-// 不然已安裝 PWA 的使用者要等到下次真的動到 index.html/css/js 才會看到新的更新日誌紀錄
+// 不然已安裝 PWA 的使用者要等到下次真的動到 app.html/css/js 才會看到新的更新日誌紀錄
 function isChangelogRequest(url) {
   return url.pathname.endsWith('/changelog.json');
 }

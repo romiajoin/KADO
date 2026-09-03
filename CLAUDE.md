@@ -83,6 +83,7 @@ Token 只顯示一次，外洩需立即到 GitHub Settings 撤銷並重新產生
 - **只改指定範圍**：改 A 不要動 B，除非明確說要一起改
 - **layout / 動畫 bug 要先看截圖**：光看程式碼很難診斷視覺問題
 - **不要用 `sed -i` 處理含 SVG 的區塊**：會破壞 path data，改用 Python 或 str_replace
+- **不要自行修改 `sw.js` 的 `CACHE_VERSION`**：改完程式碼後不要順手 bump 版本號，除非明確說要 bump——還沒要 commit/deploy 時 bump 版本號沒有意義
 
 ---
 
@@ -342,6 +343,14 @@ function fitOptionsWidth(container) {
 - **v30.5**：倒數 badge 擴及 grid modal／地圖詳情面板（見上方「倒數 Badge」）。動到 `js/main.js`／`js/map.js`，`CACHE_VERSION` 從 `'v30.4'` bump 到 `'v30.5'`
 - **v30.6**：`v30.4` 上線後發現舊格式分享連結（A 欄流水號）被誤判成「已下架」——原本只比對 `permId`，沒有 fallback 機制，導致修正上線前產生、機台其實還在的舊連結全部顯示已下架 toast。補上三段式判斷（永久ID精準比對才自動開啟／A 欄 fallback 比對到但刻意不開啟／兩者都找不到才顯示已下架），新增 `share_link_legacy_fallback` GA 事件；`api/share.js` 也補上同樣的 fallback（但保留採用 fallback 結果，跟 `main.js` 刻意安靜處理不同，見上方「分享連結永久ID機制」的不對稱設計說明）。動到 `js/main.js`、`api/share.js`；`main.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.5'` bump 到 `'v30.6'`
 - **v30.8**：搜尋結果的網址列即時同步，見上方「搜尋結果網址即時同步」章節。只動到 `js/main.js`（`syncSearchUrl()`／`applyFilters()` 內呼叫／`?id=` 判斷的 `else` 分支還原邏輯），不涉及任何新 UI 元素，`index.html`／`style.css` 沒有變動；`main.js` 在 `SHELL_ASSETS` catch-all 範圍內，`CACHE_VERSION` 從 `'v30.7'` bump 到 `'v30.8'`
+- **v30.9**：修好 `v30.7` 引入的 `api/index.js`（首頁 `/` 動態 OG meta）其實從未真的生效過的 bug。**根因**：Vercel 的路由優先權是「同路徑的靜態檔案 > `vercel.json` 的 `rewrites`」；專案根目錄一直有一個 `index.html`，導致 `/` 這個請求永遠直接命中這份靜態檔案，`"/" -> "/api/index"` 的 rewrite 規則排不到，`api/index.js` 形同虛設——不管是 `/?id=` 分享連結還是 `v30.8` 的搜尋結果分享連結，社群平台爬蟲抓到的其實一直是完全沒有 `og:image` 的空殼（實測 `https://kadotw.vercel.app/` 完全沒有任何 `og:` 標籤，反而沒有撞名靜態檔案的 `/api/share` 是正常的，藉此定位到根因）。**修法**（Vercel 官方文件建議的標準解法：把撞名的靜態檔案或 function 其中一個改名）：
+  - `index.html` → `app.html`（改名，讓 `/` 不再對應任何實體檔案，rewrite 才會真的接手）
+  - `api/index.js`：`fs.readFileSync` 改讀 `app.html`
+  - `events.html`：原本寫死的兩處 `href="index.html"` 改成 `href="/"`
+  - `sw.js`：`SHELL_ASSETS` 移除已經不存在的 `/index.html`（不移除的話 `cache.addAll()` 會因為抓不到 404/redirect 而讓整個 SW 安裝失敗）
+  - `vercel.json`：拿掉多餘的 `/index.html` header 規則（檔案已不存在），新增 `/index.html -> /` 的 301 redirect 相容舊的直接連結
+  - `README.md`／`docs/spec.md` 同步更新
+  - `main.js`／`app.html` 本身沒有變動，但 `sw.js`／`vercel.json` 都動了，屬於殼層層級的修正，`CACHE_VERSION` 從 `'v30.8'` bump 到 `'v30.9'`
 
 ### 倒數 Badge（v23 新增，v30.5 擴及詳情彈窗）
 - `getEndingBadge(loc)`/`getEndDate(loc)`：解析 `limited` 欄位（`"2026/06/24～2026/07/12"` 格式，取「～」後半段）算出結束日，跟今天比較天數差

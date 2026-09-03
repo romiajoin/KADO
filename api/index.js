@@ -1,13 +1,21 @@
 // api/index.js
 //
 // 攔截首頁 `/` 的請求（見 vercel.json 的 rewrite），目的是讓直接分享
-// `/?id=永久ID` 這種網址時，Threads/LINE/Discord 等爬蟲也能看到依機台
-// 動態換的分享圖，不只是走 /api/share 那條路徑才有圖。
+// `/?id=永久ID`、以及搜尋結果分享連結（`/?q=...`）這類網址時，
+// Threads/LINE/Discord 等爬蟲也能看到 OG 預覽圖，不只是走 /api/share 那條路徑才有圖。
 //
 // 跟 api/share.js 不同：這支不是導轉頁，回傳的就是真正的 SPA 內容本身
-// （原封不動的 index.html），只是動態把 og:title / og:image 等標籤塞進
+// （原封不動的 app.html），只是動態把 og:title / og:image 等標籤塞進
 // <head>。真人訪客看到的頁面內容完全不受影響，js/main.js 原本讀取
-// window.location.search 裡 id/view 參數的邏輯也不用改。
+// window.location.search 裡 id/view/q 等參數的邏輯也不用改。
+//
+// ⚠️ SPA 殼層檔案刻意命名為 app.html、不叫 index.html：Vercel 的路由優先權是
+// 「同路徑的靜態檔案 > vercel.json 的 rewrites」——如果專案根目錄真的有一個
+// index.html，`/` 這個請求會直接被當成靜態檔案原樣回傳，vercel.json 裡
+// `"/" -> "/api/index"` 的 rewrite 規則永遠不會被觸發（這支 function 形同虛設）。
+// 這正是 v30.7 上線後，`/` 的 OG 標籤實際上從未生效過的根因（不管是 `/?id=`
+// 還是 `/?q=` 分享連結，社群平台爬蟲抓到的都是完全沒有 og:image 的殼層）。
+// 把 SPA 殼層改名成 app.html，讓 `/` 不再對應任何實體檔案，rewrite 才會真的接手。
 
 const fs = require('fs');
 const path = require('path');
@@ -86,7 +94,7 @@ module.exports = async function handler(req, res) {
   const id = req.query.id || '';
   const ogImageUrl = await getShareImageUrl(id);
 
-  const htmlPath = path.join(process.cwd(), 'index.html');
+  const htmlPath = path.join(process.cwd(), 'app.html');
   const html = fs.readFileSync(htmlPath, 'utf-8');
   const finalHtml = html.replace('</head>', buildOgTags(ogImageUrl));
 
