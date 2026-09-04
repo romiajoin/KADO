@@ -4,7 +4,7 @@
 
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
-**⚠️ v32.1（本檔案這次更新時）尚未 commit／push**：`git status` 顯示 `app.html`／`js/filters.js`／`js/grid.js`／`js/main.js`／`js/map.js`／`js/sort.js`／`js/utils.js`／`style.css` 有未 commit 的修改，另外新增了 `events.html`／`events.css`／`js/events.js`／`js/events-data.js`／`js/events-header.js`／`js/events-scroll.js`／`js/filter-widget.js`／`js/sort-widget.js` 八個尚未 `git add` 的新檔案——全部是同一個「活動行事曆」新功能（見下方「活動行事曆頁（events.html）」章節）；v32.1 是 v32 之上的小改動（「最後更新」時間改成比較機台/活動兩分頁，見「最後更新元素」），同樣尚未 commit。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先 `./push.sh`。
+**⚠️ v32.1（本檔案這次更新時）尚未 commit／push**：`git status` 顯示 `app.html`／`js/filters.js`／`js/grid.js`／`js/main.js`／`js/map.js`／`js/sort.js`／`js/utils.js`／`style.css` 有未 commit 的修改，另外新增了 `events.html`／`events.css`／`js/events.js`／`js/events-data.js`／`js/events-header.js`／`js/events-scroll.js`／`js/filter-widget.js`／`js/sort-widget.js` 八個尚未 `git add` 的新檔案——全部是同一個「活動行事曆」新功能（見下方「活動行事曆頁（events.html）」章節）；v32.1 是 v32 之上的小改動（「最後更新」時間改成比較機台/活動兩分頁，見「最後更新元素」；另外修正月曆沒有活動時最後一週異常延伸的版面 bug，見「月曆卡片高度：flex:1 → flex:0 1 auto」），同樣尚未 commit。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先 `./push.sh`。
 
 - 網站：https://kadotw.vercel.app/
 - Repo：https://github.com/romiajoin/KADO
@@ -609,6 +609,19 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 ### 月曆捲動重做：放棄「星期列 sticky + 整頁捲動」（v32）
 舊版讓月曆整頁（`.events-page-body`）自己捲動、星期列用 `position: sticky` 貼在頂端；實測不管桌機還是手機，快速滑動時都會看到已經捲過去的日期列殘影疊到星期列上面。試過 `translateZ(0)` 強制合成圖層、`clip-path` 換掉 `overflow:hidden` 兩個方向都修不好，錄影確認問題出在 sticky 本身跟整頁捲動的節奏對不齊，不是圓角或圖層的問題。改成月曆本身是固定高度的元件：`.events-layout`／`.events-calendar-col` 都是 `flex: 1; min-height: 0` 一路把剩餘高度往下傳，星期列跟工具列維持一般文件流的自然高度（`flex-shrink: 0`，本來就不會被捲動經過，完全不需要 sticky），真正捲動的只有月曆格線本身（`.events-day-grid`，自己 `overflow-y: auto`），滑動完全不會碰到 sticky 機制，殘影問題不會再出現。`.events-page-body` 自己保留的 `overflow-y: auto` 只是保險（理論上不會觸發），不是主要捲動來源。
 
+### 月曆卡片高度：flex:1 → flex:0 1 auto（v32.1 修正）
+**問題**：Gill 回報「月曆沒有活動時，最底部那一 row 應該顯示預設的高度（和其他 row 一樣），而不是無限延伸到底部」——實測在篩選出 0 筆活動的月份最明顯（例如篩到一個完全沒有活動的縣市），月曆最後一週會被拉出一大段跟其他週高度完全不成比例的空白，看起來像 bug。
+
+**根因**：`.events-day-grid`（月曆真正的捲動容器）原本是 `flex: 1`，等同 `flex: 1 1 0%`——關鍵在 `flex-basis: 0%`：瀏覽器分配高度時完全不看內容實際多高，一律從 0 開始撐滿 `.events-calendar-col` 剩下的所有可視高度。內容（週列）不夠多時，這個框依然會被撐到跟版面剩餘空間一樣高，多出來的空白留在框「裡面」；疊加上直向格線背景畫在整個 `.events-day-grid` 上、`.events-week-row:last-child` 又刻意拿掉了下框線，空白區跟最後一週之間沒有任何視覺分界，看起來就像最後一週本身無限延伸到卡片底部。
+
+**修法**（`events.css` + `js/events.js`）：
+- `js/events.js` 的 `renderEventsCalendar()`：渲染出來的週列不再直接塞進 `#eventsDayGrid`，改包一層 `<div class="events-weeks">`，`.events-weeks` 才是真正裝週列內容的容器
+- `events.css` 新增 `.events-weeks { flex-shrink: 0; padding-bottom: 20px; background-image: repeating-linear-gradient(...); }`：把直向格線背景跟原本「捲到底留 20px」的 `padding-bottom` 都搬到這一層——`flex-shrink: 0` 讓這層永遠維持自然內容高度，格線只會畫到實際週列的高度為止，不會延伸到卡片以外
+- `.events-day-grid` 的 `flex: 1` 改成 `flex: 0 1 auto`（grow:0／shrink:1／basis:auto）：`basis:auto` 讓框的「預設大小」直接等於 `.events-weeks` 的實際內容高度，`grow:0` 代表內容不夠高時不會被硬撐大，卡片自然收到跟內容一樣高，多出來的空間變成 `.events-calendar-col` 的留白（在白色卡片邊框「外面」，不是卡片內部的空白）；保留 `flex-shrink:1` + 既有的 `min-height:0`，內容真的超過可視高度時（月份週數多、展開全部橫幅…），這個框還是會被壓縮到剩餘可視空間、靠 `overflow-y:auto` 內部捲動，不影響「`.events-day-grid` 是唯一真正捲動來源」的設計（見上方「月曆捲動重做」）
+- 順手拿掉 `.events-week-row:last-child { border-bottom: none; }`，讓最後一週跟其他週一樣保留下框線——即使極端情況下卡片底部仍留一點空白（例如 flex-shrink 壓縮到剩餘空間但還沒完全貼齊），也有清楚的框線跟內容分界，不會再誤判成「這一列」的一部分
+
+**驗證方式**：`flex: 1`（`flex-basis: 0%`）vs `flex: 0 1 auto`（`flex-basis: auto`）是純粹的 CSS flexbox 基礎行為差異，不依賴資料狀態；本機起 dev server 開 `events.html`，月曆篩到 0 筆活動的縣市/月份，量測 `.events-day-grid` 高度應該緊貼 `.events-weeks` 的實際內容高度（週列高度總和 + 20px padding-bottom，手機版還要再加 `--events-top-bar-height` 這份合法的頂部留白），跟卡片可視高度只會差 1px 內的邊框誤差。
+
 ### `.events-filter-row`：篩選列 ⇄ 月曆導航 ⇄ 拼貼排列切換共用同一列（v32）
 `.filter-bar`（篩選 pill）、`.events-toolbar`（月曆上/下個月導航）、`.events-collage-toolbar`（拼貼排列切換）合併成同一列 `.events-filter-row`，彼此垂直置中；`.events-toolbar`／`.events-collage-toolbar` 互斥顯示（依 `state.view` 用 `[hidden]` 切換），視覺上是同一個「靠右」的位置，同一時間只會出現其中一個。`.events-toolbar`／`.events-collage-toolbar` 都用 `flex-shrink: 0`（不能設 `flex:1`/stretch，不然會把對方的位置搶走或把整列擠爆），靠 `.filter-bar` 的 `flex:1` 把它們推到最右邊。
 
@@ -642,6 +655,62 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 | `sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result`（`gaPrefix: 'events_sort'`） | 排序面板互動（`sort-widget.js` 內部送出，實際事件名稱是 `events_sort_panel_open` 等） | 同首頁對應事件 |
 
 **待辦**：以上全新事件（含新增的 `events_month_nav`／`events_week_expand`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫（`page_id`／流程見下方「外部工具筆記」）。
+
+### 活動分類色碼（EVENT_CATEGORIES，events.css）
+`events-data.js` 的 `EVENT_CATEGORIES` 直接在程式碼裡寫死 hex 值，對應 Google Sheet 活動分頁 B 欄（類型）的字串值必須完全一致：POP-UP `#EA580C`、展覽 `#0066FF`、其他 `#FFCF48`、CAFÉ／餐廳 `#16A34A`、特典 `#7C3AED`。這組色碼同時被月曆橫幅左側色條（`.events-bar::before`）、分類 badge（`.events-bar-cat`／`.events-detail-type-badge`，靠 `--bar-color` 這個 CSS 變數帶進來）、拼貼卡片跟詳情 Modal 共用，改色只要動 `events-data.js` 一處。
+
+### FAB（`.events-link`）幾個容易忽略的 CSS 細節
+- **`gap: 0` 不是 `6px`**：收合狀態下 `.events-label` 雖然靠 `max-width:0` 視覺上沒有寬度，但 flex `gap` 是「item 之間」的間距，不看 item 本身是不是 0 寬——圓形按鈕裡只要還有兩個 flex item（icon + label），就會多插入一段看不見的間距，`justify-content:center` 會把「icon + 這段空隙」一起置中，icon 本身被往左推大約半個 gap，肉眼看起來偏心。改成收合時 `gap:0`，只在 hover 展開成膠囊時才透過 `@media (hover:hover) and (min-width:769px)` 的規則加回 `gap:6px`（多加 `min-width:769px` 是為了避免觸控筆電這類 `hover:hover` 為真但螢幕窄的裝置，在手機排版下誤展開成長條膠囊）。
+- **`body.map-view .events-link { display:none }`**：地圖模式下桌機側邊欄貼在畫面左側、手機是貼底 bottom sheet，FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet 內容卡在一起；地圖模式本身也已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口。`events.html` 沒有地圖／列表模式的差異，這條規則對它不生效。
+
+### `.filter-bar` 選擇器範圍修正（events.css，v40 重構遺留的死規則）
+`.events-filter-row .filter-bar { background:none; padding:0; }` 這條規則原本寫的是 `.events-calendar-col .filter-bar`，是 v40 重構（搜尋列／filter-row／星期列從 `.events-calendar-col` 搬進 `#eventsTopBar`／`.events-topbar-controls`）之前的舊選擇器。重構後 `#eventsFilterBar` 已經不在 `.events-calendar-col` 底下了，這條規則變成完全比對不到任何東西的死規則——安靜地失效、不報錯、肉眼也看不出差異，直到實測才發現：`filter-bar` 自己的左右 20px padding 疊加在外層 `.events-topbar-controls` 的 20px padding 上面，手機版第一個 pill 距離視窗左緣變成 40px（20+20），不是預期的 20px。改成 `.events-filter-row .filter-bar`，比對到現在實際包著 `#eventsFilterBar` 的容器，覆寫才真的生效。**教訓**：DOM 結構搬遷（v40 這類把區塊移進新 wrapper 的重構）之後，記得檢查原本綁在舊祖先選擇器上的規則有沒有變成死規則——CSS 對比對不到的選擇器不會有任何警告。
+
+### 月曆直向格線的數學推導（events.css，v32／v38.3 修正）
+月曆整個容器（`.events-day-grid`）背景用 `repeating-linear-gradient` 畫 7 等分直線，取代只在某一週或某個區塊補格線的做法——用 `background-image`（不是疊一層 element）的好處是繪製順序在子元素內容之下，日期格子、活動橫幅的底色會蓋住線，只有真正空白的地方才透出來，不會有「一條線硬生生切過一個橫跨多天的活動橫幅」的畫面。
+
+**v38.3 修正週期算法**：原本週期直接用 `calc(100% / 7)`，沒扣掉 `.events-week-daynums` 那個真實 grid 用掉的 6 條 1px gap，算出來的週期比真正的「一欄 + 一條縫」寬了大約 5px，且越右邊的線累積誤差越多。月曆全版寬（~960px+）時 5px 幾乎看不出來，但「當日活動」drawer 往左推、月曆欄位變窄之後，同樣 5px 的絕對誤差佔每一欄的比例變大很多，才會看起來「格線歪掉、往左偏移」——不是推版面本身的 bug，是這條背景假格線本來就跟真實 grid 欄寬對不齊，只是變窄後才被看見。推導：真實欄寬 `c = (100% - 6px) / 7`（7 欄 6 條 1px gap），一欄+一條縫的週期 `P = c + 1px = (100% + 1px) / 7`，改成 `repeating-linear-gradient` 的 4 個 `calc()` 分子要一起改，不能只改其中一個。滑鼠 hover 整欄外框（`.events-week-hover-col`，見「月曆橫幅列排版與 hover 外框」段落）的 `left`／`width` 是 JS 用同一套算法算的 inline style，跟這裡的背景格線共用同一個推導，兩邊要一起改。
+
+### 橫幅色條與分類 badge 的 CSS 技巧
+- **`.events-bar::before` 用偽元素畫左側色條，不用 `border-left`**：原本用 `border-left: 4px solid` 畫色條，圓角會完全跟著 `.events-bar` 本身的 `border-radius` 走——CSS Backgrounds §5.5 規定同一邊兩個角半徑加總超過該邊長度時瀏覽器會等比縮小，色條只有 4px 寬，算出來的圓角被壓得極小、幾乎看不出來，跟淡色底框的圓角視覺上不像同一組設計。改成獨立偽元素後，色條自己的 `border-radius`（8px，跟外層 bar 同一個數字）不受外層 box 尺寸牽連，兩端會是完整看得出來的圓角。
+- **`--bar-color` 沒餵到會整條宣告失效，不是掉回預設色**：`.events-bar-cat`／`.events-detail-type-badge` 的 `border`／`color` 都吃 `var(--bar-color)`，這個變數必須設在該元素自己身上或繼承自外層祖先——沒有這個變數，`var()` 解析直接失敗，整條宣告作廢，不是掉回某個預設色，視覺上會變成沒有框線、文字退回瀏覽器預設黑色。月曆橫幅（`barHtml()`）是設在外層 `.events-bar` 上讓子元素繼承；當日活動 drawer 卡片（`eventGroupCardHtml()`）沒有這層外層元素，直接設在 `.events-bar-cat` 自己身上（`style="--bar-color:${color}"`）。之後新增用到 `.events-bar-cat`／`.events-detail-type-badge` 的地方，一定要記得餵這個變數。
+
+### 拼貼列表 grid 列高崩塌 bug（events.css，v34.1）
+`.collage-list-grid` 資料筆數一多（events 目前實測 200+ 筆），`grid-auto-rows: auto` 算出來的列高會被壓成幾乎 0px，卡片整張被 `.loc-card-grid` 的 `overflow:hidden` 裁成一條細線。根因是這個容器過去自己是 `flex:1; min-height:0` 的 flex item，本身高度被撐成「容器剩餘空間」這種明確值（不是自然高度），列數又遠超過這個高度；瀏覽器算 `auto` 列高退回去看每個格子項目的「自動最小尺寸」，而 `.loc-card-grid` 剛好設了 `overflow:hidden`（給 16px 圓角用）——CSS 規格規定 `overflow` 非 `visible` 的元素這個自動最小尺寸算 0，三個條件疊在一起，列高就被壓到接近 0。修法：把 `flex:1`／`min-height:0`／`overflow-y:auto` 搬到外層新增的 `.collage-list-wrap`，`.collage-list-grid` 自己變回自然高度（跟首頁 `.grid` 在 `#gridView` 裡的情況一致，本來就不會踩到這個問題），`grid-auto-rows: min-content` 留著當保險不拆掉。
+
+### 拼貼「當日活動」drawer 往左推的實作機制（補充「拼貼「當日活動」drawer 開合動畫對齊」）
+drawer 開啟時只有星期列（`#eventsWeekdayRow`）跟月曆導航（`.events-nav-group`）要跟著月曆格線往左縮，header／搜尋列／篩選列要維持全寬——不能整個 `#eventsTopBar` 套 `margin-right`（那樣會連 header 都一起縮）。做法是只在這兩個子元素自己身上加 `margin-right: 360px`（`body.day-events-open` 且桌機寬度時）：`#eventsWeekdayRow` 是 `#eventsTopBar` 裡一個普通 block 元素（`width:auto`），加 `margin-right` 只會讓它自己變窄，不影響同一容器裡的其他兄弟元素；`.events-nav-group` 則是 `.events-toolbar`（`flex-shrink:0`，寬度貼齊內容含這個 margin）裡唯一的 flex item，效果是 `.events-toolbar` 整體寬度不變（右邊界仍在 `#eventsTopBar` 右緣），但 `.events-nav-group` 的可視內容（按鈕＋月份標籤）在框內往左移動 360px，視覺上跟月曆格線／星期列對齊，不用去動 `.events-toolbar`／`.events-filter-row` 本身（那樣會連 `.filter-bar`／篩選 pill 一起被牽動）。
+
+### 其他 UI 細節設計理由
+- **城市切換 tab（`.events-city-tabs`）不共用篩選 pill 的 class**：視覺上跟 `.filter-pill` 同一套「藥丸形、active 實心藍底白字」語言，但獨立一份 class（不共用 `.filter-pill`），因為篩選 pill 的行為（開合面板／清除）跟這裡單純的「切換顯示內容」不一樣，共用容易互相牽動。
+- **當日活動 drawer 卡片改單欄（`.events-card-list`，v39.1）**：這份清單只用在 400px 寬的 drawer 裡，兩欄會讓每張卡片窄到 180px 左右，標題/地點容易換行擠壓，單欄比較好讀；drawer 卡片同時拿掉了縮圖（v39），只剩文字內容，一次要看好幾張、寬度有限，純文字掃視速度更快。
+- **「已結束」用降低整張卡片透明度，不加灰階濾鏡**：`.collage-card.is-ended`／`.loc-card-grid.is-ended` 只降 `opacity` 到 0.6，圖片保留原色，比灰階濾鏡更柔和——卡片數量多時拼貼牆不會有一半整片變灰。兩種卡片語言共用同一顆 `.is-ended` class，數值也要一致，不然切換排列方式時「已結束」深淺會不一樣。
+
+
+### `buildGroups()` 合併多地點活動時取最寬日期範圍（events.js）
+理論上同一組（標題＋期間相同）的多個地點，`start`／`end` 應該完全一致，但仍寫成「取涵蓋範圍最大的一份」（`if (ev.start < group.start) group.start = ev.start`／`if (ev.end > group.end) group.end = ev.end`），防呆萬一表單裡兩個地點日期填得不完全一樣，篩選／月曆判斷仍以最寬的範圍為準，不會因為其中一列填錯幾天就整組消失或提早結束。
+
+### `findGroupByKey()` 刻意查 `allEvents`（未篩選）而不是 `visibleGroups()`
+詳情 Modal／分享連結還原用的查找都吃**未經篩選**的全量資料，理由跟 `ensureGroupKeyMap()` 一樣：如果改查目前篩選後的 `visibleGroups()`，使用者篩選條件剛好不含這組活動的分類時，點開一個已經開著的詳情 Modal 或分享連結進來會找不到對應的 group，變成無法開啟。
+
+### 月曆橫幅排列演算法：`weekEventBars()`（events.js）
+每一週橫幅的擺放分兩步：先算每個 group 在這一週實際涵蓋的欄位範圍（`colStart`／`colSpan`，只算這一週裡真的有顯示日期的欄，不延伸到留白格），再依「開始欄位小的排前面，同樣開始欄位時橫跨天數多的排前面」排序，最後用 `rowLastCol` 陣列（記錄每個 row 目前佔用到的最後一欄）做簡單的區間排程：找第一個「目前佔用範圍在這個 bar 開始欄位之前」的 row 放進去，找不到就開新 row。這個排序規則是為了讓橫跨多天的活動優先卡進較前面的 row，畫面看起來比較穩定，不會因為 bar 順序不同而每次重新整理都跳來跳去。
+
+### `.events-week-hover-col` 疊在橫幅「上層」是靠 DOM 順序，不是 z-index
+`renderWeekRow()` 刻意把 `.events-week-hover-col` 這個絕對定位圖層放在 `.events-week-bars` **之後**：兩者都是 `position` 非 `static`、`z-index` 都是 `auto` 的元素，同一個堆疊層級（stacking context）裡沒有設 `z-index` 時，堆疊順序完全照 DOM 順序決定，後出現的畫在上面。這樣 hover 外框才會蓋在橫幅色塊「上層」，滑鼠移過去能看到完整一圈框線，不會被橫幅擋住切成一段一段。之後如果要調整這幾個元素的疊放順序，記得這裡沒有用 `z-index` 控制，改 DOM 順序就會直接影響視覺結果。
+
+### 觸控裝置刻意不綁 hover 監聽（`isDesktopPointer()`，events.js）
+日期格子的 `mouseenter`／`mouseleave`（整欄外框效果）只在 `isDesktopPointer()`（`hover:hover` 且 `pointer:fine`）為真時才綁定，觸控裝置完全不綁，不是綁了但沒效果——因為部分瀏覽器會在 `tap` 時補一次「幽靈」`mouseenter` 事件，觸控裝置上硬綁這組事件會有不一致的行為（外框忽現忽不現），乾脆整組跳過。
+
+### 拼貼列表卡片沿用首頁 `.loc-card-grid`，不是另一套卡片語言（`eventListCardHtml()`，events.js）
+拼貼「列表」排列（跟「格狀」是完全不同的卡片語言）直接沿用首頁地點列表卡片的完整 class 組合（`.loc-card-grid`／`.card-top`／`.card-badge-row`／`.type-badge`／`.ending-badge`／`.card-name`／`.card-limited`／`.card-tags`／`.tag`／`.card-actions`／`.btn-expand`，全部定義在 `style.css`，兩個頁面都有載入），連互動邏輯都比照首頁 `grid.js` 的 `renderGrid()`：卡片本身不能點，只有「詳情」按鈕可以點才開彈窗；卡片上不放縮圖（首頁列表卡片本身也沒有圖，圖只在「詳情」彈窗裡）、不放「在 Google Maps 查看」連結（只留在詳情 Modal 裡，那裡本來就有，多地點時還能切城市 tab 各自查看，卡片這層不需要重複一份）。首頁的 `.type-badge` 只有 `.gacha`／`.photocard` 兩種寫死的顏色，這裡活動類型有五種（`EVENT_CATEGORIES`），改用 inline style 帶入對應色碼，視覺上仍是同一顆「白底、色框、色字」的 badge，只是顏色來源不同。多地點活動的 tag 只列縣市（不重複的城市各一顆），不顯示場地；單一地點才顯示場地——因為多地點時「場地」這個欄位每個地點都不一樣，不適合放在合併後的單一卡片上。
+
+### `syncEventsPanelOffset()`：drawer 頂部對齊錨點依檢視模式切換（events.js）
+「當日活動」drawer 頂部要跟月曆頂部切齊，量的原本一直是 `.events-page-body`（真正在捲動的月曆格線容器）的 `getBoundingClientRect().top`。v32 把星期列（`#eventsWeekdayRow`）搬進 `#eventsTopBar` 之後，星期列已經不算在 `.events-page-body` 裡面，如果還是只量 `.events-page-body` 的頂部，drawer 頂部會比「星期列＋格線」這一整塊月曆卡片的視覺頂部低一截（矮了一個星期列的高度），跟月曆對不齊。修法是依目前是不是月曆檢視動態換錨點：月曆檢視時（星期列沒有 `hidden`）改成量星期列自己的頂部，讓 drawer 跟整張月曆卡片（星期列+格線）齊高；拼貼檢視星期列本來就是 `hidden`，這時沒有「月曆」可以對齊，維持原本量 `.events-page-body` 頂部的行為。跟首頁 `--top-bar-height` 是同一種坑（訪客 banner 非同步出現、高度晚一步變化），同樣改用 `ResizeObserver` 盯 `header`／`.visitor-banner`／`#eventsWeekdayRow` 本身的尺寸變化，不用為每個成因各自補監聽。
+
+### 活動詳情 Modal 城市頁籤：哪些欄位共用、哪些因地點而異（`locationSectionHtml()`，events.js）
+同一組有多個地點（例如台北／高雄同時開）時，標題／圖片／分類／期間只畫一份（合併後在最外層），只有場地、地址、營業時間、更多資訊連結、Google Maps 連結這幾項因地點而異，改放進城市 tab 切換的內容區塊（`#eventDetailLocationSlot`）裡，切 tab 只換這個 slot 的內容，不整份重繪 Modal——跟月曆橫幅、卡片是同一套「合併共通欄位，只有真的因地點而異的內容才分開」的設計原則。
+
 
 ---
 

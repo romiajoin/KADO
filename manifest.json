@@ -1,7 +1,7 @@
 {
   "name": "KADO！抽卡機在哪",
   "short_name": "KADO",
-  "description": "全台抽卡機／相卡機資訊持續更新中！",
+  "description": "抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
