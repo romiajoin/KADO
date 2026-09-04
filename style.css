@@ -728,7 +728,7 @@
       }
       .view-btn .label { display: none; }
       .view-btn { padding: 8px 16px; }
-      header { padding: 20px; justify-content: flex-start; gap: 16px; }
+      header { padding: 20px 20px 20px 12px; justify-content: flex-start; gap: 16px; }
       .header-info { display: none; }
       .header-right .report-link,
       .header-right .changelog-link,
@@ -808,6 +808,13 @@
       .sidebar-header { padding: 10px 16px 6px; }
       .location-list { padding: 0px 20px 00px 20px; }
       .leaflet-popup-content { max-height: 40vh !important; overflow-y: auto !important; overflow-x: hidden !important; }
+    }
+
+    /* 窄螢幕（例如 iPhone SE／小尺寸 Android，<412px）：header-right 那顆活動入口圖示
+       擠進來後標題沒地方喘息，副標題「抽卡機在哪」先收起來，只留「KADO！」品牌字，
+       避免標題被壓到換行或截斷。 */
+    @media (max-width: 412px) {
+      .logo h1 span { display: none; }
     }
 
     /* ===== Mobile ===== */

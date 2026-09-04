@@ -3,7 +3,7 @@
 社群共建的台灣 IP 抽卡機 / 快閃活動查詢網站，資料由管理者維護於 Google Sheet，網站自動讀取並顯示。
 
 **🔗 [查看網站](https://kadotw.vercel.app/)**  
-**最後更新：** 2026/09/03（v31）
+**最後更新：** 2026/09/04（v32.1，活動行事曆頁尚未 push 上線，見下方說明）
 
 ---
 
@@ -25,6 +25,11 @@
 - 🔍🔗 搜尋或篩選機台時，網址列會即時同步當下的條件，複製網址列就能分享這個搜尋結果，對方點開會直接看到同樣的結果，不用另外點分享按鈕（v30.8 新增）
 - 📋 回報表單，讓社群協助新增地點或回報錯誤
 - 🗒️ 更新日誌，桌機 header／手機列表模式皆有連結可查看歷次版本更新內容
+- 🗓️ **全新「活動行事曆」頁面**（`events.html`，v32 開發中，尚未 push 上線）：整理全台動漫快閃店／聯名展覽／簽名會／CAFÉ 聯名／特典活動等實體活動
+  - 月曆檢視（依日期瀏覽，同一天多場活動可展開清單）／總覽檢視（拼貼卡片，格狀或列表排列可切換）雙模式
+  - 依「類型／IP／縣市」篩選、關鍵字搜尋、依「結束日／距離」排序（跟首頁篩選/排序 UI 共用同一套元件，見 `CLAUDE.md`）
+  - 活動詳情彈窗：同一檔活動在多城市開時可切換城市頁籤、支援多圖輪播、一鍵分享
+  - 首頁與行事曆頁互通：畫面右下角常駐一顆 FAB（floating action button）可一鍵互相切換
 
 ---
 
@@ -48,18 +53,26 @@
 ### 檔案結構
 
 ```
-app.html            # 進入點（SPA 殼層，刻意不叫 index.html——見下方 rewrite 說明）
-style.css            # 全部樣式
+app.html             # 首頁進入點（SPA 殼層，刻意不叫 index.html——見下方 rewrite 說明）
+events.html          # 活動行事曆頁面（v32 開發中，獨立頁面，不共用 app.html 的 JS 模組鏈）
+style.css            # 首頁／行事曆頁共用的全站樣式（header、卡片、彈窗等共用元件）
+events.css           # 活動行事曆頁專屬樣式（月曆格線、拼貼卡片、FAB 等）
 js/
   main.js            # 資料載入／view 切換／篩選＋排序協調／回到前景自動刷新／下拉刷新（v31 起，原本在 pwa.js）
   map.js             # 地圖／marker／側邊欄／mobile bottom sheet
-  filters.js         # 篩選 UI
-  sort.js            # 排序 UI + 定位權限
+  filters.js         # 首頁篩選狀態與資料（渲染/開合邏輯已抽到 filter-widget.js）
+  sort.js            # 首頁排序狀態串接（渲染/開合邏輯已抽到 sort-widget.js）
+  filter-widget.js   # 通用篩選 UI 元件（pill／桌機下拉／手機 bottom sheet），首頁與行事曆頁共用
+  sort-widget.js     # 通用排序 UI 元件（按鈕／dropdown／bottom sheet + 定位權限），首頁與行事曆頁共用
   grid.js            # 列表卡片渲染 + 排序邏輯
   scroll.js          # mobile 列表模式：頂部工具列滑動隱藏/顯示（v26 新增）
   changelog.js       # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
-  utils.js           # 裝置/顯示模式判斷
+  utils.js           # 零依賴共用工具：裝置判斷、縣市清單、倒數 badge、圖片網址轉換、距離計算（首頁與行事曆頁都會用到的邏輯集中在這）
   visitor.js         # 訪客計數
+  events.js          # 活動行事曆頁面邏輯：月曆／總覽（拼貼格狀・列表）渲染、篩選/排序/搜尋串接、詳情彈窗、分享
+  events-data.js     # 活動資料層：讀取 Google Sheet「活動」分頁 CSV，解析成 events.js 用的資料結構
+  events-header.js   # 行事曆頁專用：只負責抓「最後更新」時間戳並寫進 DOM，不載入 main.js
+  events-scroll.js   # 行事曆頁專用：手機版頂部工具列滑動隱藏/顯示（比照 scroll.js，但要同時盯 3 種子模式的捲動容器）
 api/share.js         # 分享連結 OG meta 用的 serverless function
 api/index.js          # 首頁 / 動態 OG meta 用的 serverless function（v30.7 新增，透過 vercel.json rewrite 攔截 /；讀取 app.html 塞入 og 標籤後回傳）
 changelog.json       # 更新日誌內容（v27 新增，跟 manifest.json 同層）
@@ -68,6 +81,8 @@ wrangler.toml        # 上述 Worker 的部署設定（KV binding、Worker 名�
 permanent-id.gs      # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，
                       # 不在這個 repo 的 push.sh 流程裡，見「分享連結永久ID機制」）
 ```
+
+> `filters.js`／`sort.js` 目前是「串接首頁 DOM 用的薄層」，實際的 UI 渲染／開合／量寬／GA 事件都在 `filter-widget.js`／`sort-widget.js` 這兩個通用元件裡，`events.js` 建立自己的另一份實例共用同一套邏輯。細節與抽出來的理由見 `CLAUDE.md`。
 
 ---
 
@@ -94,16 +109,20 @@ permanent-id.gs      # 分享連結永久ID機制的 Apps Script（v30.4 新增�
 | O | 營業時間 | 如：週一至週日 11:00–22:00 | ❌ |
 | P | 分享圖 | 社群平台分享預覽用的專屬縮圖，Cloudinary 網址（v28 新增） | ❌ |
 | Q | 永久ID | 分享連結真正比對的依據，新增資料時由 Apps Script（`permanent-id.gs`）自動產生，一旦產生絕對不能手動修改或重複使用（v30.4 新增） | 系統自動填入 |
-| R | 最後更新時間 | 只有第一列（標題列下方那一列）會填，網站抓這一格顯示「最後更新：」文字 | 僅第一列 |
+| R | 最後更新時間 | 只有第一列（標題列下方那一列）會填。**v32.1 起**：網站會同時抓活動分頁 P 欄的時間戳一起比較，兩者取較新的一個顯示（見下方「活動行事曆分頁」） | 僅第一列 |
 
 > 緯度經度可以用 Google Maps 點地點後取得。
 > 欄位為空時，對應資訊不顯示，不影響版面。
+
+### 活動行事曆分頁（`events.html` 用，另一個分頁）
+
+活動行事曆頁讀的是同一份 Google Sheet 裡**另一個分頁**（不是上面機台那張），欄位順序：`id, 類型, 活動標題, 期間限定, 場地, 縣市, 地址, 緯度, 經度, 作品(IP), 圖片, 更多資訊連結, 營業時間`（M～O 欄位保留但目前功能用不到；**P 欄「最後更新時間」v32.1 起啟用**，網站會跟機台分頁 R 欄比較，取較新的一個顯示，寫入方式與 R 欄相同——只有第一列會填）。類型欄（B 欄）的值必須完全對應 `js/events-data.js` 的 `EVENT_CATEGORIES`（目前是 POP-UP／展覽／其他／CAFÉ・餐廳／特典活動），改了其中一邊要兩邊同步改，否則舊資料會退回灰色分類、篩選也篩不出來。同一檔活動在多個縣市開時，每個地點各自填一列，網站會依「標題＋期間」自動合併成同一組顯示。詳細欄位對照與分組機制見 `CLAUDE.md`／`spec.md`。
 
 ---
 
 ## 資料更新流程
 
-1. 在 Google Sheet 新增或編輯資料
+1. 在 Google Sheet 新增或編輯資料（機台資料、活動資料分別在各自的分頁）
 2. 網站重新整理後自動讀取，不需修改程式碼
 
 ### 新增圖片

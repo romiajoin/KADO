@@ -5,7 +5,7 @@
 // 同時同步 grid 跟地圖」的協調中心。
 // =============================================
 
-import { getDeviceType } from './utils.js';
+import { getDeviceType, driveUrlToImage } from './utils.js';
 import { renderGrid, sortLocations, getEndingBadge } from './grid.js';
 import { renderSortControl, closeDesktopSortPanel, closeMobileSortSheet } from './sort.js';
 import { buildFilterOptions, renderFilterBar, FILTER_CONFIG, filterState } from './filters.js';
@@ -13,6 +13,9 @@ import { map, renderMapLocations, initMap, initBottomSheet, applySheetLevel, she
 import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
 
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
+    // 活動行事曆分頁（events-data.js 的 EVENTS_SHEET_CSV_URL 同一份，這裡重複定義一份是延續專案既有「各檔案自帶所需常數」的慣例）——
+    // 只用來比對「最後更新時間」P 欄，不解析活動內容，機台頁不需要活動資料本身。
+    const EVENTS_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=1540199365&single=true&output=csv';
 
     // 回到前景自動刷新的節流門檻：距上次抓取超過這個時間才真的打 API
     export const REFRESH_THROTTLE_MS = 30 * 60 * 1000; // 30 分鐘
@@ -81,16 +84,6 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
     let prevSearchKw = '';          // 上一次的搜尋關鍵字，用來偵測「從無到有」／「從有到無」這兩個轉折
     let sheetLevelBeforeSearch = null; // 搜尋開始那一刻，sheet 原本停在哪一層；清空搜尋時要還原成這個值，
                                         // 而不是看清空當下 sheet 剛好停在哪（那可能是搜尋自己展開的 mid，不是使用者手動拉的）
-    export function driveUrlToImage(url) {
-      if (!url) return '';
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-      if (url.includes('res.cloudinary.com')) {
-        return url.replace('/upload/', '/upload/w_800,q_auto,f_auto/');
-      }
-      return url;
-    }
-
     // =============================================
     // 🔧 解析 CSV 單列
     // =============================================
@@ -123,6 +116,18 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       return `${datePart} ${String(h).padStart(2, '0')}:${mStr}`;
     }
 
+    // 同一格原始字串轉成可比較的 Date，供「機台分頁 R 欄」跟「活動分頁 P 欄」兩個最後更新時間比大小用；
+    // 格式跟預期不符就回傳 null，呼叫端會 fallback 成只信任機台分頁那欄（跟改動前行為一致，不會因為活動分頁格式跑掉而整個「最後更新」失效）。
+    function parseUpdateDate(raw) {
+      const match = (raw || '').match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(上午|下午)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (!match) return null;
+      const [, yStr, mStr, dStr, ampm, hStr, minStr, sStr] = match;
+      let h = parseInt(hStr, 10);
+      if (ampm === '下午' && h !== 12) h += 12;
+      if (ampm === '上午' && h === 12) h = 0;
+      return new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, parseInt(dStr, 10), h, parseInt(minStr, 10), sStr ? parseInt(sStr, 10) : 0);
+    }
+
     // =============================================
     // 📥 載入 Google Sheet
     // =============================================
@@ -135,12 +140,37 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
         document.getElementById('grid').innerHTML = '<div class="empty-state">⏳ 載入資料中...</div>';
       }
       try {
-        const response = await fetch(SHEET_CSV_URL);
+        // 活動分頁只用來比「最後更新時間」，這條 fetch 失敗不該讓整個機台清單載入失敗，
+        // 所以獨立 catch 成 null，後面比較時當作「沒有活動分頁時間可比」處理。
+        const [response, eventsResponse] = await Promise.all([
+          fetch(SHEET_CSV_URL),
+          fetch(EVENTS_SHEET_CSV_URL).catch(() => null),
+        ]);
         const csvText = await response.text();
         const rows = csvText.trim().split('\n');
 
         const firstRow = parseCSVRow(rows[1] || '');
-        const lastUpdated = firstRow[17] || '';
+        const machineLastUpdatedRaw = firstRow[17] || ''; // R 欄
+
+        // 活動分頁 P 欄（機台分頁 CLAUDE.md 早已放棄的「跳過不解析」在這裡例外：
+        // 只取這一格文字比較時間，不解析整份活動資料，避免拖進 events-data.js 那條鏈）
+        let eventsLastUpdatedRaw = '';
+        if (eventsResponse && eventsResponse.ok) {
+          const eventsCsvText = await eventsResponse.text();
+          const eventsRows = eventsCsvText.trim().split('\n');
+          const eventsFirstRow = parseCSVRow(eventsRows[1] || '');
+          eventsLastUpdatedRaw = eventsFirstRow[15] || ''; // P 欄
+        }
+
+        const machineDate = parseUpdateDate(machineLastUpdatedRaw);
+        const eventsDate = parseUpdateDate(eventsLastUpdatedRaw);
+        let lastUpdated = machineLastUpdatedRaw;
+        if (machineDate && eventsDate) {
+          if (eventsDate > machineDate) lastUpdated = eventsLastUpdatedRaw;
+        } else if (!machineDate && eventsDate) {
+          lastUpdated = eventsLastUpdatedRaw;
+        }
+
         const lastUpdatedText = lastUpdated ? '最後更新：' + to24Hour(lastUpdated) : '社群共建 · 持續更新';
         ['lastUpdated', 'listLastUpdated'].forEach(id => {
           const el = document.getElementById(id);
@@ -608,6 +638,7 @@ window.closeGridModal = closeGridModal;
 window.trackGmapsClick = trackGmapsClick;
 window.shareLocation = shareLocation;
 
+
 // =============================================
 // 🔄 回到前景自動刷新（節流）
 // 從 pwa.js 搬過來——這兩塊（自動刷新／下拉刷新）跟「有沒有安裝成 PWA」無關，
@@ -687,7 +718,6 @@ window.addEventListener('focus', maybeAutoRefresh);
     setIndicatorHeight(0);
   });
 })();
-
 
     // 初始化
     initTopBarScroll();

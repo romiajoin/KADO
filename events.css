@@ -1,0 +1,1271 @@
+/* =============================================
+ * events.css — 活動行事曆
+ * 分類色（EVENT_CATEGORIES）直接在 events-data.js 寫死 hex，對應表單 B 欄
+ * 實際分類值：POP-UP #EA580C／展覽 #0066FF／其他 #FFCF48／CAFÉ / 餐廳 #16A34A／特典 #7C3AED。
+ * ============================================= */
+
+/* ---------- header 入口按鈕（FAB） ----------
+ * 手機／桌機統一改成右下角常駐的浮動按鈕（FAB，v41 前手機版原本收在 header-right、
+ * 跟「列表／地圖」切換鈕放一起的純圖示外框按鈕，v41 起改成跟桌機同一種 FAB
+ * 呈現方式，維持全站一致）：預設是純圖示的實心藍色圓鈕，用 CSS position:fixed
+ * 讓它跟 DOM 位置脫鉤，所以 index.html／events.html 裡 <a id="eventsLink">／
+ * <a id="gachaMapLink"> 實際放在哪個位置都不影響呈現，本來就不占 header 版面空間。
+ * 滑鼠 hover 展開成帶文字的膠囊，只在滑鼠裝置（`hover:hover` 且桌機斷點）生效——
+ * 手機是觸控裝置，沒有 hover 這個互動狀態，維持單純的圓形 icon 鈕即可，不需要
+ * 額外處理「展開後怎麼收合」這種只有滑鼠才有的問題。
+ * 這顆按鈕現在純粹是連結，不做未讀提示（原本 events-data.js 的紅點邏輯已經拿掉）。
+ */
+
+.events-link {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* gap 預設 0，不是 6px：收合狀態下 .events-label 雖然靠 max-width:0 視覺上
+   * 沒有寬度，但 flex gap 是「item 之間」的間距，不看 item 本身是不是 0 寬，
+   * 只要有兩個 flex item 就會插入這段間距——icon 跟 label 之間還是會多出
+   * 6px 看不見的空隙，讓 justify-content:center 把「icon + 6px 空隙」這一整
+   * 塊拿去置中，icon 本身就會被往左推大約半個 gap（3px），視覺上偏左，
+   * 圓形按鈕裡的 icon 明顯沒有貼在正中央。gap 改成只在展開成膠囊時
+   * （見下面 hover 那個 media block）才加回來，收合狀態下只有一個 icon，
+   * 沒有第二個 item 需要留間距，置中才會準。 */
+  gap: 0;
+  width: 52px;
+  height: 52px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--fill-blue);
+  color: var(--fill-white);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 102, 255, 0.35);
+  transition: width 0.22s ease, padding 0.22s ease, background 0.15s ease, box-shadow 0.15s ease, gap 0.15s ease;
+}
+
+/* 地圖模式不顯示：index.html／app.html 地圖模式下，桌機側邊欄貼在畫面左側、
+ * 手機是貼底的 bottom sheet，FAB 固定在右下角的位置常常跟地圖右下角的
+ * Leaflet 內建控制項（zoom／attribution）或手機 bottom sheet 展開時的內容
+ * 卡在一起，體驗上會互相干擾；地圖模式本身也已經有明確的返回列表視圖入口
+ * （view-toggle 的列表鈕），不缺一個額外的固定入口。`body.map-view` 由
+ * js/main.js 的 setView() 切換（見 main.js），只有 app.html 會出現這個
+ * class，events.html 沒有地圖／列表模式的差異，這條規則對它不生效。 */
+body.map-view .events-link {
+  display: none;
+}
+
+.events-link svg { flex-shrink: 0; }
+
+.events-link .events-label {
+  display: inline-block;
+  max-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.22s ease, opacity 0.15s ease;
+}
+
+/* 只在滑鼠裝置（有 hover 能力）且桌機斷點才展開成膠囊——多加 min-width:769px
+ * 是為了避免「觸控筆電」這類 hover:hover 為真但螢幕窄的裝置，在手機排版下
+ * 誤展開成長條膠囊，跟手機單純圓鈕的設計意圖不符。 */
+@media (hover: hover) and (min-width: 769px) {
+  .events-link:hover {
+    width: 168px;
+    padding: 0 20px 0 16px;
+    gap: 6px;
+    background: #0052D6;
+    box-shadow: 0 10px 26px rgba(0, 102, 255, 0.45);
+  }
+
+  .events-link:hover .events-label {
+    max-width: 120px;
+    opacity: 1;
+    transition: max-width 0.22s ease, opacity 0.15s ease 0.05s;
+  }
+}
+
+/* ---------- events.html 頁面版型（獨立頁面，不是 modal，跟 index.html 共用 style.css 的 body/字型設定） ---------- */
+
+body.events-standalone {
+  background: var(--fill-gray6);
+  min-height: 100vh;
+}
+
+/* events.html 的 header 直接沿用 index.html 那顆（style.css 裡未加 scope 的
+ * header／.logo／.header-right／.header-info／.header-divider／.report-link／
+ * .changelog-link，包含手機斷點的收合規則），只是拿掉「列表／地圖」view-toggle，
+ * 所以不需要自己另外一套 header CSS。這裡只補一條：events.html 的 logo 是可以點
+ * 回首頁的 <a>，要蓋掉連結預設的底線。 */
+.events-logo-link {
+  text-decoration: none;
+}
+
+.events-page-body {
+  /* margin-right transition 時間曲線跟 .day-events-panel 滑入對齊，見 CLAUDE.md */
+  transition: margin-right 0.28s ease;
+  /* 放棄「星期列 sticky + 整頁捲動」（殘影問題），改月曆固定高度、格線本身捲動，詳見 CLAUDE.md「月曆捲動重做」 */
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  /* top padding 由 .events-filter-row 的 margin-bottom 提供，見 CLAUDE.md */
+  padding: 0 20px 0px;
+}
+
+/* 補回 events-search-row/filter-row/weekday-row 原本從 .events-page-body 拿到的 padding，見 CLAUDE.md */
+.events-topbar-controls {
+  padding: 12px 20px 0px 20px;
+}
+
+/* 手機滑動隱藏 padding-top 補償規則寫在本檔案最後面（selector specificity 相同，靠寫在後面覆蓋舊規則），詳見 CLAUDE.md「#eventsTopBar 的實際範圍與踩過的坑」 */
+
+/* ---------- 月曆版面：flex column，.events-calendar-col 用 flex:1 撐滿剩餘高度 ---------- */
+.events-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 工具列／星期列維持自然高度，月曆格線用 flex:1 吃掉剩下高度自己捲動 */
+.events-calendar-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- 月曆工具列 ---------- */
+
+.events-toolbar {
+  /* justify-content:space-between 現已無實際作用（裡面只剩一個 .events-nav-group），保留不影響版面 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0; /* v2：跟星期列一樣維持自然高度，不被 flex 容器擠壓 */
+}
+
+/* .events-toolbar 用 flex-shrink:0 被 .filter-bar 的 flex:1 推到最右邊，跟 .events-collage-toolbar 互斥顯示同一位置 */
+.events-filter-row .events-toolbar {
+  flex-shrink: 0;
+}
+
+/* 手機版月曆模式：靠 .events-toolbar 吃滿 width:100% 讓 flex-wrap 自動換行，不用真的搬動 DOM，詳見 CLAUDE.md */
+@media (max-width: 768px) {
+  .events-filter-row {
+    flex-wrap: wrap;
+  }
+
+  .events-filter-row .events-toolbar {
+    width: 100%;
+  }
+
+  /* 只在 .events-toolbar 換行顯示時才縮短 margin-bottom（:has() + :not([hidden]) 排除拼貼模式），見 CLAUDE.md */
+  .events-filter-row:has(> .events-toolbar:not([hidden])) {
+    margin-bottom: 12px;
+  }
+}
+
+.events-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.events-nav-group button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  color: var(--fill-gray-64);
+}
+
+/* 活動資料從 2026/05 開始，鎖住最早可翻到的月份（js/events.js 的
+   MIN_MONTH），上一頁按鈕到底時停用並轉淡，跟月份標籤右邊的下一頁按鈕
+   （不受限制，永遠可點）做出視覺區隔。 */
+.events-nav-group button:disabled {
+  cursor: default;
+  opacity: 0.32;
+}
+
+.events-month-label {
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 96px;
+  text-align: center;
+  color: var(--fill-black);
+}
+
+/* 類型 filter 改用跟首頁機台／IP／縣市同一套 pill + 桌機下拉面板 + 手機
+ * bottom sheet 元件（js/filter-widget.js），樣式直接沿用 style.css 既有的
+ * .filter-bar／.filter-pill／.filter-panel／.filter-sheet-*，這裡不用再寫
+ * 一份色塊 chip 樣式。style.css 的 .filter-bar 是照首頁 #topBar 那組灰底
+ * 搜尋列的間距寫的（左右各 20px padding、灰底），這裡覆寫掉 padding／背景，
+ * 讓 filter-bar 貼齊外層容器（.events-filter-row，v40 起改為 .events-toolbar
+ * 那排的 wrapper，見 events.html）的邊界，垂直間距改由 .events-filter-row
+ * 自己的 margin-bottom:20px 提供。
+ *
+ * ⚠️ 選擇器範圍修正：這裡原本寫的是 `.events-calendar-col .filter-bar`，
+ * 是 v40 重構（搜尋列／filter-row／星期列從 .events-calendar-col 搬進
+ * #eventsTopBar／.events-topbar-controls，見 events.html v40 註解）之前
+ * 的舊選擇器，重構後 #eventsFilterBar 已經不在 .events-calendar-col 底下
+ * 了，這條規則變成完全比對不到任何東西的死規則——安靜地失效，沒有報錯，
+ * 肉眼也看不出差異，直到有人實際測量才發現：filter-bar 自己的左右 20px
+ * padding 疊加在外層 .events-topbar-controls 的 20px padding 上面，
+ * 手機版第一個 pill 距離視窗左緣變成 40px（20+20），不是預期的 20px。
+ * 改成 `.events-filter-row .filter-bar`，比對到現在實際包著 #eventsFilterBar
+ * 的容器，覆寫才會真的生效。 */
+.events-filter-row .filter-bar {
+  background: none;
+  padding: 0;
+}
+
+/* v37：搜尋框（.search-box，沿用 index.html／style.css 既有元件與樣式，這裡
+ * 不覆寫 .search-box 本身，只讓外面這層容器貼齊欄位左右邊，跟同一欄裡其他
+ * 區塊（filter-bar／星期列／月曆格線）的間距慣例一致）。手機斷點下
+ * .search-box-mobile 原本就是 width:100%（style.css 的 max-width:720px
+ * 規則，未加 scope，這裡沿用不用重寫）。 */
+.events-search-row {
+  /* 新增活動數量 badge（.count-badge，跟 app.html 的 #countBadge 同一套元件）
+   * 貼右對齊，要讓這一排變成橫向排列——原本只有一顆 search-box（桌機／手機
+   * 互斥顯示），block 預設堆疊沒差，現在多了第二個常駐子元素才需要
+   * display:flex。.count-badge 自己已經有 margin-left:auto（style.css），
+   * 靠它自動貼到最右邊，這裡只要負責讓兩者同一行、垂直置中即可。 */
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 跟首頁 .toolbar 的 search-box／count-badge 間距一致 */
+  margin-bottom: 16px;
+  flex-shrink: 0; /* 跟 .events-toolbar／.events-weekday-row 同一套慣例：維持
+                     自然高度，不被 flex 容器擠壓——這樣它才會跟 index.html
+                     的 #topBar 一樣，捲動時「本來就不動」，不需要另外用
+                     position:sticky/fixed（events-day-grid 的註解記錄過
+                     sticky 在這個捲動節奏下會有殘影問題，見下方）。 */
+}
+
+/* v36.2：filter-bar 跟拼貼排列切換（.collage-layout-btn）同一列，垂直置中對齊
+ * （align-items:center），彼此平行不再各佔一行；filter-bar 吃掉剩餘寬度
+ * （flex:1 + min-width:0，讓裡面的 pill 群組在窄螢幕還能自己 overflow-x
+ * 捲動），排列切換按鈕維持自然寬度、貼右（flex-shrink:0，不參與置中對齊，
+ * 見 .events-collage-toolbar 也不需要再自己 justify-content:flex-end）。 */
+.events-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.events-filter-row .filter-bar {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- 月曆格線 ---------- */
+
+.events-weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--fill-white);
+  gap: 1px;
+  border: 1px solid var(--fill-white);
+  border-bottom: 1px solid var(--fill-gray5);
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  /* 拿掉 position:sticky（改成月曆固定高度、內部自己捲動，見 CLAUDE.md「月曆捲動重做」），flex-shrink:0 維持自然高度 */
+  flex-shrink: 0;
+}
+
+.events-weekday-row div {
+  background: var(--fill-white);
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--fill-black);
+  padding: 12px 0;
+}
+
+/* 一整週一列（.events-week-row）：上面是 7 天的日期數字（.events-week-daynums），
+ * 下面接一整排橫幅事件條（.events-week-bars，CSS Grid 7 欄）——每個活動一條
+ * （.events-bar），寬度依照它在這一週裡實際涵蓋的天數橫向延伸（用 grid-column
+ * start/span 定位，JS 算好欄位跟 row 直接寫成 inline style），同一週裡日期
+ * 重疊的活動分到不同 row 疊放，沒重疊的共用同一 row，row 數不固定、跟著這一
+ * 週最多同時有幾場重疊的活動一起長高。
+ * 同一週橫幅超過 MAX_VISIBLE_ROWS（events.js）條時，預設只顯示前幾條，底下
+ * 出現「全部顯示」／「部分顯示」（.events-week-toggle）可以展開／收合，
+ * 每一週各自獨立記住展開狀態（events.js 的 state.expandedWeeks）。 */
+
+.events-day-grid {
+  display: flex;
+  flex-direction: column;
+  background: var(--fill-white);
+  border: 1px solid var(--fill-gray5);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  /* 新的捲動來源（取代整頁捲動+sticky），見 CLAUDE.md「月曆捲動重做」 */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* v32：直向的日期分隔線本來只存在日期數字那一列（.events-week-daynums 靠
+   * gap:1px + 灰底「露縫隙」做出來的假格線，那個技巧只在那個 grid 容器內有
+   * 效），往下接的活動橫幅區（.events-week-bars）完全沒有格線，使用者反應
+   * 「格線只到一半就斷掉」。這裡直接在整個月曆容器（.events-day-grid，涵蓋
+   * 全部週）背景上，用 repeating-linear-gradient 畫 7 等分直線，取代只補
+   * 单一週或單一區塊的做法：
+   * - 用 background-image（不是疊一層 element）：CSS 的繪製順序背景本來就在
+   *   子元素內容之下，日期格子（.events-day-num-cell 白底不透明）、活動橫幅
+   *   （.events-bar 有底色）擋住的地方線會被蓋住看不到，只有真正空白的地方
+   *   （橫幅之間的空隙、沒有活動的格子）才會透出來——不會有「一條線硬生生
+   *   切過一個橫跨多天的活動橫幅」這種難看的畫面，多天活動的圓角橫幅還是
+   *   看起來是完整一條。
+   * - 用 calc(100% / 7) 當週期，7 欄跟 .events-week-daynums／.events-week-bars
+   *   的 grid-template-columns: repeat(7, minmax(0,1fr)) 對齊——這兩個
+   *   grid 容器左右都沒有額外的外距/padding（縮排是各自欄位內距，不影響欄
+   *   寬計算），所以跟這裡用整個 .events-day-grid 寬度算出來的 7 等分基準
+   *   一致，線的位置對得起來。 */
+  /* v38.3：週期從 calc(100% / 7) 改成 calc((100% + 1px) / 7)——原本的算法
+   * 沒扣掉 .events-week-daynums 那個真實 grid 用掉的 6 條 1px gap，算出來的
+   * 週期比真正的「一欄 + 一條縫」寬了一點點（誤差固定約 5px，越右邊的線
+   * 累積越多）。月曆全版寬（~960px+）時 5px 誤差幾乎看不出來，但 drawer
+   * 往左推、月曆欄位變窄之後，同樣 5px 的絕對誤差佔每一欄的比例變大很多，
+   * 才會看起來「格線歪掉、往左偏移」——不是推版面本身的 bug，是這條背景
+   * 假格線本來就跟真實 grid 欄寬對不齊，只是變窄後才被看見。
+   * 推導：真實欄寬 c = (100% - 6px) / 7（7 欄 6 條 1px gap），一欄+一條縫的
+   * 週期 P = c + 1px = (100% - 6px)/7 + 1px = (100% + 1px)/7，跟下面 4 個
+   * calc() 裡的分子要一起改，不能只改其中一個。 */
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc((100% + 1px) / 7 - 1px),
+    var(--fill-gray5) calc((100% + 1px) / 7 - 1px),
+    var(--fill-gray5) calc((100% + 1px) / 7)
+  );
+}
+
+.events-week-row {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--fill-gray5);
+}
+
+.events-week-row:last-child {
+  border-bottom: none;
+}
+
+/* 只包日期數字＋橫幅兩層 grid（不含「全部顯示」toggle），見 js/events.js
+ * renderWeekRow() 的說明——.events-week-hover-col 用 top:0;bottom:0 貼齊
+ * 這一層的高度，所以這層的邊界就是外框能往下延伸到的範圍。 */
+.events-week-body {
+  position: relative;
+}
+
+.events-week-daynums {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--fill-gray5);
+}
+
+.events-day-num-cell {
+  background: var(--fill-white);
+  padding: 8px 12px 4px;
+  min-height: 22px;
+}
+
+/* 只有當天有活動的格子才可以 hover／點擊，跟原本只有數字本身
+ * （.events-day-num.clickable）變色不同，這裡整格都給提示、可點擊範圍也
+ * 擴大到整格，不用精準點在小小的數字上。
+ * hover 效果：日期數字變藍（純 CSS，這裡）＋這一天整欄（日期格＋當週橫幅區
+ * 一路往下）浮現藍色外框（.events-week-hover-col，JS 控制，見
+ * js/events.js 的 onDayCellHoverEnter()／renderWeekRow() 的說明）。
+ * 排除 .today：「今天」的數字本來就是實心藍底圓章＋白字（見下面
+ * .events-day-num-cell.today .events-day-num），這裡的 hover 變色是把文字
+ * 改成藍色，兩個疊在一起會變成藍字疊藍底，數字整個看不見。 */
+.events-day-num-cell.has-events {
+  cursor: pointer;
+}
+
+.events-day-num-cell.has-events:hover:not(.today) .events-day-num {
+  color: var(--fill-blue);
+}
+
+.events-day-num-cell.pad {
+  background: var(transparent);
+}
+
+/* 整欄 hover 外框：見 js/events.js 的 onDayCellHoverEnter()。left／width 由
+ * JS 用跟背景直向格線（.events-day-grid 的 repeating-linear-gradient）同一套
+ * 算法設定 inline style，這裡只負責視覺樣式跟顯示/隱藏（.show）的過渡。 */
+.events-week-hover-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 0 transparent;
+  transition: box-shadow 0.15s;
+}
+
+.events-week-hover-col.show {
+  box-shadow: inset 0 0 0 1.5px var(--fill-blue);
+}
+
+/* 「今天」：日期數字改成藍色漸層圓章＋一點投影，跟其他天有區別但不搶戲。 */
+.events-day-num-cell.today {
+  background: var(transparent);
+}
+
+.events-day-num {
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fill-black);
+}
+
+.events-day-num.clickable {
+  cursor: pointer;
+}
+
+.events-day-num.clickable:hover {
+  color: var(--fill-blue);
+}
+
+.events-day-num-cell.today .events-day-num {
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: var(--fill-blue);
+  color: var(--fill-white);
+}
+
+.events-week-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 12px;
+}
+
+/* 每個活動一條橫幅：淡色底＋左側粗色邊條（同一套 EVENT_CATEGORIES 顏色），
+ * 用 --bar-color 這個 CSS 變數帶顏色進來（JS inline style 設定），底色用
+ * color-mix 從 --bar-color 淡化出來，不用另外準備一組淡色 token。內文「分類
+ * ｜標題」一行不換行，太長就用 ellipsis 省略（格子本來就矮，換行會被切）。 */
+.events-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  /* 左邊多留 4px（原本 border-left 佔的寬度）+ 4px 呼吸空間，讓文字不會貼著
+   * 下面 ::before 畫的色條；色條改用偽元素獨立畫，不再用 border-left（見下方
+   * ::before 說明），這裡只留位置。 */
+  padding: 6px 8px 6px 16px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bar-color) 8%, var(--fill-white));
+  font-family: inherit;
+  font-size: 11.5px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 左側色條（v?）：原本用 border-left: 4px solid 畫，圓角完全跟著 .events-bar
+ * 本身的 border-radius 走——因為色條只有 4px 寬，box 的圓角修正演算法
+ * （CSS Backgrounds §5.5：同一邊的兩個角半徑加總超過該邊長度時，瀏覽器會等比
+ * 縮小）會把色條的圓角壓得極小、幾乎看不出來，跟淡色底框的圓角視覺上長得
+ * 不像同一組設計。改成獨立的偽元素，色條自己的圓角（8px，跟外層 bar 同一個
+ * 數字）不受外層 box 尺寸牽連，兩端會是完整看得出來的圓角，而不是被壓扁的
+ * 直角。 */
+.events-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--bar-color);
+  border-radius: 8px;
+}
+
+/* 類型 badge（Figma「Frame 28」）：白底＋色框＋色字（outline 風格，跟主站
+ * 列表卡片的 .type-badge 同一套調性），沿用 --bar-color 這個 CSS 變數決定
+ * 框線／文字顏色。寬度不寫死（原稿是 44px 但長分類名如「CAFÉ / 餐廳」會被
+ * 截斷），靠 padding 隨文字自然撐開；高度也用 padding 撐出接近原稿 18px 的
+ * 視覺高度，不寫死 height。
+ * ⚠️ 用到這顆 class 的地方都要記得餵 --bar-color，不管是設在它自己身上還是
+ * 繼承自外層祖先元素——沒有這個變數，border／color 兩條宣告會直接失效（不是
+ * 掉回某個預設色，是整條 var() 解析失敗、宣告作廢），變成沒有框線、文字退回
+ * 瀏覽器預設黑色。月曆橫幅（js/events.js 的 barHtml()）是設在外層 .events-bar
+ * 上讓子元素繼承；當日活動 drawer 卡片（eventGroupCardHtml()）沒有這層外層
+ * 元素，直接設在 .events-bar-cat 自己身上（`style="--bar-color:${color}"`）。 */
+.events-bar-cat {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--fill-white);
+  border: 1px solid var(--bar-color);
+  border-radius: 8px;
+  color: var(--bar-color);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.events-bar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fill-black);
+  font-size: 16px;
+}
+
+.events-bar:hover {
+  filter: brightness(0.97);
+}
+
+.events-bar.selected {
+  box-shadow: inset 0 0 0 1.5px var(--bar-color);
+}
+
+.events-bar.selected .events-bar-title {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* 同一組（標題＋期間相同）涵蓋不只一個地點時（例如台北／高雄同時開），橫幅
+ * 右側掛一個「N 地」徽章，取代原本兩條標題完全一樣的橫幅疊在一起，見
+ * js/events.js 的 barHtml()／buildGroups()。實心底用 --bar-color＋白字——
+ * 跟 .events-bar-cat 現在的 outline 風格（白底／色框／色字）刻意不同，這裡
+ * 維持實心是為了跟橫幅右側的其他狀態徽章（例如倒數 badge）視覺份量一致。 */
+.events-bar-multi-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: var(--bar-color);
+  color: var(--fill-white);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.events-week-toggle {
+  display: flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 3px;
+  margin: 0 12px 12px 0;
+  padding: 0px 0px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--fill-black);
+  cursor: pointer;
+}
+
+.events-week-toggle:hover {
+  color: var(--fill-blue);
+}
+
+/* ---------- 活動詳情 Modal ----------
+ * Modal 本體（.grid-modal-overlay/.grid-modal-box）、標題／期間限定／地址／
+ * 底部 Google Maps 連結＋分享按鈕、圖片放最下面，全部直接沿用 style.css
+ * 既有的 .popup-*／.modal-* class 跟版面順序（跟抽卡機詳情彈窗 main.js
+ * openGridModal() 同一套視覺），這裡只補一顆疊在 close 按鈕同排的分類色
+ * badge（Figma 的「Frame 28」，見下面 .events-detail-type-badge）——用
+ * --bar-color 帶分類色進來，跟月曆橫幅（.events-bar）同一套做法。 */
+
+/* 內距、間距只用 #eventDetailContent 這個 id 覆寫，不動全站共用的
+ * .grid-modal-content／.modal-header，避免影響 index.html 那顆抽卡機 modal。
+ * 四周留白統一 16px（原本 .grid-modal-content 上方是 0）。 */
+#eventDetailContent {
+  padding: 16px;
+}
+
+/* 分類 badge 是 position:absolute（見下面 .events-detail-type-badge），不佔
+ * 文件流高度，圖片搬到 modal 最下面之後，標題變成第一個文件流內的元素，
+ * 沒有東西再幫忙把內容往下推、會被 badge／close 按鈕蓋到——所以在這裡補
+ * margin-top，數字沿用原本圖片那份的間距換算：16(#eventDetailContent
+ * padding-top，跟 close 按鈕 top 對齊) + 24(close 按鈕高) + 12(間距)，扣掉
+ * 已經算進 padding 的 16，margin-top 設 36。 */
+#eventDetailContent .modal-header {
+  margin-top: 36px;
+}
+
+.events-detail-image-wrap {
+  /* 圖片改放在 modal 最下面（跟抽卡機詳情彈窗 main.js openGridModal() 的
+   * imgHtml 同一個位置：badge／標題／資訊／操作列都在前面，圖片壓在最後），
+   * 不再是「跟分類 badge 同排、緊接在最上面」。margin-top:12px 沿用跟
+   * .popup-img-wrap（抽卡機 modal 的圖片容器）同一個間距慣例，銜接在
+   * .popup-actions 下面；不用 margin-bottom，最下面的留白交給
+   * #eventDetailContent 本身的 padding。 */
+  margin-top: 12px;
+}
+
+/* 分類 badge＋倒數 badge（v36 新增：跟抽卡機 modal 一樣要顯示倒數 badge）
+ * 這一排：跟 close 按鈕同一排、垂直置中對齊——不再疊在圖片上，改成
+ * position:absolute 相對 .grid-modal-box（跟 .grid-modal-close 同一個定位基準），
+ * top 跟 close 按鈕一樣是 16px（badge 高度跟 close 按鈕接近，兩者視覺上會置中
+ * 對齊），左邊留 16px；right 留 48px（close 按鈕 16(right)+24(寬)+8(間距)）避免
+ * 倒數 badge 太長時撞到 close 按鈕。兩顆 badge 用 flex 排在同一排、中間留 6px，
+ * 跟 .events-card-pills／.collage-card-pills 那幾個 pill 列同一個間距慣例。 */
+.events-detail-badge-row {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.events-detail-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: var(--fill-white);
+  border: 1px solid var(--bar-color);
+  border-radius: 8px;
+  color: var(--bar-color);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 同活動多地點時的城市切換 tab（events.js 的 cityTabsHtml）：跟 .filter-pill
+ * 同一套「藥丸形、active 實心藍底白字」語言，但獨立一份 class，不共用
+ * .filter-pill——那組是篩選面板專用，行為（開合面板／清除）跟這裡單純的
+ * 「切換顯示內容」不一樣，共用容易互相牽動。 */
+.events-city-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.events-city-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--fill-gray5);
+  border-radius: 9999px;
+  background: var(--fill-white);
+  color: var(--fill-gray-64);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.events-city-tab:hover { color: var(--fill-blue); }
+
+.events-city-tab.active {
+  background: var(--fill-blue);
+  border-color: var(--fill-blue);
+  color: var(--fill-white);
+}
+
+/* ---------- 清單 ---------- */
+
+.events-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.events-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fill-gray-64);
+  margin: 0 0 10px;
+}
+
+.events-card-list {
+  /* v39.1：改單欄——這份清單現在只用在 400px 寬的 drawer 裡（見上面 v39
+   * 拿掉縮圖的說明），兩欄會讓每張卡片窄到 180px 左右，標題/地點很容易
+   * 換行擠壓，單欄比較好讀。原本 <720px 斷點也是退回單欄，桌機這裡改了
+   * 之後那條規則變成重複，順手拔掉（見下面 @media max-width:720px 區塊）。 */
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* 不放縮圖（v39 拿掉 .events-card-thumb）：這份卡片只用在當日活動 drawer，
+ * 一次要看好幾張、寬度只有 400px，純文字掃視速度更快。拿掉縮圖後只剩
+ * .events-card-body 一個子元素，不需要再用 flex row 排兩塊、也不用留給
+ * 縮圖的 gap。 */
+.events-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--fill-blue-8);
+  cursor: pointer;
+}
+
+.events-card:hover {
+  border-color: var(--fill-blue);
+}
+
+.events-card.selected {
+  border-color: var(--fill-blue);
+  background: var(--fill-blue-8);
+  box-shadow: inset 0 0 0 1px var(--fill-blue);
+}
+
+.events-card-body {
+  min-width: 0;
+}
+
+.events-card-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* v39.2：跟月曆橫幅（.events-bar）的分類徽章合併成同一顆 .events-bar-cat
+ * （見上面該規則），不再各自維護一份「圓角膠囊」樣式——drawer 卡片跟月曆
+ * 橫幅現在共用同一顆方角徽章，改其中一邊樣式時兩邊會一起變。 */
+
+/* 倒數 badge 改沿用全站共用的 .ending-badge（style.css，首頁格狀卡片／地圖
+ * popup／拼貼列表卡片都是同一顆），不再各自定義一份 .events-countdown-pill
+ * ——同樣是「快結束」提示，字級、圓角、padding 全站要長一樣。 */
+
+/* 卡片版的「N 地點」標示：跟橫幅版（.events-bar-multi-badge）同一個概念，卡片
+ * 這裡沒有 --bar-color 可用（分類色已經被 .events-bar-cat 用掉了），改用藍
+ * token（跟站內其它「多選/次要資訊」提示同一套配色，例如篩選 pill 的 active
+ * 狀態）避免跟分類色混淆。 */
+.events-multi-pill {
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: var(--fill-blue-16);
+  color: var(--fill-blue);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.events-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--fill-black);
+}
+
+.events-card-venue {
+  font-size: 14px;
+  color: var(--fill-black);
+  margin-top: 8px;
+}
+
+.events-card-period {
+  font-size: 14px;
+  color: var(--fill-black);
+  margin-top: 8px;
+}
+
+/* 月曆／拼貼切換沿用首頁 .view-toggle／.view-btn；[hidden] 切換區塊需 !important（selector specificity 打平問題），見 CLAUDE.md「events.html」章節 */
+.events-toolbar[hidden],
+.events-weekday-row[hidden],
+.events-day-grid[hidden],
+.events-collage-toolbar[hidden],
+.events-collage-grid[hidden],
+.collage-list-wrap[hidden] {
+  display: none !important;
+}
+
+/* 拼貼格狀／列表切換：兩顆各自獨立的圖示按鈕，非循環按鈕，見 CLAUDE.md「月曆檢視 / 總覽（拼貼）檢視」 */
+.events-collage-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.collage-layout-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.collage-layout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--fill-gray-16);
+  border-radius: 999px;
+  color: var(--fill-gray-64);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.collage-layout-btn:hover {
+  color: var(--fill-blue);
+  border-color: var(--fill-blue);
+}
+.collage-layout-btn.active {
+  background: var(--fill-blue);
+  border-color: var(--fill-blue);
+  color: var(--fill-white);
+}
+.collage-layout-btn.active:hover {
+  background: var(--fill-blue);
+  color: var(--fill-white);
+}
+
+/* 拼貼視圖：JS 輪流分欄取代 CSS multi-column，見 CLAUDE.md「拼貼格狀排版：JS 輪流分欄取代 CSS multi-column」 */
+.events-collage-grid {
+  /* 欄與欄之間、卡片與卡片之間都不留間距（column-gap:0 + 卡片本身
+   * margin:0），拼成無縫貼齊的拼貼牆，貼近參考圖那種「圖片直接互相貼齊」
+   * 的效果。
+   * 滿版貼齊左右：.events-page-body 本身有左右 padding，且桌機／手機
+   * （≤720px）都是同一份 20px（.events-page-body 沒有針對手機另外縮小左右
+   * padding，見下面「手機版（<720px）：版面微調」區塊的說明），拼貼想要貼齊
+   * 視窗邊緣就得跳出這層 padding——用「負 margin 往外拉、width 用 calc
+   * 補回被拉掉的寬度」這個常見手法，這裡桌機／手機共用同一組 -20px／
+   * calc(100% + 40px)，不需要依斷點切換兩組數字（下面 @media(max-width:720px)
+   * 只需要蓋掉 padding-top，margin／width 沿用同一組值即可）。滿版之後跟
+   * 視窗邊緣齊平，圓角拿掉（貼齊邊緣時圓角看起來像被切一半，不好看）。
+   * v37：flex:1 + min-height:0 + overflow-y:auto，比照 .events-day-grid 的
+   * 做法，讓拼貼牆自己吃掉 .events-calendar-col 剩下的高度、自己捲動——
+   * 這樣上面的搜尋框／filter-row（events-search-row／events-filter-row）
+   * 才會跟 index.html 的 #topBar 一樣「本來就不會被捲動經過」，不用另外
+   * 加 position:sticky/fixed。刻意不用 sticky：.events-day-grid 上面的
+   * 註解記錄過，這個捲動節奏下 sticky 會讓已經捲過去的內容殘影疊在
+   * sticky 元素上面，實測修不好，才改成「捲動來源本身就只有這塊」的做法，
+   * 拼貼牆比照辦理。 */
+  display: flex;
+  align-items: flex-start;
+  /* 上緣留白桌機版限定拆成兩份，故意疊出「靜止 40px、捲動後 20px」的效果：
+   * .events-filter-row 的 margin-bottom:20px 是固定的一份（filter-row 本身
+   * 不會被捲動，這份 20px 永遠都在，見 .events-filter-row）；這裡自己再用
+   * padding-top:20px 補第二份——這份 padding 在 overflow-y:auto 的捲動範圍
+   * 「裡面」，會跟著卡片一起被捲走。margin 維持 0 -20px（只有左右負 margin
+   * 做滿版貼齊，跟 width: calc(100% + 40px) 配對），不去抵銷 filter-row 的
+   * margin-bottom，兩份 20px 才會在靜止時疊加成 40px。往下捲動超過 20px
+   * 後，這份 padding-top 的可視範圍捲完、被容器自己的 overflow 裁掉（容器
+   * 上緣本身固定在 filter-row 下方 20px 處，不會再往上滑出去），畫面上就只
+   * 剩 filter-row 那份固定的 20px，兩者間距收斂成 20px。手機（≤720px）維持
+   * 原本「只有 filter-row 固定 20px、沒有額外可捲動留白」的單一間距，見下面
+   * @media 那條的 padding-top:0。 */
+  margin: 0 -20px;
+  padding-top: 20px;
+  width: calc(100% + 40px);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.collage-grid-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 空結果狀態（.empty-state，見 js/events.js 的 collageEmptyHtml()，跟首頁共用
+ * 同一個 class）文字雖然本來就是 text-align:center，但格狀拼貼的容器
+ * .events-collage-grid 是 display:flex，flex item 預設不會撐滿整列寬度、
+ * 只會縮到文字本身的寬度，text-align:center 在一個貼齊文字寬度的框裡看不
+ * 出置中效果。首頁 #grid 是 display:grid + .empty-state 的 grid-column:1/-1
+ * 撐滿橫跨全部欄位所以沒這個問題；.collage-list-grid 同樣是 grid 也沒事，
+ * 只有這個 flex 容器要額外撐滿寬度才會跟首頁看起來一致。 */
+.events-collage-grid .empty-state {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .events-collage-grid {
+    /* 手機維持原本「只有 filter-row 固定 20px」的單一間距，不疊加桌機版
+     * 那份可捲動的 padding-top——這裡明確蓋回 padding-top:0，不要繼承上面
+     * 桌機版的 padding-top:20px，不然會變成固定 20px 疊加可捲動 20px。
+     * margin／width 修正：原本這裡寫 -16px／calc(100% + 32px)，是誤以為
+     * .events-page-body 手機版左右 padding 是 16px；實際上 .events-page-body
+     * 在所有寬度都是同一份 padding:0 20px 0px（見下面「手機版（<720px）：
+     * 版面微調」區塊的說明——左右 20px 跟桌機相同，沒有另外縮成 16px），
+     * 沿用桌機版跟 20px padding 配對的 -20px／calc(100% + 40px) 才會真正貼齊
+     * 視窗邊緣，用 -16px／32px 會在左右各留下 4px 沒貼到邊。 */
+    margin: 0 -20px;
+    padding-top: 0;
+    width: calc(100% + 40px);
+  }
+}
+
+.collage-card {
+  margin: 0;
+  background: var(--fill-white);
+  box-shadow: inset 0 0 0 0.5px var(--fill-gray-16);
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+}
+
+.collage-card-media {
+  position: relative;
+  overflow: hidden; /* hover 放大時裁掉超出卡片範圍的部分，不撐開版面 */
+  background: var(--fill-gray6);
+}
+
+.collage-card-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.25s ease;
+}
+
+/* hover 效果從原本的陰影＋提亮改成放大圖片本身：卡片高度是瀑布流版面
+ * （圖片原生比例撐出來的），放大只作用在 img 本身、.collage-card-media 用
+ * overflow:hidden 裁切，不會影響卡片高度、不會撐動旁邊欄位。 */
+.collage-card:hover .collage-card-media img {
+  transform: scale(1.06);
+}
+
+/* 沒有圖片的活動：退回固定比例的純色底，pills/文字排版跟有圖片時一致，
+ * 不會因為缺圖整張卡片崩塌成一條線。 */
+.collage-card-media.no-image {
+  aspect-ratio: 4 / 3;
+}
+
+.collage-card-pills {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+
+/* 分類 badge 改跟列表卡片同一顆 .type-badge（白底、色框、色字，見
+ * eventListCardHtml() 那邊的說明），跟拼貼卡片原本的實心色塊 .events-bar-cat
+ * 不一樣調性——疊在圖片上時白底本身對比不夠，所以陰影兩顆 badge 都要補。 */
+.collage-card-pills .type-badge,
+.collage-card-pills .ending-badge {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+}
+
+/* 「已結束」badge：events.js 的 collageCardHtml／eventListCardHtml 在
+ * isGroupEnded() 為 true 時，改印 class="ending-badge ended-badge"（同時掛兩個
+ * class）取代原本的倒數 badge——刻意不另外重寫一份 padding/border-radius/
+ * font-size，直接沿用 .ending-badge 的完整外形，只用 .ended-badge 覆蓋顏色
+ * （灰色實心底＋白字），確保「已結束」跟「快結束」兩顆 badge 除了顏色以外
+ * UI 完全一致，之後 .ending-badge 改外形這裡不用跟著改第二份。 */
+.ended-badge {
+  background: var(--fill-gray-64);
+  color: var(--fill-white);
+}
+
+.collage-card-body {
+  padding: 16px 16px 16px;
+}
+
+.collage-card-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fill-blue);
+  margin-bottom: 4px;
+}
+
+.collage-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--fill-black);
+}
+
+.collage-card-period {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fill-black);
+  margin-top: 8px;
+}
+
+.collage-card-venue {
+  font-size: 14px;
+  color: var(--fill-black);
+  margin-top: 8px;
+}
+
+
+/* ---------- 拼貼視圖，列表排列（v34 新增，v34.1 改成完全比照首頁列表卡片） ----------
+ * 跟上面「格狀」是完全不同的視覺語言：不滿版（維持 .events-page-body 原本
+ * 的左右留白，不用負 margin 跳出去）、卡片之間有間距，容器版面數字直接沿用
+ * 首頁「地點列表」模式（style.css 的 .grid：auto-fill、minmax(300px,1fr)、
+ * gap:20px）。
+ * 卡片本身不是借用拼貼格狀那套（.collage-card／.events-bar-cat），而是
+ * 直接沿用首頁 .loc-card-grid 整組 class（style.css，見 js/events.js 的
+ * eventListCardHtml()）——不放圖、卡片本身不能點，只有「詳情」按鈕可以點
+ * 才會開彈窗（Google Maps 連結收在詳情 Modal 裡，卡片上不重複放），逐一
+ * 對齊首頁 grid.js 的 renderGrid() 行為，這裡不另外寫一份卡片樣式，靠共用
+ * class 保證兩邊之後一起改、不會慢慢跑掉。 */
+/* .collage-list-wrap 是實際的捲動容器（flex:1 + min-height:0 +
+ * overflow-y:auto，取代原本直接放在 .collage-list-grid 上的寫法）：手機列表
+ * 排列模式專用的「最後更新｜回報表單｜更新日誌」列（.last-updated-list-row，
+ * 見 events.html）要「隨列表捲動」，得跟卡片格線放在同一個捲動範圍內，但
+ * .collage-list-grid 本身是 JS 用 innerHTML 整段覆寫（js/events.js 的
+ * renderCollageList()），塞在裡面每次重新渲染都會被洗掉，所以拉出這一層
+ * wrap：.last-updated-list-row 固定在 wrap 裡、grid 之外，兩者一起被 wrap 的
+ * overflow-y:auto 捲動，grid 重新渲染不會動到它。 */
+.collage-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.collage-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  /* bug fix（v34.1 沿用至今）：資料筆數一多（events 目前實測 200+ 筆），auto
+   * 列高會被壓成幾乎 0px，卡片整張被 .loc-card-grid 的 overflow:hidden 裁成
+   * 一條細線。根因是這個容器過去自己是 flex:1 + min-height:0 的 flex item，
+   * 本身高度被撐成「容器剩餘空間」這種明確值（不是自然高度），列數又遠超過
+   * 這個高度；瀏覽器算 auto 列高退回去看每個格子項目的「自動最小尺寸」，而
+   * .loc-card-grid 剛好設了 overflow:hidden（給 16px 圓角用）——CSS 規格規定
+   * overflow 非 visible 的元素這個自動最小尺寸算 0，三個條件疊在一起，列高
+   * 就被壓到接近 0，不是卡片內容實際需要的高度。現在 flex:1/min-height:0/
+   * overflow-y:auto 都搬到外層 .collage-list-wrap 了，.collage-list-grid 自己
+   * 變回自然高度（跟首頁 .grid 在 #gridView 裡的情況一致，本來就不會踩到這個
+   * 問題），但 grid-auto-rows: min-content 留著當保險，不拆掉。 */
+  grid-auto-rows: min-content;
+  /* 上緣留白跟 .events-collage-grid 同一套「桌機版疊兩份 20px」做法：
+   * .events-filter-row 的 margin-bottom:20px 是固定的一份（filter-row 不會
+   * 被捲動），這裡再用 padding-top:20px 補第二份、落在 .collage-list-wrap
+   * overflow-y:auto 的捲動範圍裡面，會跟著卡片一起被捲走。靜止時兩份疊加
+   * 看起來是 40px，往下捲動超過 20px 後，這份 padding-top 的可視範圍捲完、
+   * 被容器自己的 overflow 裁掉（容器上緣固定在 filter-row 下方 20px 處），
+   * 間距收斂成 filter-row 那份固定的 20px。手機（≤720px）維持原本「只有
+   * filter-row 固定 20px」的單一間距，見下面 @media 那條的 padding-top:0。 */
+  padding-top: 20px;
+}
+
+@media (max-width: 720px) {
+  .collage-list-grid {
+    /* 手機維持原本「只有 filter-row 固定 20px」的單一間距，不疊加桌機版
+     * 那份可捲動的 padding-top——這裡明確蓋回 padding-top:0，不要繼承上面
+     * 桌機版的 padding-top:20px，不然會變成固定 20px 疊加可捲動 20px。 */
+    padding-top: 0;
+  }
+}
+
+/* .card-badge-row 是 style.css 共用定義（首頁也在用，space-between 把左邊
+   分類 badge 群組跟右邊倒數 badge 推到兩端），這裡只新增左邊那個子群組的
+   排版——分類 badge 跟「多地點」標示緊鄰、4px 間距，是 events.css 專屬的
+   包裝層，不動 style.css 共用的東西。 */
+.card-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 已結束的活動（events.js 的 isGroupEnded()）：拼貼格狀／列表混排時，用來
+ * 區分「還沒結束」跟「已結束」——只降整張卡片的透明度，不加灰階濾鏈，圖片
+ * 保留原色（跟反灰比起來更柔和，卡片多的時候拼貼牆不會有一半整片變灰）。
+ * .collage-card／.loc-card-grid 兩種卡片語言都用同一顆 .is-ended，數值也
+ * 要一致，不然兩種排列方式切換時「已結束」看起來深淺不同。 */
+.collage-card.is-ended,
+.loc-card-grid.is-ended {
+  opacity: 0.6;
+}
+
+/* 「當日活動」清單：non-modal 側邊 drawer（桌機往左推、手機貼底 sheet），設計理由見 CLAUDE.md「「當日活動」清單（drawer）：non-modal 設計」 */
+.day-events-overlay {
+  display: none;
+  position: fixed;
+  top: var(--events-header-h, 0px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 2250;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.day-events-overlay.show {
+  display: flex;
+}
+
+.day-events-panel {
+  background: var(--fill-white);
+  border-radius: 16px 0 0 16px;
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  /* 從右側滑入：預設推到視窗外，.show 時歸位；transform 只在 .show 狀態
+   * 加上 class 的當下觸發轉場，不需要額外 JS。 */
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+}
+
+.day-events-overlay.show .day-events-panel {
+  transform: translateX(0);
+}
+
+/* 「往左推」：drawer 開著時月曆整塊縮寬讓出空間，不是疊在上面。只在桌機生效
+ * （手機維持貼底 sheet，蓋在月曆上面，不推版面）；class 由 js/events.js 的
+ * openDayEventsPanel/closeDayEventsPanel 加在 <body> 上。跟 panel 的滑入
+ * transition 給一樣的時間曲線，兩邊視覺上像同一塊在移動。 */
+@media (min-width: 721px) {
+  body.day-events-open .events-page-body {
+    margin-right: 400px;
+  }
+}
+
+.day-events-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 18px 18px 12px;
+}
+
+.day-events-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fill-black);
+}
+
+.day-events-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fill-black);
+  line-height: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.day-events-close:hover {
+  color: var(--fill-blue);
+}
+
+.day-events-body {
+  /* v38：Drawer 高度撐滿（height:100%），body 要用 flex:1 + min-height:0
+   * 才會吃滿剩下的高度、自己捲動——不然 flex column 預設不會撐開，內容
+   * 短的話 drawer 下半部會空白，內容長的話反而整個 drawer 被撐爆。 */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 18px 18px;
+}
+
+/* 手機：跟 changelog 一樣改成貼底單一高度 sheet，不做多段拖曳 snap。 */
+@media (max-width: 720px) {
+  .day-events-overlay {
+    /* 手機貼底 sheet 蓋在整個畫面上（含 header），跟桌機「頂部切齊月曆」
+     * 的 non-modal drawer 是兩種不同版型，這裡把桌機那份 top 偏移覆寫掉。 */
+    top: 0;
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+    /* 手機維持原本 Modal 行為（蓋在月曆上面＋遮罩＋點背景關閉），桌機那份
+     * non-modal 的 transparent／pointer-events:none 只在桌機生效，這裡要
+     * 覆寫回來。 */
+    background: rgba(0, 0, 0, 0.32);
+    pointer-events: auto;
+  }
+
+  .day-events-panel {
+    max-width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
+    /* 手機沒被要求改版型，維持原本貼底 sheet 的底色／藍色上邊框；這次
+     * 「頂部切齊／拿掉外框陰影／底色改白」只針對桌機那份 drawer。 */
+    background: var(--fill-gray6);
+    border: none;
+    border-top: 1px solid var(--fill-blue);
+    /* 桌機是從右邊滑入（translateX），手機貼底改回從下面滑入
+     * （translateY），兩條軸互相覆寫，不會疊加。 */
+    transform: translateY(100%);
+  }
+
+  .day-events-overlay.show .day-events-panel {
+    transform: translateY(0);
+  }
+}
+
+/* ---------- 手機版（<720px）：版面微調 ----------
+ * 頁面只剩月曆一個區塊（見上面 .events-layout），格子高度本來就是動態的
+ * （跟著內容長），這裡只剩窄螢幕才需要的細節：留白縮小、格子最小高度跟著
+ * 降低、項目字級跟著縮小。 */
+
+@media (max-width: 720px) {
+  /* v40：這裡原本重複設一次跟桌機一樣的 padding: 20px 20px 0px，數值完全沒變
+   * （純粹是舊規則，不確定當初為什麼特地在這個斷點重申一次一樣的值）。現在
+   * .events-page-body 的 top padding 已經改成 mobile 專屬的
+   * padding-top: var(--events-top-bar-height, 0px)（見上面 @media(max-width:768px)
+   * 那條），如果這裡繼續用 padding 簡寫整組覆寫，會把 top padding 蓋回固定
+   * 20px、洗掉 --events-top-bar-height 的效果——720px 這個斷點在 768px 以內，
+   * 一定會受影響。拿掉這條，讓 768px 那條規則生效就好，左右 padding 20px 跟
+   * 桌機本來就相同，不用在這裡重複宣告。 */
+
+  .events-day-num-cell {
+    padding: 6px 6px 3px;
+  }
+
+  .events-bar {
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+
+  .events-week-toggle {
+    font-size: 12px;
+  }
+
+}
+
+
+/* v40.2：接續上面 .events-topbar-controls 那條 v40.1 說明——手機版滑動隱藏
+ * #eventsTopBar 需要的 padding-top 補償，必須放在整個檔案的最後面才能穩定
+ * 生效。.events-day-grid／.events-collage-grid／.collage-list-wrap 這三個
+ * 真正捲動的容器，各自（或像 .collage-list-wrap 這樣經由內層
+ * .collage-list-grid）在檔案裡散落好幾條 @media(max-width:720px) 的
+ * padding-top 規則（疊兩份 20px 那套設計留下的），跟這裡的
+ * @media(max-width:768px) 規則 selector specificity 完全相同——CSS 在
+ * specificity 相同時由「寫在檔案更後面」的規則勝出，所以這條必須擺在檔案
+ * 最尾端，才能保證贏過前面所有同名選擇器的舊規則，不管它們原本寫在哪個
+ * @media 區塊裡。720px 那些舊規則本身刻意保留不動（桌機／>768px 邏輯不
+ * 受影響），這裡只在 ≤768px（跟 #eventsTopBar 變成 fixed 的斷點一致）時
+ * 蓋掉它們，721px～768px 這段原本沒有任何規則處理過的落差也一併吃到同一套
+ * 算法。桌機（>768px）var(--events-top-bar-height) 固定是 0
+ * （js/events-scroll.js 的 updateTopBarHeight() 只在 mobile 才量測非零值），
+ * 不需要另外排除。 */
+@media (max-width: 768px) {
+  .events-day-grid,
+  .events-collage-grid,
+  .collage-list-wrap {
+    padding-top: var(--events-top-bar-height, 0px);
+  }
+}

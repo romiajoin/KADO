@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>活動行事曆｜KADO！抽卡機在哪</title>
+  <meta name="description" content="全台動漫快閃店、聯名展覽、簽名會等實體活動整理，KADO！抽卡機在哪">
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NGGBNKBJB9"></script>
+  <script>
+   window.dataLayer = window.dataLayer || [];
+   function gtag(){dataLayer.push(arguments);}
+   gtag('js', new Date());
+   gtag('config', 'G-NGGBNKBJB9');
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="events.css" />
+</head>
+<body class="events-standalone">
+
+  <!-- 手機版滑動隱藏/顯示範圍與踩坑，見 CLAUDE.md「#eventsTopBar 的實際範圍與踩過的坑」 -->
+  <div class="top-bar" id="eventsTopBar">
+  <div class="visitor-banner" id="visitorBanner" style="display:none;">
+    已經有 <span id="visitorCount">⋯</span> 人來找過抽卡機
+  </div>
+  <header>
+    <a class="logo events-logo-link" href="/" aria-label="回到 KADO 首頁">
+      <img class="logo-icon" src="logo.svg" alt="logo" />
+      <h1>KADO！<span>抽卡機在哪</span></h1>
+    </a>
+    <div class="header-right">
+      <div class="header-info" id="lastUpdated"></div>
+      <div class="header-divider"></div>
+      <!-- 回到抽卡機地圖的 FAB markup 實際位置在 #eventsTopBar 外面，見下方 -->
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSefuFSIqJ3qbJ245-snAD5MR6xHYHhkzzGGtpNXBvUVyZoZWQ/viewform?usp=dialog" class="report-link" target="_blank" rel="noopener">回報表單</a>
+      <div class="header-divider"></div>
+      <a href="#" class="changelog-link" id="changelogLinkDesktop">更新日誌</a>
+      <!-- 月曆／總覽切換，「總覽」命名理由見 spec.md「月曆檢視 / 總覽（拼貼）檢視」 -->
+      <div class="view-toggle" id="eventsViewTabs" role="tablist" aria-label="瀏覽方式">
+        <button type="button" class="view-btn active" data-view="collage" role="tab" aria-selected="true" aria-label="切換到總覽檢視">
+          <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor"><path d="M324-600q-15.3 0-25.65-10.29Q288-620.58 288-635.79t10.35-25.71Q308.7-672 324-672h456q15.3 0 25.65 10.29Q816-651.42 816-636.21t-10.35 25.71Q795.3-600 780-600H324Zm0 156q-15.3 0-25.65-10.29Q288-464.58 288-479.79t10.35-25.71Q308.7-516 324-516h456q15.3 0 25.65 10.29Q816-495.42 816-480.21t-10.35 25.71Q795.3-444 780-444H324Zm0 156q-15.3 0-25.65-10.29Q288-308.58 288-323.79t10.35-25.71Q308.7-360 324-360h456q15.3 0 25.65 10.29Q816-339.42 816-324.21t-10.35 25.71Q795.3-288 780-288H324ZM180-600q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-636q0 14-10.35 25T180-600Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-480q0 14-10.35 25T180-444Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-324q0 14-10.35 25T180-288Z"/></svg>
+          <span class="label">總覽</span>
+        </button>
+        <button type="button" class="view-btn" data-view="calendar" role="tab" aria-selected="false" aria-label="切換到月曆檢視">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          <span class="label">月曆</span>
+        </button>
+      </div>
+    </div>
+  </header>
+    <!-- 搜尋框沿用首頁 .search-box 元件，多比對活動標題 -->
+    <div class="events-topbar-controls">
+      <div class="events-search-row">
+          <div class="search-box search-box-desktop">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor" style="flex-shrink:0"><path d="M384.03-336Q284-336 214-406t-70-170q0-100 70-170t170-70q100 0 170 70t70 170.03q0 40.39-12.5 76.18Q599-464 577-434l214 214q11 11 11 25t-11 25q-11 11-25.5 11T740-170L526-383q-30 22-65.79 34.5-35.79 12.5-76.18 12.5Zm-.03-72q70 0 119-49t49-119q0-70-49-119t-119-49q-70 0-119 49t-49 119q0 70 49 119t119 49Z"/></svg>
+            <input type="text" id="eventsSearchInput" placeholder="搜尋 活動、作品、縣市、場地..." />
+            <button class="search-clear-btn" id="eventsClearSearch" aria-label="清除搜尋"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
+          </div>
+          <div class="search-box search-box-mobile">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor" style="flex-shrink:0"><path d="M384.03-336Q284-336 214-406t-70-170q0-100 70-170t170-70q100 0 170 70t70 170.03q0 40.39-12.5 76.18Q599-464 577-434l214 214q11 11 11 25t-11 25q-11 11-25.5 11T740-170L526-383q-30 22-65.79 34.5-35.79 12.5-76.18 12.5Zm-.03-72q70 0 119-49t49-119q0-70-49-119t-119-49q-70 0-119 49t-49 119q0 70 49 119t119 49Z"/></svg>
+            <input type="text" id="eventsSearchInputMobile" placeholder="搜尋 活動、作品、縣市、場地..." />
+            <button class="search-clear-btn" id="eventsClearSearchMobile" aria-label="清除搜尋"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></button>
+          </div>
+          <!-- 活動數量：算 group 數（同一檔活動多地點只算一次），不是地點列數 -->
+          <div class="count-badge"><strong id="eventsCountBadge">0</strong> 個活動</div>
+        </div>
+        <!-- 類型 filter：改用跟首頁機台／IP／縣市同一套 pill + 桌機下拉面板 + 手機
+             bottom sheet 元件（見 js/filter-widget.js／js/events.js 的
+             createFilterWidget() 呼叫），樣式沿用 style.css 既有的 .filter-bar／
+             .filter-pill／.filter-panel，這裡只是空容器，內容由 JS 畫。 -->
+        <!-- filter-bar 跟月曆導航/拼貼排列切換合併成同一列，見 CLAUDE.md -->
+        <div class="events-filter-row">
+          <div class="filter-bar" id="eventsFilterBar"></div>
+          <!-- 月曆上/下個月：跟 .events-collage-toolbar 互斥顯示，同一個右側位置 -->
+          <div class="events-toolbar" id="eventsToolbar" hidden>
+            <div class="events-nav-group">
+              <button id="eventsPrevMonth" aria-label="上個月">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <div class="events-month-label" id="eventsMonthLabel"></div>
+              <button id="eventsNextMonth" aria-label="下個月">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+          </div>
+          <!-- 拼貼格狀／列表切換：兩顆各自獨立圖示按鈕（曾試過單顆循環按鈕，不夠明顯），見 setCollageLayout() -->
+          <div class="events-collage-toolbar" id="eventsCollageToolbar">
+            <div class="collage-layout-toggle" id="eventsCollageLayoutToggle">
+              <button type="button" class="collage-layout-btn active" data-layout="grid" aria-pressed="true" aria-label="切換到格狀排列">
+                <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M120-425v-355q0-24 18-42t42-18h270v415H120Zm270-60Zm120-355h270q24 0 42 18t18 42v185H510v-245Zm0 720v-415h330v355q0 24-18 42t-42 18H510ZM120-365h330v245H180q-24 0-42-18t-18-42v-185Zm270 60Zm180-350Zm0 180Zm-390-10h210v-295H180v295Zm390-170h210v-125H570v125Zm0 180v295h210v-295H570ZM180-305v125h210v-125H180Z"/></svg>
+              </button>
+              <button type="button" class="collage-layout-btn" data-layout="list" aria-pressed="false" aria-label="切換到列表排列">
+                <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M324-600q-15.3 0-25.65-10.29Q288-620.58 288-635.79t10.35-25.71Q308.7-672 324-672h456q15.3 0 25.65 10.29Q816-651.42 816-636.21t-10.35 25.71Q795.3-600 780-600H324Zm0 156q-15.3 0-25.65-10.29Q288-464.58 288-479.79t10.35-25.71Q308.7-516 324-516h456q15.3 0 25.65 10.29Q816-495.42 816-480.21t-10.35 25.71Q795.3-444 780-444H324Zm0 156q-15.3 0-25.65-10.29Q288-308.58 288-323.79t10.35-25.71Q308.7-360 324-360h456q15.3 0 25.65 10.29Q816-339.42 816-324.21t-10.35 25.71Q795.3-288 780-288H324ZM180-600q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-636q0 14-10.35 25T180-600Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-480q0 14-10.35 25T180-444Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-324q0 14-10.35 25T180-288Z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- 星期列跟著搬進 #eventsTopBar，避免 padding-top 補償留在不會捲動的祖先層，詳見 CLAUDE.md -->
+        <div class="events-weekday-row" id="eventsWeekdayRow" hidden></div>
+    </div>
+  </div>
+
+  <!-- FAB 必須是 body 直接子元素，不能放進 #eventsTopBar：will-change:transform 坑，詳見 CLAUDE.md「FAB：首頁 ⇄ 行事曆頁互通」 -->
+  <a href="/" class="events-link" id="gachaMapLink" aria-label="抽卡機／相卡機台地圖">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -960 960 960" fill="currentColor"><path d="m612-404 31-107q3-11-1-22t-14-18l-93-63q-8-5-16.5-2T508-604l-31 107q-3 11 .5 22t13.5 18l93 63q8 5 17 2t11-12ZM168-222l-30-15q-28-13-38-40t3-55l65-140v250Zm148 78q-31 0-53.5-20.5T240-216v-288l134 360h-58Zm206-4q-31 11-56-1t-36-43L259-660q-11-31 .5-56.5T302-753l294-107q31-11 56 .5t36 42.5l172 472q11 31-.5 56T817-253L522-148Z"/></svg>
+    <span class="events-label">抽卡 / 相卡機台</span>
+  </a>
+
+  <main class="events-page-body">
+    <!-- 從這裡開始是三種子模式各自的捲動內容，跟 #eventsTopBar 分離 -->
+    <div class="events-layout">
+      <div class="events-calendar-col" id="eventsCalendarCol">
+        <div class="events-day-grid" id="eventsDayGrid" hidden></div>
+        <!-- 拼貼格狀：預設檢視，初始不加 hidden，要跟 state.view 初始值一致 -->
+        <div class="events-collage-grid" id="eventsCollageGrid"></div>
+        <!-- 拼貼列表：比照首頁地點列表卡片，不放圖 -->
+        <!-- 這一排要隨列表捲動，不能塞進會被 renderCollageList() 整段覆寫的 #eventsCollageList，改包一層 .collage-list-wrap，詳見 CLAUDE.md -->
+        <div class="collage-list-wrap" id="eventsCollageListWrap" hidden>
+          <div class="last-updated-list-row">
+            <div class="last-updated-list" id="eventsListLastUpdated"></div>
+            <div class="header-divider"></div>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSefuFSIqJ3qbJ245-snAD5MR6xHYHhkzzGGtpNXBvUVyZoZWQ/viewform?usp=dialog" class="report-link" target="_blank" rel="noopener">回報表單</a>
+            <div class="header-divider"></div>
+            <a href="#" class="changelog-link" id="changelogLinkMobile">更新日誌</a>
+          </div>
+          <div class="collage-list-grid" id="eventsCollageList"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 活動詳情 Modal：沿用機台詳情彈窗視覺樣式，id 換一組避免撞名，獨立一份不 import main.js -->
+  <div class="grid-modal-overlay" id="eventDetailOverlay">
+    <div class="grid-modal-box">
+      <button class="grid-modal-close" id="eventDetailClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      <div class="grid-modal-content" id="eventDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- 分享連結複製成功的提示，跟首頁 #share-toast 同一套樣式，這裡獨立一份 DOM -->
+  <div id="share-toast"></div>
+
+  <!-- 類型 filter 手機 bottom sheet，結構同首頁 #filterSheetOverlay -->
+  <div class="filter-sheet-overlay" id="eventsFilterSheetOverlay">
+    <div class="filter-sheet" id="eventsFilterSheet" onclick="event.stopPropagation()">
+      <div class="filter-sheet-header">
+        <span class="filter-sheet-title" id="eventsFilterSheetTitle"></span>
+        <button class="filter-sheet-close" id="eventsFilterSheetClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="filter-sheet-body">
+        <div class="filter-panel-hint" id="eventsFilterSheetHint" style="display:none;"></div>
+        <div class="filter-sheet-options" id="eventsFilterSheetOptions"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 拼貼排序手機 bottom sheet，結構同首頁 #sortSheetOverlay；桌機 dropdown 由 sort-widget.js 動態插入 -->
+  <div class="filter-sheet-overlay" id="eventsSortSheetOverlay">
+    <div class="filter-sheet" id="eventsSortSheet" onclick="event.stopPropagation()">
+      <div class="filter-sheet-header">
+        <span class="filter-sheet-title">排序方式</span>
+        <button class="filter-sheet-close" id="eventsSortSheetClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="filter-sheet-body">
+        <div class="sort-hint" id="eventsSortSheetHint"></div>
+        <div id="eventsSortSheetOptions"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 「+N 更多」當日活動清單 drawer，events.html 專屬元件，不跟 changelog 共用 -->
+  <div class="day-events-overlay" id="dayEventsOverlay">
+    <div class="day-events-panel">
+      <div class="day-events-header">
+        <div class="day-events-title" id="dayEventsTitle"></div>
+        <button class="day-events-close" id="dayEventsClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="day-events-body" id="dayEventsBody"></div>
+    </div>
+  </div>
+
+  <!-- Changelog Modal（桌機）／Bottom Sheet（手機）：跟 index.html 共用同一套，
+       markup／CSS／JS 都直接沿用，這樣「更新日誌」在 events.html 也能正常打開 -->
+  <div class="changelog-overlay" id="changelogOverlay" onclick="closeChangelog(event)">
+    <div class="changelog-panel" onclick="event.stopPropagation()">
+      <div class="changelog-header">
+        <div class="changelog-header-text">
+          <span class="changelog-title">更新日誌</span>
+          <span class="changelog-author">made with ♥ by @kadonogill</span>
+        </div>
+        <button class="changelog-close" id="changelogClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="changelog-body" id="changelogBody">
+        <div class="empty-state">⏳ 載入中...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/events-header.js"></script>
+  <script type="module" src="js/changelog.js"></script>
+  <script type="module" src="js/visitor.js"></script>
+  <script type="module" src="js/events.js"></script>
+</body>
+</html>

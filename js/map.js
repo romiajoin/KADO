@@ -13,7 +13,8 @@
 
 import { getDeviceType } from './utils.js';
 import { getEndingBadge } from './grid.js';
-import { driveUrlToImage, allLocations, currentFiltered } from './main.js';
+import { driveUrlToImage } from './utils.js';
+import { allLocations, currentFiltered } from './main.js';
 
 window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態產生的 onclick="closeDetailPanel(...)" 用
 

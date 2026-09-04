@@ -1,7 +1,7 @@
 // =============================================
 // grid.js — 格狀列表渲染 + 排序邏輯（結束日期 / 距離）
 // 拆分階段二：這塊算「次獨立」——會讀 sort.js 的 sortState／userCoords，
-// 也會呼叫 main.js 的 driveUrlToImage／openGridModal，
+// 也會呼叫 main.js 的 openGridModal（driveUrlToImage 已搬到 utils.js），
 // 但不會回頭呼叫地圖或篩選 UI 的任何東西，依賴方向大致單向。
 //
 // 註：applyFilters／syncCount／trackFilterResult／handleSearch 這幾個「重新計算＋觸發地圖同步」
@@ -9,9 +9,12 @@
 // core.js。
 // =============================================
 
-import { getDeviceType } from './utils.js';
-import { driveUrlToImage, openGridModal } from './main.js';
+import { getDeviceType, driveUrlToImage, getEndDate, getEndingBadge, haversineKm } from './utils.js';
+import { openGridModal } from './main.js';
 import { sortState, userCoords } from './sort.js';
+// getEndingBadge 沿用自 utils.js（events.js 也要用，見 utils.js 開頭的說明），
+// 這裡重新 export 一次，main.js 既有的 `import { getEndingBadge } from './grid.js'` 才不用跟著改。
+export { getEndingBadge };
 
 
     // =============================================
@@ -108,37 +111,12 @@ import { sortState, userCoords } from './sort.js';
 
     // =============================================
     // 🔍 排序邏輯（結束日期 / 距離）
+    // getEndDate／getEndingBadge 搬到 utils.js 了（events.js 也需要，理由見 utils.js），
+    // 這裡繼續用同一份，行為不變。
     // =============================================
-    function getEndDate(limited) {
-      if (!limited) return null; // null 代表無期限（常態機）
-      const p = limited.split('～');
-      return new Date(p[p.length - 1].trim().replace(/\//g, '-'));
-    }
 
-    // 即將結束 badge：只在 URGENT_DAYS 天內顯示（把今天算進去 → 今天結束＝剩 1 天＝「最後一天」）
-    const URGENT_DAYS = 3; // 幾天內才顯示 badge，之後要調就改這裡
-    export function getEndingBadge(limited) {
-      const end = getEndDate(limited);
-      if (!end) return null;                       // 常態機、無結束日 → 不顯示
-      const now = new Date();
-      const endD = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-      const nowD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const diffDays = Math.round((endD - nowD) / 86400000); // 只比日期，不看時分
-      if (diffDays < 0) return null;               // 已結束
-      if (diffDays >= URGENT_DAYS) return null;     // 超過 3 天不顯示
-      const remaining = diffDays + 1;              // 今天結束 = 剩 1 天
-      return remaining === 1 ? '最後一天' : `倒數 ${remaining} 天`;
-    }
-
-    function haversineKm(lat1, lng1, lat2, lng2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLng = (lng2 - lng1) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
+    // haversineKm 搬到 utils.js 了（events.js 拼貼模式的距離排序也需要，理由見該檔案），
+    // 這裡繼續 import 那一份，行為不變。
     export function sortLocations(arr) {
       const list = arr.slice();
 

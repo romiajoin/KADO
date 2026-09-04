@@ -4,6 +4,8 @@
 
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
+**⚠️ v32.1（本檔案這次更新時）尚未 commit／push**：`git status` 顯示 `app.html`／`js/filters.js`／`js/grid.js`／`js/main.js`／`js/map.js`／`js/sort.js`／`js/utils.js`／`style.css` 有未 commit 的修改，另外新增了 `events.html`／`events.css`／`js/events.js`／`js/events-data.js`／`js/events-header.js`／`js/events-scroll.js`／`js/filter-widget.js`／`js/sort-widget.js` 八個尚未 `git add` 的新檔案——全部是同一個「活動行事曆」新功能（見下方「活動行事曆頁（events.html）」章節）；v32.1 是 v32 之上的小改動（「最後更新」時間改成比較機台/活動兩分頁，見「最後更新元素」），同樣尚未 commit。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先 `./push.sh`。
+
 - 網站：https://kadotw.vercel.app/
 - Repo：https://github.com/romiajoin/KADO
 - Google Analytics：`G-1G91M8FLWQ`
@@ -27,19 +29,26 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 ## 檔案結構（2026/07 拆分為 ES Modules）
 
 ```
-index.html          # 進入點,<script type="module" src="js/xxx.js"> 依序載入
-style.css            # 全部樣式,留在根目錄
+app.html             # 首頁進入點（v30.9 起改名自 index.html，見「首頁 /?id= 動態 OG Meta」）
+events.html          # 活動行事曆頁（v32 新增，獨立頁面，見「活動行事曆頁」章節）
+style.css            # 首頁／行事曆頁共用樣式，留在根目錄
+events.css           # 活動行事曆頁專屬樣式
 js/
   main.js            # 核心協調：loadFromSheet／setView／applyFilters／回到前景自動刷新／下拉刷新（v31 起，原本在 pwa.js，PWA 移除時搬過來）
   map.js             # 地圖核心：Leaflet／marker／cluster popup／桌面側邊欄／mobile bottom sheet(最大的模組)
-  filters.js         # 篩選 UI：pill／dropdown／bottom sheet
-  sort.js             # 排序 UI：按鈕／dropdown／bottom sheet + 定位權限
-  grid.js             # 列表卡片渲染 + 排序邏輯（getEndDate/getEndingBadge/sortLocations）
+  filters.js         # 首頁篩選狀態＋資料（buildFilterOptions），UI 渲染/開合已抽到 filter-widget.js
+  sort.js             # 首頁排序狀態串接（SORT_OPTIONS／sortState／userCoords），UI 渲染/開合/定位權限已抽到 sort-widget.js
+  filter-widget.js    # 通用篩選元件核心（pill／桌機下拉／手機 bottom sheet／量寬／GA），首頁 filters.js 與 events.js 各自建立實例共用（v?? 抽出）
+  sort-widget.js      # 通用排序元件核心（按鈕／dropdown／bottom sheet／定位權限／GA），首頁 sort.js 與 events.js 各自建立實例共用（v?? 抽出）
+  grid.js             # 列表卡片渲染 + 排序邏輯（sortLocations；getEndDate/getEndingBadge/driveUrlToImage/haversineKm 已搬到 utils.js）
   scroll.js           # #topBar（header/toolbar/filter-bar/訪客 banner）mobile 列表模式滑動隱藏/顯示（v26 新增）
   changelog.js        # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
-  utils.js            # isStandaloneMode／getDeviceType（零依賴）
+  utils.js            # 零依賴共用工具：isStandaloneMode／getDeviceType／TW_CITY_ORDER／getEndDate／getEndingBadge／driveUrlToImage／haversineKm（後四項 v32 從 grid.js／main.js／filters.js 搬來，理由是 events.js 也要用，見「活動行事曆頁」章節）
   visitor.js          # 訪客計數（零依賴）
-  changelog.js        # 更新日誌 modal/sheet：讀取 changelog.json、渲染、開關、GA event（v27 新增）
+  events.js           # 活動行事曆頁邏輯：月曆／總覽（拼貼格狀・列表）渲染、篩選/排序/搜尋串接、詳情 Modal、分享（v32 新增）
+  events-data.js      # 活動資料層：fetch 活動分頁 CSV → 解析成 events.js 用的結構（v32 新增）
+  events-header.js    # 行事曆頁專用：抓「最後更新」時間戳寫進 DOM，不 import main.js（v32 新增；v32.1 起同時比較機台/活動兩分頁時間戳，見「最後更新元素」）
+  events-scroll.js    # 行事曆頁專用：手機版 #eventsTopBar 滑動隱藏，同時盯 3 種子模式的捲動容器（v32 新增）
 api/share.js          # 不受影響,原本就是獨立檔案
 changelog.json        # 更新日誌內容（v27 新增，跟 manifest.json 同層）：date/version/text 三欄，text 可為字串或陣列（同天多筆）
 permanent-id.gs       # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，
@@ -128,6 +137,12 @@ Token 只顯示一次，外洩需立即到 GitHub Settings 撤銷並重新產生
 - `#mapLastUpdated` — Mobile map mode，位於 `.map-scroll-wrapper` 內、`location-list` 上方，隨列表捲動
 - 三處由 JS `forEach` 統一更新，內容相同（12px / weight 400 / fill-black / text-align center）
 - **v27 修正：24 小時制轉換**——Google Sheet 儲存格原始格式是 12 小時制（例如 `2026/7/14 下午 8:33:00`，AM/PM 跟時數之間可能有空白），新增 `to24Hour()` 轉換函式，順便拿掉秒數；轉換規則：下午且非 12 點 → +12 小時，上午 12 點 → 0 點（午夜），下午 12 點維持 12（正午）；格式跟預期不符就直接回傳原字串，不讓「最後更新」整個消失。這個修正同時緩解了另一個問題：`.report-link`/`.changelog-link` 因 `white-space: nowrap` 不會縮小換行，導致所有 flex-shrink 壓力集中在日期文字上，稍微縮小就整行跳去換行，換行後短的第二行在原本（幾乎沒縮小的）box 寬度裡留下大片空白——縮短顯示文字後大部分螢幕寬度不會再觸發這個問題
+- **v32.1 新增：跨分頁比較**——Gill 提出「活動分頁（`events.html` 用，`gid=1540199365`）P 欄也會被更新，希望『最後更新』顯示兩個分頁裡較新的那個時間」。`js/main.js`（`loadFromSheet()`）跟 `js/events-header.js`（`loadLastUpdated()`）都改成：
+  - `Promise.all` 同時 fetch 機台分頁（`SHEET_CSV_URL`）跟活動分頁（新增的 `EVENTS_SHEET_CSV_URL`，`gid=1540199365`，跟 `events-data.js` 是同一份 URL，各檔案各自重複定義一份，延續專案既有「各檔案自帶所需常數」慣例）；活動分頁那條 fetch 包 `.catch(() => null)`，失敗不影響機台清單／機台頁本身載入
+  - 新增 `parseUpdateDate(raw)`：把 `to24Hour()` 用的同一種原始格式（`yyyy/M/d 上午|下午h:mm(:ss)?`）解析成真正的 `Date` 物件，供兩欄時間比大小（字串比較在月/日沒有補零時不可靠，例如 `"2026/7/9"` 字串會排在 `"2026/7/14"` 後面，必須轉成 `Date` 才能正確比較）
+  - 比較邏輯：兩欄都能解析成 `Date` 時，活動分頁較新才切換顯示活動分頁那欄；機台分頁解析失敗（格式跑掉）但活動分頁能解析，才 fallback 用活動分頁；其餘情況（含兩者都解析失敗）一律沿用機台分頁 R 欄原始字串——維持 v32.1 之前的行為，不讓活動分頁的格式問題波及機台頁「最後更新」的既有可靠性
+  - 活動分頁 P 欄（0-based index 15）目前只拿來比較時間，不解析成 `events-data.js` 那套完整活動資料結構，機台頁沒有理由拖進那條 chain
+  - `CACHE_VERSION` 機制已在 v31 整個作廢（見「Service Worker 快取版本管理」v31 條目），這次改動不用 bump 任何東西
 
 ### Mobile Map Bottom Sheet（v20 重寫，v23 再次大改：改成內容驅動的共用三檔系統）
 - Sidebar 從「固定顯示全部地點清單」改為 **marker 驅動**：`sheetLevel` 狀態機為 `'peek' | 'mid' | 'full' | 'content'`，`sheetLoc` 記錄目前顯示的那一筆（null 代表顯示列表）
@@ -497,6 +512,9 @@ function fitOptionsWidth(container) {
 ### Header 順序（PC）
 `最後更新時間 ｜ 回報表單 ｜ 更新日誌 　[列表][地圖]`（v27 起新增「更新日誌」）
 
+- **窄螢幕修正（v32）**：`<412px`（例如 iPhone SE）header 右側多了活動入口圖示後標題沒地方喘息，`@media (max-width: 412px)` 把 `.logo h1 span`（副標題「抽卡機在哪」）隱藏，只留「KADO！」品牌字，避免標題被壓到換行或截斷
+- mobile header 的 `padding` 從 `20px` 改成 `20px 20px 20px 12px`（左邊縮窄），配合新增的 FAB 騰出空間
+
 ### 更新日誌（v27 新增）
 - `js/changelog.js`：讀取根目錄 `changelog.json`、渲染條目列表、開關 modal/sheet、觸發 GA event
 - `changelog.json`（根目錄，跟 `manifest.json` 同層）：`date`/`version`/`text` 三欄，`text` 可為字串（單筆）或陣列（同天多筆，各自變成一個 bullet），`version` 純內部對照用、不顯示給使用者
@@ -506,6 +524,124 @@ function fitOptionsWidth(container) {
 - **⚠️ 開發時踩過的坑**：mobile 版原本只把 `.header-right .report-link` 跟 `.header-divider` 列入隱藏清單，沒把新的 `.changelog-link` 也列進去，導致桌機那顆連結在手機 header 上跟著跑出來、跟手機列表列的那顆重複——已補上隱藏規則
 - `sw.js`：新增 `isChangelogRequest()` 判斷，讓 `changelog.json` 走 network-first（見「Service Worker 快取版本管理」v27 條目）
 - GA4 事件：`changelog_open`（`source`: header_desktop/header_mobile_list，`device`）、`changelog_close`（`method`: x_button/backdrop_click，`device`）；GA4 後台「新增版本」跟「觸發位置」schema 選項還沒有「v27」跟「更新日誌 Modal/Sheet」，需手動到資料庫設定加選項（工具權限沒有 `update-data-source`，無法自動加）
+
+---
+
+## 活動行事曆頁（`events.html`，v32，尚未 commit）
+
+跟 `app.html` 是完全獨立的頁面（同分頁導航過去，不是 overlay/modal），header logo／右下角 FAB 互相導覽。整理「非常駐機台」的實體活動（動漫快閃店、聯名展覽、簽名會、CAFÉ／餐廳聯名、特典活動），資料來自同一份 Google Sheet 的另一個分頁（欄位規格見上方「Google Sheet 欄位」章節旁的活動分頁說明，或 `spec.md`）。
+
+### 為什麼是獨立頁面、獨立一批模組
+`main.js` 頂層會連帶載入 `filters.js`／`sort.js`／`map.js`／`scroll.js`，這些模組初始化時都預期 `app.html` 才有的 DOM（例如 `#filterSheetOverlay`、`#sortSheetOverlay`）。若 `events.js` 直接 `import` 這條鏈，在 `events.html` 上執行會直接噴錯、整條 import chain 中斷，行事曆畫不出來。因此拆成完全獨立的一批檔案：`events.js`（頁面邏輯，不 import `main.js`）、`events-data.js`（資料層，fetch 活動分頁 CSV）、`events-header.js`（抓「最後更新」時間戳，不需要 `main.js` 整份協調邏輯；v32.1 起同時 fetch 機台分頁比較時間戳，見「最後更新元素」）、`events-scroll.js`（手機版頂部 bar 滑動隱藏，照抄 `scroll.js` 但要盯 3 種子模式的捲動容器）。
+
+### 共用工具搬遷到 `utils.js`
+以下邏輯原本各自定義在不同檔案，因為 `events.js` 也需要用、又不能拖進 `main.js`/`grid.js` 那條鏈，搬到零依賴的 `utils.js`，行為完全不變，`grid.js`/`main.js` 改成從 `utils.js` import 同一份：
+- `TW_CITY_ORDER`（原在 `filters.js`）
+- `getEndDate()`／`getEndingBadge()`（原在 `grid.js`）——`period` 欄位沿用跟 `limited` 一樣的 `"yyyy/MM/dd～yyyy/MM/dd"` 格式，直接複用同一套判斷，不重寫
+- `driveUrlToImage()`（原在 `main.js`）
+- `haversineKm()`（原在 `grid.js`）——拼貼模式距離排序取「一組活動裡離使用者最近的那個地點」也要用
+
+`grid.js` 開頭額外重新 `export { getEndingBadge }` 一次，是因為 `main.js` 既有 `import { getEndingBadge } from './grid.js'` 語句，這樣改動範圍只在 `grid.js`/`utils.js`，不用連帶改 `main.js` 的 import 來源。
+
+### 共用 UI 元件抽出：`filter-widget.js` / `sort-widget.js`
+首頁的篩選/排序 pill＋桌機下拉面板＋手機 bottom sheet 這整套 UI 渲染／開合／換行後量寬／GA 事件邏輯，跟 `events.js` 的篩選/排序需求幾乎一模一樣，直接從 `filters.js`／`sort.js` 抽成兩個通用元件：
+- `createFilterWidget({ config, getOptions, state, barEl, sheetOverlayId, ..., isMobileLayout, onChange, gaPrefix, onTogglePanel, onOpenSheet, onOutsideClose, onResizeClose })` — 「資料從哪來」「選完要做什麼」「選取的意義是什麼（未選=全部 or 未選=都不顯示）」「要不要跟排序面板互相關閉」全部透過參數/callback 注入，元件本身只管畫 UI、開合、量寬、送 GA
+- `createSortWidget({ options, initialKey, sheetOverlayId, ..., isMobileLayout, onChange, gaPrefix, onTogglePanel, onOpenSheet, onOutsideClose, onResizeClose })` — 差異：排序選項是垂直清單不換行，不需要量寬機制；多一套定位權限流程（`geoPermissionDenied`／`requestUserLocation`／`GEO_ERROR_MESSAGES`），這塊是排序元件獨有
+
+`filters.js`／`sort.js`（首頁）跟 `events.js`（行事曆頁）各自呼叫 `createXxxWidget()` 建立**自己的一份實例**，掛在各自的 DOM id 上，兩份實例互不相干；`sort-widget.js` 的 DOM id（`sortBtn`/`sortPanel`/...）是寫死字串，因為一個頁面只會有一個排序元件實例，不像篩選元件同一頁有機台/IP/縣市三組、需要 `data-key` 動態區隔。
+
+首頁 `filters.js`／`sort.js` 現在只保留：首頁專屬的選項資料計算（`buildFilterOptions`）、跟 `main.js`/`grid.js`/`map.js` 的串接（`applyFilters`／`sortLocations`／`renderMapLocations`）、跟對方（篩選 ⇄ 排序）面板互相關閉的 hook。
+
+### 資料分組：同一檔活動在多地點
+Sheet 仍是「一列＝一個地點」，畫面渲染前用「標題＋期間」把同一檔活動的多個地點合併成一組（group）——月曆橫幅／當日活動清單／拼貼卡片／詳情 Modal 都吃 group。分組 key（`g0`/`g1`...）用 `ensureGroupKeyMap()` 在第一次用到時從**未經篩選**的 `allEvents` 算一次，不受篩選狀態影響（避免篩選切換時同一組的 key 對不起來），也不直接拿標題字串當 key（避免標題含逗號等字元打斷 `data-group-key` 屬性值）。這是務實做法，不用改 Sheet 結構；真的遇到「兩檔不同活動剛好同標題同期間」的巧合，建議加一欄專用的「活動群組ID」取代字串比對。
+
+### 月曆檢視 / 總覽（拼貼）檢視
+- **月曆**：月份格線，有活動的日期顯示「橫幅」（`.events-bar`，色碼對應 `EVENT_CATEGORIES`），超過可視高度收進「+N 更多」。點橫幅或「當日活動」清單卡片開詳情 Modal。`MIN_MONTH`（2026/05）鎖住最早可翻到的月份，避免翻到早於資料建置起點的空月曆讓人誤以為系統壞了；預設仍開「當月」，不是鎖死顯示最早月份
+- **總覽**（`state.view: 'collage'`，v32 起是預設 view；對外顯示文字刻意用「總覽」不用「列表」，因為內部還有格狀/列表次要切換，兩層都叫「列表」會混淆）：卡片拼貼排版，不受月份侷限，一次看到全部符合篩選的活動；已結束/尚未結束分兩組各自排序，分組固定不受排序影響。內部「格狀／列表」切換（v32）是兩顆各自獨立的圖示按鈕，不是循環按鈕
+- 排序（結束日/距離）只在總覽有意義，UI 掛在跟篩選 pill 同一排的 `#eventsFilterBar`，`setView()` 切到月曆時把 `.sort-group` 設成 `hidden`
+
+### `eventsFilterState`／搜尋關鍵字獨立於 `state` 物件之外（v32）
+類型／IP／縣市篩選狀態、搜尋關鍵字都刻意不掛在 `events.js` 主要的 `state` 物件上，而是各自獨立宣告：`filter-widget.js` 的 `clearFilterKey()` 清除時是把整個 `state[key]` 重新指派一個新陣列（`state[key] = []`），不是原地 splice——如果掛在 `state.xxx` 上，清除後 `state` 裡的參照會跟 widget 內部用的物件對不上，「清除」按鈕會變成沒有實際效果，獨立成物件、渲染時直接讀這個，就不會有兩份參照要對齊的問題。選取語意跟首頁一致：未選＝顯示全部，選了才篩成只顯示那幾種，跟首頁 `main.js` 的 `applyFilters()` 是同一個判斷方式；city 的比對依據是每個地點自己的 `city` 欄位，同一檔活動只要有任一地點落在篩選縣市裡就會顯示。
+
+### 月曆橫幅列排版與 hover 外框（v32）
+月曆改成「橫幅事件條」樣式：每週一列，上面 7 天日期數字，下面接一整排橫幅（每個活動一條，寬度依它在這一週實際涵蓋的天數橫向延伸，只算月曆內顯示出來的天，不延伸到留白格），同一週日期重疊的活動分到不同 row 疊放，沒重疊的共用同一 row；超過 `MAX_VISIBLE_ROWS` 條時預設只顯示前幾條，底下出現「全部顯示」/「部分顯示」可展開/收合，每一週各自獨立記住展開狀態（`state.expandedWeeks`）。
+
+滑鼠移到有活動的日期格子時，這一天的整欄（從日期數字格一路往下到當週橫幅區底部）會浮現藍色外框，讓使用者一眼看出這天對應到下面哪些橫幅。外框不能單純用格子本身的 border/box-shadow 做，因為日期數字列（`.events-week-daynums`）跟橫幅列（`.events-week-bars`）是兩個獨立的 CSS Grid、欄寬算法不一樣（前者只有 1px gap 無 padding，後者有 12px padding + 12px gap），兩者的「欄」在像素上對不齊。改用一個獨立的絕對定位圖層（`.events-week-hover-col`，每週一個）蓋在整週容器上，寬度／位置套用跟背景直向格線（見月曆格線那段的 `calc((100% + 1px) / 7)` 推導）同一套算法，才能跟畫面上原本看得到的直向格線完全對齊。欄位 index 直接用「格子在 `.events-week-daynums` 裡的第幾個 child」算，不用額外資料屬性。外框只在滑鼠裝置開（觸控裝置沒有「移過去但不點」這個手勢）。
+
+### 拼貼格狀排版：JS 輪流分欄取代 CSS multi-column（v32）
+原本用純 CSS multi-column（`column-count`）排版，缺點是閱讀順序會變成「先填滿第一欄、再填第二欄」，不是使用者預期的「由左到右、由上到下」。改成 JS 依序把卡片「輪流」分配到各欄（卡片 0→欄0、1→欄1、2→欄2...、N→欄0...），欄位本身仍用 flex 直排、圖片原生比例決定卡片高度，維持無縫貼齊的瀑布流視覺；差別只在「哪張卡放進哪一欄」改成依序輪流，不是照欄位目前高度最短的去放，讀者由左到右掃過去看到的就是資料原本的排序（跟月曆一致：快結束的在前）。代價是同一「列」的卡片底部不會剛好切齊，但比讀取順序錯亂更能接受。欄數要跟 `events.css` 的 `.events-collage-grid` 對應斷點（1100px／720px／420px）保持一致，兩邊改動要一起改；螢幕寬度跨過欄數斷點時（resize debounce 150ms）欄數要重新分配並重繪。
+
+### 拼貼距離排序只有三個選項（v32）
+拼貼排序沿用共用的 `sort-widget.js`，但只有三個選項，沒有「距離：遠到近」——事件是 group，可能對應多個地點，距離排序取「離使用者最近的那個地點」，這個場景下「遠到近」的實用性低很多，先不做。排序結果不是直接決定畫面順序，是餵給總覽的「還沒結束」／「已結束」分組各自內部排序，分組本身固定不受排序影響。
+
+### 篩選 ⇄ 排序面板互相關閉：同檔案內用 closure 處理宣告順序（v32）
+`events.js` 建立 filterWidget 時就要參照稍後才宣告的 sortWidget（互相關閉 hook），靠的是箭頭函式的 closure（等到真的被呼叫時 sortWidget 早就指派好了）——跟 CLAUDE.md「跨檔案依賴要注意」提過的「函式宣告會在模組載入時先掛好」是同一種順序不敏感的寫法，只是這次是同一個檔案內的 const closure，不是跨檔案 import。
+
+### 總覽切到月曆時，當日活動 drawer 要跟著收起（v32）
+`setView()` 切到「總覽」時，如果當日活動 drawer（`#dayEventsOverlay`）還開著要跟著收起——它是 non-modal 的，使用者切視圖不會先關掉它，drawer 內容又是特定某一天的活動，留著蓋在總覽上面沒有意義；只在真的開著時才呼叫收起，避免每次切換視圖都多送一次 `events_day_more_close` GA 事件。
+
+### 「當日活動」清單（drawer）：non-modal 設計（v32）
+桌機是「往左推」的 non-modal drawer——月曆本身仍可互動、不鎖背景捲動（鎖了使用者就翻不了月/點不了其他天，跟 non-modal 的初衷矛盾），overlay 用 `pointer-events: none`；手機才是貼底 modal sheet，鎖 body 捲動。點清單卡片開詳情 Modal 後 drawer **不會**自動關閉（同一天常有多場活動，看完一場很可能想接著看下一場，逼使用者關 Modal 再重新點日期太麻煩），改成手動同步卡片的 `.selected` class，不整份重繪、不重新綁 listener。詳情 Modal 的 z-index（9999）本來就蓋過 drawer（2250），不需要處理疊層。`closeDayEventsPanel()` 的 `method` 參數用 `methodOverride` 區分「使用者關閉」跟「`setView()` 切到總覽時程式自動收起」（v32），避免污染 GA。
+
+**關閉活動詳情 Modal 時不能無條件清空 body 捲動鎖定**：手機版 drawer 開著時本來就鎖了 `body` 捲動（`.day-events-open` class + inline `overflow:hidden`），點卡片開詳情不會自動收合 drawer，所以關閉詳情 Modal 時如果直接清空鎖定，會變成「drawer 還開著、背景卻能捲動」；`closeEventDetailModal()` 只在 drawer 沒開（或桌機版本來就沒鎖）時才清空鎖定。
+
+Drawer 頂部要跟月曆頂部切齊，量的是 `.events-page-body` 的 `getBoundingClientRect().top`（頁面本身不整頁捲動，這個 top 值等於 header + 訪客 banner 目前實際佔用的高度），寫進 CSS variable `--events-header-h`；訪客 banner 非同步出現，用 `ResizeObserver` 盯 header/banner 本身尺寸變化，不用為每個成因各自補監聽（跟首頁 `--top-bar-height` 是同一個坑、同一種修法）。
+
+### 活動詳情 Modal
+視覺沿用機台詳情彈窗（`.grid-modal-overlay`／`.grid-modal-box`／`.popup-*`），id 換一組（`#eventDetailOverlay`/`#eventDetailContent`）避免撞名，這裡沒有 import `main.js`，是獨立一份。已結束的活動顯示「已結束」badge（沿用倒數 badge 外形只換顏色）優先於倒數 badge。同一組涵蓋不只一個地點時顯示城市頁籤（`cityTabsHtml`），切頁籤只換 `#eventDetailLocationSlot` 內容，不整份重繪。「更多資訊」對應表單 L 欄（原欄位名叫「備註」，內容已改成連結），固定顯示「查看 →」文字。K 欄圖片可逗號分隔多張，統一轉陣列（`eventImages()`）供縮圖（`eventThumbUrl()`，只取第一張）與詳情輪播共用。圖片外層包一層 `.popup-img-wrap`（灰底、12px padding、圓角），跟機台 modal 同外觀，不讓圖片直接鋪滿寬度貼齊 modal 邊緣。多圖輪播沿用跟機台 modal 同一套 `.carousel` 元件與事件委派模式（掛在 `document`，因為 modal 內容是動態塞進去的 `innerHTML`），差異是這裡沒有 lightbox 功能，圖片不加 `data-lightbox`。
+
+### 分享（`shareEvent()`）
+目前只產生 `?event=<地點 id>` 網址（多地點時固定帶第一個地點的 id，維持跟機台單地點分享一致的網址格式），**還沒有**讀取這個參數還原畫面的邏輯——這部分不在這次改動範圍內，之後要做建議比照機台的 `permId` 精準比對機制（見「分享連結永久ID機制」），不要沿用 A 欄流水號那種會失效的做法。手機 `navigator.share()`、桌機複製網址 + toast，跟機台分享互動一致。
+
+### FAB：首頁 ⇄ 行事曆頁互通（v32）
+兩邊各自放一顆 `.events-link`（共用 `events.css` 的樣式），手機/桌機統一是畫面右下角常駐 FAB，桌機 hover 展開成膠囊顯示文字。
+
+**⚠️ v32 修正的坑：`will-change: transform` 會替 `position: fixed` 子孫元素建立新的 containing block**
+FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡面。這個 wrapper 手機版的滑動隱藏動畫用 `will-change: transform`；瀏覽器對「有 `will-change: transform`」的元素跟「真的套用了 transform」一視同仁，都會替內部 `position: fixed` 的子孫元素建立新的 containing block——這代表 FAB 的 `fixed` 定位變成「相對這個祖先元素」而不是「相對視窗」，肉眼看到的症狀是 FAB 沒有貼在視窗右下角，而是貼在 `#topBar` 右下角，並隨 `#topBar` 的 `translateY` 隱藏/顯示動畫一起飄走。**修法**：把 FAB 移出 `#topBar`／`#eventsTopBar`，變成 `body` 的直接子元素，恢復單純的「相對視窗 `position: fixed`」。之後任何新增的 fixed 定位 UI，如果放在有 `will-change`/`transform` 的容器裡出現「明明是 fixed 卻沒有貼齊視窗」的怪現象，先往這個方向查。
+
+### 手機版頂部工具列滑動隱藏（`events-scroll.js`，v32）
+邏輯照抄 `scroll.js` 的 `#topBar` 版本（往下滑累積超過 `HIDE_THRESHOLD` 才隱藏、往上滑立刻顯示、`TOP_SAFE_ZONE` 內強制顯示）。差異：`events.html` 沒有「地圖/列表」兩種模式各自的捲動容器，而是「月曆／拼貼格狀／拼貼列表」三種子模式各自獨立的捲動容器（`#eventsDayGrid`／`#eventsCollageGrid`／`#eventsCollageListWrap`，同一時間只有一個可見、真的在捲動），所以同時掛在三個容器上，各自用 `Map` 追蹤自己的 `{ lastScrollTop, downAccum }`，不共用單一變數，避免切換子模式時把另一個容器殘留的捲動狀態誤判成一次大幅度滑動。`resetEventsTopBarScrollState()` 在 `setView()`／`setCollageLayout()` 切換任一子模式時都要呼叫，確保 bar 狀態乾淨。
+
+**`#eventsTopBar` 的實際範圍與踩過的坑（v32）**：`#eventsTopBar` 包住訪客 banner／header／搜尋列／`.events-filter-row`（篩選 pill + 月曆導航/拼貼排列切換）／星期列，五者一起隨滑動隱藏/顯示；`.events-page-body` 底下真正捲動的是「月曆／拼貼格狀／拼貼列表」三種子模式各自的容器（`#eventsDayGrid`／`#eventsCollageGrid`／`.collage-list-wrap`），不是 `.events-page-body` 本身。星期列一開始沒有跟著搬進 `#eventsTopBar`，留在 `.events-page-body` 裡靠 `padding-top` 補償高度——結果 `.events-page-body` 不是真正的捲動容器，這段 `padding-top` 永遠不會消失，滑動隱藏 `#eventsTopBar` 後畫面頂端留下一塊固定不消失的空白色塊，修法是把星期列也搬進 `#eventsTopBar`、`padding-top` 補償改吃在三個真正會捲動的子容器上。
+
+**⚠️ 這個 `padding-top` 補償規則第一次修正時沒生效的坑**：三個子容器各自散落著好幾條 `@media(max-width:720px)` 的 `padding-top` 舊規則，跟新規則的 selector specificity 完全一樣，CSS 只能靠「寫在檔案更後面」的規則覆蓋前面的——第一次補丁寫的位置比大部分舊規則早，`.events-collage-grid` 因此被舊規則蓋掉、完全沒生效，`.collage-list-wrap` 剛好沒有同名舊規則卡在後面所以矇對；後來確認要把新規則移到檔案最後面才真的對三個容器都生效。**之後在 `events.css` 加任何「本來就有同名舊規則、只是要覆寫」的規則，先確認新規則寫在檔案裡的位置夠後面，不要只看 selector 對不對就以為一定生效。**
+
+### 月曆捲動重做：放棄「星期列 sticky + 整頁捲動」（v32）
+舊版讓月曆整頁（`.events-page-body`）自己捲動、星期列用 `position: sticky` 貼在頂端；實測不管桌機還是手機，快速滑動時都會看到已經捲過去的日期列殘影疊到星期列上面。試過 `translateZ(0)` 強制合成圖層、`clip-path` 換掉 `overflow:hidden` 兩個方向都修不好，錄影確認問題出在 sticky 本身跟整頁捲動的節奏對不齊，不是圓角或圖層的問題。改成月曆本身是固定高度的元件：`.events-layout`／`.events-calendar-col` 都是 `flex: 1; min-height: 0` 一路把剩餘高度往下傳，星期列跟工具列維持一般文件流的自然高度（`flex-shrink: 0`，本來就不會被捲動經過，完全不需要 sticky），真正捲動的只有月曆格線本身（`.events-day-grid`，自己 `overflow-y: auto`），滑動完全不會碰到 sticky 機制，殘影問題不會再出現。`.events-page-body` 自己保留的 `overflow-y: auto` 只是保險（理論上不會觸發），不是主要捲動來源。
+
+### `.events-filter-row`：篩選列 ⇄ 月曆導航 ⇄ 拼貼排列切換共用同一列（v32）
+`.filter-bar`（篩選 pill）、`.events-toolbar`（月曆上/下個月導航）、`.events-collage-toolbar`（拼貼排列切換）合併成同一列 `.events-filter-row`，彼此垂直置中；`.events-toolbar`／`.events-collage-toolbar` 互斥顯示（依 `state.view` 用 `[hidden]` 切換），視覺上是同一個「靠右」的位置，同一時間只會出現其中一個。`.events-toolbar`／`.events-collage-toolbar` 都用 `flex-shrink: 0`（不能設 `flex:1`/stretch，不然會把對方的位置搶走或把整列擠爆），靠 `.filter-bar` 的 `flex:1` 把它們推到最右邊。
+
+手機（≤768px）月曆模式下，桌機那種「跟 filter-bar 同一列、靠右」在窄螢幕會被 pill 群組的橫向捲動擠到看不見，改成讓 `.events-filter-row` 允許換行（`flex-wrap: wrap`），`.events-toolbar` 自己吃滿 `width: 100%`——單一行放不下一個佔滿整列寬度的 item，會自動被擠到下一行，效果等同「另起一行」但不用真的搬動 DOM。換行後用 `:has()` 偵測（`.events-filter-row:has(> .events-toolbar:not([hidden]))`）把 `.events-filter-row` 原本給 pill 列準備的 `margin-bottom: 20px` 縮成 `12px`，避免換行後工具列跟月曆之間顯得太鬆；`:not([hidden])` 是為了排除拼貼模式（`.events-toolbar` 被隱藏、`.events-collage-toolbar` 顯示）不受這次調整影響，維持原本 20px。
+
+### 拼貼列表獨立包一層 `.collage-list-wrap`，避免被重繪洗掉（v32）
+手機列表排列模式專用的「最後更新｜回報表單｜更新日誌」列，要跟卡片一起被捲走（不是固定在頂部），不能直接塞進 `#eventsCollageList` 裡面——那個容器的 `innerHTML` 每次篩選/排序/資料重新載入都被 `renderCollageList()` 整段覆寫，塞在裡面會被洗掉。改成外面包一層 `.collage-list-wrap`（真正的捲動容器，`overflow-y: auto` 搬到這裡），這一排固定當第一個 child、`#eventsCollageList`（純卡片格線）當第二個 child，兩者一起被 wrap 捲動，grid 重新渲染不會動到這排；`hidden` 屬性也是切在 `.collage-list-wrap` 這一層（`applyCollageContainers()`），不是切在內層的 `#eventsCollageList`。
+
+### 拼貼「當日活動」drawer 開合動畫對齊（v32）
+`.events-page-body` 的 `margin-right`（drawer 開啟時把月曆「往左推」）補上 `transition`，時間曲線刻意跟 `.day-events-panel` 本身的滑入 transition 對齊，兩邊視覺上像同一塊東西在移動，不是各自獨立的兩個動畫。
+
+### GA4 事件（活動行事曆專屬，追加於上方主表之後）
+| 事件名稱 | 觸發時機 | 參數 |
+|---|---|---|
+| `events_page_view` | 頁面載入完成 | `device` |
+| `events_view_switch` | 切換「總覽／月曆」 | `view`, `device` |
+| `events_collage_layout_switch` | 總覽內切換「格狀／列表」 | `layout`, `device` |
+| `events_month_nav`（新增） | 點月曆「上一月／下一月」導航按鈕 | `direction`(prev/next), `device` |
+| `events_week_expand`（新增） | 點某週橫幅清單的「全部顯示／部分顯示」切換按鈕 | `week_key`, `action`(expand/collapse), `device` |
+| `events_day_more_open` | 打開「當日活動」清單 drawer | `date_key`, `count`, `device` |
+| `events_day_more_close` | 關閉 drawer | `method`(x_button/backdrop_click/other/view_switch), `device` |
+| `events_detail_open` | 打開活動詳情 Modal | `event_id`(該組所有地點 id 用 `+` join), `location_count`, `source`, `device` |
+| `events_detail_close` | 關閉活動詳情 Modal | `method`(backdrop_click/x_button), `device` |
+| `events_city_tab_switch` | 詳情 Modal 內切換城市頁籤 | `machine_id`, `source`, `device` |
+| `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
+| `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
+| `events_search` | 搜尋框輸入（debounce 800ms，關鍵字長度 ≥2 才記） | `search_term`, `device` |
+| `gmaps_click` | 詳情 Modal 內點「在 Google Maps 查看」 | `machine_id`, `source`, `device` |
+| `search_box_focus` / `search_clear` | 搜尋框聚焦/清除（沿用首頁事件名稱） | `source`(events_desktop_toolbar/events_mobile_toolbar), `device` |
+| `filter_click`／`filter_clear`／`filter_panel_open`／`filter_panel_close`（`gaPrefix: 'events_filter'`） | 篩選 pill/面板互動（`filter-widget.js` 內部送出，事件名稱前綴由呼叫方決定，這裡實際送出的名稱是 `events_filter_click` 等） | 同首頁對應事件 |
+| `sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result`（`gaPrefix: 'events_sort'`） | 排序面板互動（`sort-widget.js` 內部送出，實際事件名稱是 `events_sort_panel_open` 等） | 同首頁對應事件 |
+
+**待辦**：以上全新事件（含新增的 `events_month_nav`／`events_week_expand`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫（`page_id`／流程見下方「外部工具筆記」）。
 
 ---
 
