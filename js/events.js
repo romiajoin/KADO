@@ -6,6 +6,8 @@ import { TW_CITY_ORDER } from './utils.js';
 import { haversineKm } from './utils.js';
 import { driveUrlToImage } from './utils.js';
 import { EVENT_CATEGORIES, loadEvents, allEvents } from './events-data.js';
+import { loadMachines, allMachines } from './machines-data.js';
+import { findRelatedMachines, relatedMachineTypesForGroup } from './event-match.js';
 import { createFilterWidget } from './filter-widget.js';
 import { createSortWidget } from './sort-widget.js';
 import { initEventsTopBarScroll, resetEventsTopBarScrollState } from './events-scroll.js';
@@ -288,6 +290,17 @@ function onDayCellHoverLeave(cell) {
   cell.closest('.events-week-row')?.querySelector('.events-week-hover-col')?.classList.remove('show');
 }
 
+// 三種卡片（events-card／collage-card／loc-card-grid）共用：有機台就顯示「抽卡機／相卡機」type-badge，
+// 直接沿用機台本身的徽章樣式（見 style.css .type-badge），不用另外設計新 pill；沒有機台就不顯示任何東西。
+function machineTypeBadgesHtml(group) {
+  const types = relatedMachineTypesForGroup(group, allMachines);
+  if (!types.size) return '';
+  return ['抽卡機', '相卡機']
+    .filter((t) => types.has(t))
+    .map((t) => `<span class="type-badge ${t === '相卡機' ? 'photocard' : 'gacha'}">${t}</span>`)
+    .join('');
+}
+
 function eventGroupCardHtml(group) {
   const badge = getEndingBadge(group.period);
   const color = EVENT_CATEGORIES.find((c) => c.label === group.category)?.color || 'var(--fill-gray)';
@@ -306,6 +319,7 @@ function eventGroupCardHtml(group) {
           <span class="events-bar-cat" style="--bar-color:${color}">${group.category}</span>
           ${badge ? `<span class="ending-badge">${badge}</span>` : ''}
           ${multiPill}
+          ${machineTypeBadgesHtml(group)}
         </div>
         <div class="events-card-title">${group.title}</div>
         <div class="events-card-venue">${venueLabel}</div>
@@ -383,6 +397,7 @@ function collageCardHtml(group) {
         <div class="card-badge-group">
           <span class="type-badge" style="background:var(--fill-white);border:1px solid ${color};color:${color}">${group.category}</span>
           ${multi ? `<span class="events-multi-pill"><svg xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="currentColor"><path d="M480-191q119-107 179.5-197T720-549q0-105-68.5-174T480-792q-103 0-171.5 69T240-549q0 71 60.5 161T480-191Zm-24.5 67.5Q444-128 433-137q-40-35-86.5-82T260-320q-40-54-66-112.5T168-549q0-134 89-224.5T480-864q133 0 222.5 90.5T792-549q0 58-26.5 117t-66 113q-39.5 54-86 100.5T527-137q-11 9-22.5 13.5T480-119q-13 0-24.5-4.5ZM480-552Zm0 164q62-56 88-81t41-44q14-17 20.5-35.5T636-587q0-35-25.5-60.5T550-673q-21 0-40 9t-30 23q-12-14-30.5-23t-39.5-9q-35 0-60.5 25.5T324-587q0 19 6.5 36t20.5 36q16 21 44 48.5t85 78.5Z"/></svg> ${group.locations.length} 地點</span>` : ''}
+          ${machineTypeBadgesHtml(group)}
         </div>
         ${ended ? `<span class="ending-badge ended-badge">已結束</span>` : (badge ? `<span class="ending-badge">${badge}</span>` : '')}
       </div>
@@ -465,6 +480,7 @@ function eventListCardHtml(group) {
           <div class="card-badge-group">
             <div class="type-badge" style="background:var(--fill-white);border:1px solid ${color};color:${color}">${group.category}</div>
             ${multi ? `<span class="events-multi-pill"><svg xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="currentColor"><path d="M480-191q119-107 179.5-197T720-549q0-105-68.5-174T480-792q-103 0-171.5 69T240-549q0 71 60.5 161T480-191Zm-24.5 67.5Q444-128 433-137q-40-35-86.5-82T260-320q-40-54-66-112.5T168-549q0-134 89-224.5T480-864q133 0 222.5 90.5T792-549q0 58-26.5 117t-66 113q-39.5 54-86 100.5T527-137q-11 9-22.5 13.5T480-119q-13 0-24.5-4.5ZM480-552Zm0 164q62-56 88-81t41-44q14-17 20.5-35.5T636-587q0-35-25.5-60.5T550-673q-21 0-40 9t-30 23q-12-14-30.5-23t-39.5-9q-35 0-60.5 25.5T324-587q0 19 6.5 36t20.5 36q16 21 44 48.5t85 78.5Z"/></svg> ${group.locations.length} 地點</span>` : ''}
+            ${machineTypeBadgesHtml(group)}
           </div>
           ${ended ? `<div class="ending-badge ended-badge">已結束</div>` : (badge ? `<div class="ending-badge">${badge}</div>` : '')}
         </div>
@@ -740,11 +756,34 @@ function eventDetailNoteRow(ev) {
   return `<div class="popup-addr">更多資訊：<a href="${ev.note.trim()}" target="_blank" rel="noopener" style="color:var(--fill-black);text-decoration:underline;">查看</a></div>`;
 }
 
-function cityTabsHtml(group) {
+function cityTabsHtml(group, activeIndex = 0) {
   return `<div class="events-city-tabs" role="tablist" aria-label="活動地點">`
-    + group.locations.map((loc, i) => `<button type="button" class="events-city-tab${i === 0 ? ' active' : ''}" `
-      + `role="tab" aria-selected="${i === 0}" data-loc-index="${i}"> ${loc.city || loc.venue || `地點 ${i + 1}`}</button>`).join('')
+    + group.locations.map((loc, i) => `<button type="button" class="events-city-tab${i === activeIndex ? ' active' : ''}" `
+      + `role="tab" aria-selected="${i === activeIndex}" data-loc-index="${i}"> ${loc.city || loc.venue || `地點 ${i + 1}`}</button>`).join('')
     + `</div>`;
+}
+
+// 這個地點底下有哪些機台：用 event-match.js 的共用比對邏輯反查，
+// 要傳完整的 group.locations 做消歧（見 findRelatedMachines 註解），不能只傳 loc 自己一筆。
+function relatedMachinesHtml(loc, group) {
+  const related = findRelatedMachines(loc, allMachines, group.locations);
+  if (!related.length) return '';
+  const items = related.map((m) => {
+    const href = `/?id=${encodeURIComponent(m.permId || m.id)}`;
+    // 作品（IP）欄是選填，機台沒填時退回顯示機台名稱，避免卡片空白
+    const label = m.character || m.name;
+    return `
+      <a class="related-machine-item" href="${href}" target="_blank" rel="noopener" data-machine-id="${m.id}">
+        <span class="type-badge ${m.type === '相卡機' ? 'photocard' : 'gacha'}">${m.type}</span>
+        <span class="related-machine-name">${label}</span>
+      </a>`;
+  }).join('');
+  // 橫向捲動卡片列，故意不放縮圖（多數機台本來就沒填圖片，見樣式比較討論）。
+  return `
+    <div class="modal-info-section related-machines-section">
+      <div class="related-machines-title">相關機台（${related.length}）</div>
+      <div class="related-machines-list">${items}</div>
+    </div>`;
 }
 
 function locationSectionHtml(group, locIndex) {
@@ -758,6 +797,7 @@ function locationSectionHtml(group, locIndex) {
       ${loc.hours ? `<div class="popup-addr">營業時間：${loc.hours}</div>` : ''}
       ${eventDetailNoteRow(loc)}
     </div>
+    ${relatedMachinesHtml(loc, group)}
     <div class="popup-actions">
       <a href="${googleMapsUrl}" target="_blank" rel="noopener" class="popup-gmaps-link" id="eventDetailGmaps"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-191q119-107 179.5-197T720-549q0-105-68.5-174T480-792q-103 0-171.5 69T240-549q0 71 60.5 161T480-191Zm-24.5 67.5Q444-128 433-137q-40-35-86.5-82T260-320q-40-54-66-112.5T168-549q0-134 89-224.5T480-864q133 0 222.5 90.5T792-549q0 58-26.5 117t-66 113q-39.5 54-86 100.5T527-137q-11 9-22.5 13.5T480-119q-13 0-24.5-4.5ZM480-552Zm0 164q62-56 88-81t41-44q14-17 20.5-35.5T636-587q0-35-25.5-60.5T550-673q-21 0-40 9t-30 23q-12-14-30.5-23t-39.5-9q-35 0-60.5 25.5T324-587q0 19 6.5 36t20.5 36q16 21 44 48.5t85 78.5Z"/></svg> 前往 Google Maps 查看 →</a>
       <button class="popup-share-btn" id="eventDetailShare">分享 <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M648-96q-50 0-85-35t-35-85q0-9 4-29L295-390q-16 14-36.05 22-20.04 8-42.95 8-50 0-85-35t-35-85q0-50 35-85t85-35q23 0 43 8t36 22l237-145q-2-7-3-13.81-1-6.81-1-15.19 0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-23 0-43-8t-36-22L332-509q2 7 3 13.81 1 6.81 1 15.19 0 8.38-1 15.19-1 6.81-3 13.81l237 145q16-14 36.05-22 20.04-8 42.95-8 50 0 85 35t35 85q0 50-35 85t-85 35Zm0-72q20.4 0 34.2-13.8Q696-195.6 696-216q0-20.4-13.8-34.2Q668.4-264 648-264q-20.4 0-34.2 13.8Q600-236.4 600-216q0 20.4 13.8 34.2Q627.6-168 648-168ZM216-432q20.4 0 34.2-14 13.8-14 13.8-34t-13.8-34q-13.8-14-34.2-14-20.4 0-34.2 14-13.8 14-13.8 34t13.8 34q13.8 14 34.2 14Zm466-277.8q14-13.8 14-34.2 0-20.4-13.8-34.2Q668.4-792 648-792q-20.4 0-34.2 13.8Q600-764.4 600-744q0 20.4 14 34.2 14 13.8 34 13.8t34-13.8ZM648-216ZM216-480Zm432-264Z"/></svg></button>
@@ -770,11 +810,23 @@ function bindLocationSectionEvents(group, locIndex, source) {
     gtag('event', 'gmaps_click', { machine_id: loc.id, source, device: getDeviceType() });
   });
   document.getElementById('eventDetailShare').addEventListener('click', () => shareEvent(group, source));
+  // GA: related_machine_click（這個地點的「相關機台」卡片點回機台頁，見 relatedMachinesHtml()）
+  document.querySelectorAll('#eventDetailLocationSlot .related-machine-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      gtag('event', 'related_machine_click', {
+        machine_id: el.dataset.machineId,
+        event_id: loc.id,
+        source,
+        device: getDeviceType(),
+      });
+    });
+  });
 }
 
-function openEventDetailModal(group, source = 'calendar_bar') {
+function openEventDetailModal(group, source = 'calendar_bar', initialLocIndex = 0) {
   const color = EVENT_CATEGORIES.find((c) => c.label === group.category)?.color || 'var(--fill-gray)';
   const multi = group.locations.length > 1;
+  const startIdx = (initialLocIndex >= 0 && initialLocIndex < group.locations.length) ? initialLocIndex : 0;
 
   const ended = isGroupEnded(group);
   const endingBadge = ended ? '' : getEndingBadge(group.period);
@@ -788,14 +840,14 @@ function openEventDetailModal(group, source = 'calendar_bar') {
       <div class="popup-title">${group.title}</div>
     </div>
     ${group.period ? `<div class="popup-limited">期間限定：${group.period}</div>` : ''}
-    ${multi ? cityTabsHtml(group) : ''}
-    <div id="eventDetailLocationSlot">${locationSectionHtml(group, 0)}</div>
+    ${multi ? cityTabsHtml(group, startIdx) : ''}
+    <div id="eventDetailLocationSlot">${locationSectionHtml(group, startIdx)}</div>
     <div class="events-detail-image-wrap">
       ${eventDetailImageHtml(group)}
     </div>
   `;
 
-  bindLocationSectionEvents(group, 0, source);
+  bindLocationSectionEvents(group, startIdx, source);
 
   if (multi) {
     document.querySelectorAll('#eventDetailContent .events-city-tab').forEach((tab) => {
@@ -920,11 +972,32 @@ document.getElementById('eventsClearSearchMobile').addEventListener('click', fun
 });
 
 (async function initEventsPage() {
-  await loadEvents();
+  // 機台資料只用來算「相關機台」清單，跟活動分頁不是同一份，各自 fetch；
+  // 這條萬一失敗（機台 Sheet 掛了）不該讓活動行事曆整頁掛掉，獨立 catch 成空陣列。
+  await Promise.all([loadEvents(), loadMachines().catch(() => [])]);
   filterWidget.render();
   sortWidget.render(document.getElementById('eventsFilterBar'));
   updateCollageLayoutBtns();
   renderAll();
   initEventsTopBarScroll();
   gtag('event', 'events_page_view', { device: getDeviceType() });
+
+  // 偵測 ?event=<地點id> 分享連結：機台端「期間活動」標籤、跟這裡的分享按鈕（shareEvent）都會產生這種連結。
+  // 活動地點目前沒有像機台永久ID那種「重新編號也不會變」的識別碼（N/O 欄保留給以後用，見 spec.md），
+  // 只能先用 A 欄流水號比對——找得到就直接開對應活動＋地點；找不到就跟機台分享連結一樣顯示 toast，
+  // 這裡只有「找到／找不到」兩段，沒有機台那邊 A欄/永久ID 雙軌判斷的曖昧地帶，故意簡化。
+  const eventUrlParams = new URLSearchParams(window.location.search);
+  const eventLocId = eventUrlParams.get('event');
+  if (eventLocId) {
+    const targetLoc = allEvents.find((ev) => ev.id === eventLocId);
+    if (targetLoc) {
+      const group = findGroupByKey(groupKey(targetLoc));
+      const idx = group ? group.locations.findIndex((l) => l.id === eventLocId) : -1;
+      if (group) openEventDetailModal(group, 'share_link', idx < 0 ? 0 : idx);
+      gtag('event', 'events_share_link_opened', { event_id: eventLocId, device: getDeviceType() });
+    } else {
+      showEventToast('這個活動的資訊已經下架囉');
+      gtag('event', 'events_share_link_target_missing', { event_id: eventLocId, device: getDeviceType() });
+    }
+  }
 })();

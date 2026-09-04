@@ -338,6 +338,14 @@
        （跟 .card-badge-row 不同用途：那個是整張卡片寬度兩端對齊，這個只是兩顆 badge 併排） */
     .modal-badge-row { display: flex; align-items: center; gap: 8px; }
 
+    /* 機台詳情標題：機台屬於某檔 events.html 活動時，標題本身變成連去活動詳情的連結
+       （見 js/event-match.js 的 machineTitleHtml()）。列表卡片刻意不重複顯示這個連結，見該檔案註解。 */
+    .popup-title.event-title-link {
+      text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+      cursor: pointer;
+    }
+    .popup-title.event-title-link:hover { color: var(--fill-blue); }
+
 
     .content { flex: 1; overflow: hidden; display: flex; }
 

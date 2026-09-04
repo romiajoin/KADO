@@ -15,6 +15,7 @@ import { getDeviceType } from './utils.js';
 import { getEndingBadge } from './grid.js';
 import { driveUrlToImage } from './utils.js';
 import { allLocations, currentFiltered } from './main.js';
+import { machineTitleHtml } from './event-match.js';
 
 window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態產生的 onclick="closeDetailPanel(...)" 用
 
@@ -204,7 +205,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       if (compact) {
         return `
           ${headerRow}
-          <div class="modal-header"><div class="popup-title">${loc.name}</div></div>
+          <div class="modal-header">${machineTitleHtml(loc, { source: 'map_detail_panel' })}</div>
           ${loc.limited ? `<div class="popup-limited">期間限定：${loc.limited}</div>` : ''}
           <div class="modal-info-section">${basicRows}</div>
         `;
@@ -233,7 +234,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
 
       return `
         ${headerRow}
-        <div class="modal-header"><div class="popup-title">${loc.name}</div></div>
+        <div class="modal-header">${machineTitleHtml(loc, { source: 'map_detail_panel' })}</div>
         ${loc.limited ? `<div class="popup-limited">期間限定：${loc.limited}</div>` : ''}
         <div class="modal-info-section">
           ${basicRows}

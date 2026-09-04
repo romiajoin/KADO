@@ -405,7 +405,7 @@ body.events-standalone {
   background: var(--bar-color);
   color: var(--fill-white);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .events-week-toggle {
@@ -554,6 +554,42 @@ body.events-standalone {
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* 活動詳情 Modal 裡「相關機台」清單：見 js/events.js locationSectionHtml()／relatedMachinesHtml()，
+   跟 event-match.js 的比對邏輯是同一份，所以這裡只是純顯示，不用再管消歧規則。 */
+.related-machines-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fill-black);
+}
+/* 跟上面「更多資訊」那一行（js/events.js eventDetailNoteRow()）之間的間距固定 16px，
+   蓋掉 .modal-info-section 共用的 margin-top:12px（見 style.css）；
+   gap 也蓋掉共用的 8px，改成 title／list 之間 4px。 */
+.related-machines-section { margin-top: 16px; gap: 8px; }
+/* 橫向捲動卡片列：拿掉縮圖，多數機台本來就沒填圖片，沒圖也不會顯得空；
+   固定高度不管幾台都不會把 modal 撐高，見 event-machine-link 討論的樣式比較。 */
+.related-machines-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 0 16px 0px;
+}
+.related-machine-item {
+  flex: 0 0 144px; /* 卡片固定寬度，名稱太長就在卡片內換行，不會撐寬卡片本身 */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 12px 12px;
+  border-radius: 8px;
+  background: var(--fill-white);
+  border: 1px solid var(--fill-gray-16);
+  text-decoration: none;
+  color: var(--fill-black);
+}
+.related-machine-item:hover { border-color: var(--fill-blue); }
+.related-machine-item .type-badge { align-self: flex-start; font-size: 12px; padding: 4px 8px; }
+.related-machine-name { font-size: 14px; font-weight: 500; line-height: 1.35; word-break: break-word; }
 
 .events-card-title {
   font-size: 16px;

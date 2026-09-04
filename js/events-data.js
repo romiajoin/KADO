@@ -10,11 +10,14 @@ const COL = {
 };
 
 // ⚠️ label 同時是顯示文字也是跟 Google Sheet B 欄比對的依據，改了要連同 Google 表單下拉選單一起改，詳見 README.md「活動行事曆分頁」
+// POP-UP／CAFÉ・餐廳原本是 #EA580C／#16A34A，跟機台的 type-badge 撞色
+// （抽卡機 --fill-orange #EA580C、相卡機 --fill-green #16A34A，見 style.css）——
+// events.html 卡片加了「有抽卡機/相卡機」徽章後兩者會同一排出現，才改掉這兩個分類的顏色，其餘不動。
 export const EVENT_CATEGORIES = [
-  { key: 'flash',   label: 'POP-UP',      color: '#EA580C' },
+  { key: 'flash',   label: 'POP-UP',      color: '#2BADB9' },
   { key: 'expo',    label: '展覽',        color: '#0066FF' },
-  { key: 'other',   label: '其他',        color: '#FFCF48' },
-  { key: 'cafe',    label: 'CAFÉ / 餐廳', color: '#16A34A' },
+  { key: 'other',   label: '其他',        color: '#1B813D' },
+  { key: 'cafe',    label: 'CAFÉ / 餐廳', color: '#BE185D' },
   { key: 'tokuten', label: '特典活動',      color: '#7C3AED' },
 ];
 

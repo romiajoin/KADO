@@ -6,6 +6,8 @@
 // =============================================
 
 import { getDeviceType, driveUrlToImage } from './utils.js';
+import { loadEvents } from './events-data.js';
+import { matchMachineToEventRow, machineTitleHtml, stripNoEventLinkTag } from './event-match.js';
 import { renderGrid, sortLocations, getEndingBadge } from './grid.js';
 import { renderSortControl, closeDesktopSortPanel, closeMobileSortSheet } from './sort.js';
 import { buildFilterOptions, renderFilterBar, FILTER_CONFIG, filterState } from './filters.js';
@@ -199,6 +201,16 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
             permId:    cols[16] || '', // 永久ID（Q欄，Apps Script 自動產生），分享連結用，不隨 A 欄流水號變動
           };
         }).filter(loc => loc.name && !isNaN(loc.lat) && !isNaN(loc.lng));
+
+        // 機台↔活動自動比對（見 js/event-match.js）：活動分頁資料透過 events-data.js 的 loadEvents() 拿，
+        // 跟上面「只比時間戳」那段各自獨立的 fetch 不衝突——這裡要的是完整內容，不只 P 欄時間。
+        // loadEvents() 內部只抓一次、之後重複呼叫吃快取，代表活動資料在這個分頁存活期間不會再更新，
+        // 機台的自動刷新仍正常運作，只是「機台↔活動」的比對結果要重新整理分頁才會反映活動端的異動。
+        const eventRowsForMatch = await loadEvents().catch(() => []);
+        locations.forEach(loc => {
+          loc.eventMatch = matchMachineToEventRow(loc, eventRowsForMatch);
+          loc.note = stripNoEventLinkTag(loc.note); // 顯示用備註要拿掉手動排除標記本身
+        });
 
         allLocations = locations;
         currentFiltered = sortLocations(locations);
@@ -530,7 +542,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
           ${getEndingBadge(loc.limited) ? `<div class="ending-badge">${getEndingBadge(loc.limited)}</div>` : ''}
         </div>
         <div class="modal-header">
-          <div class="popup-title">${loc.name}</div>
+          ${machineTitleHtml(loc, { source })}
         </div>
         ${loc.limited ? `<div class="popup-limited">期間限定：${loc.limited}</div>` : ''}
         <div class="modal-info-section">
@@ -563,6 +575,16 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
     function trackGmapsClick(id, source) {
       gtag('event', 'gmaps_click', {
         machine_id: id,
+        source: source,
+        device: getDeviceType(),
+      });
+    }
+
+    // GA: event_title_click（機台詳情標題點進去對應活動，見 js/event-match.js machineTitleHtml()）
+    function trackEventTitleClick(machineId, eventId, source) {
+      gtag('event', 'event_title_click', {
+        machine_id: machineId,
+        event_id: eventId,
         source: source,
         device: getDeviceType(),
       });
@@ -636,6 +658,7 @@ window.setView = setView;
 window.closeLightbox = closeLightbox;
 window.closeGridModal = closeGridModal;
 window.trackGmapsClick = trackGmapsClick;
+window.trackEventTitleClick = trackEventTitleClick;
 window.shareLocation = shareLocation;
 
 
