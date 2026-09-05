@@ -548,10 +548,10 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
         <div class="modal-info-section">
           ${loc.venue ? `<div class="popup-addr">場地：${loc.venue}</div>` : ''}
           ${loc.addr ? `<div class="popup-addr">地址：${loc.addr}</div>` : ''}
-          ${loc.hours ? `<div class="popup-addr">營業時間：${loc.hours}</div>` : ''}
           ${loc.character ? `<div class="popup-addr">作品：${loc.character}</div>` : ''}
           ${loc.edition ? `<div class="popup-addr">系列：${loc.edition}</div>` : ''}
           ${loc.perDraw ? `<div class="popup-addr">價格與張數：${loc.perDraw}</div>` : ''}
+          ${loc.hours ? `<div class="popup-addr">營業時間：${loc.hours}</div>` : ''}
           ${loc.note ? `<div class="popup-addr">備註：${loc.note}</div>` : ''}
         </div>
         <div class="popup-actions">

@@ -715,7 +715,7 @@ function eventDetailImageHtml(group) {
   if (imgs.length === 0) return '';
 
   if (imgs.length === 1) {
-    return `<div class="popup-img-wrap"><img src="${imgs[0]}" class="popup-img" alt="${group.title}"></div>`;
+    return `<div class="popup-img-wrap"><img src="${imgs[0]}" class="popup-img" data-lightbox="${imgs[0]}" alt="${group.title}"></div>`;
   }
 
   const cid = `event-carousel-${group.key}`;
@@ -723,7 +723,7 @@ function eventDetailImageHtml(group) {
     <div class="popup-img-wrap">
       <div class="carousel" id="${cid}" data-index="0" data-imgs='${JSON.stringify(imgs)}'>
         <div class="carousel-img-wrap">
-          <img src="${imgs[0]}" class="popup-img carousel-img" alt="${group.title}">
+          <img src="${imgs[0]}" class="popup-img carousel-img" data-lightbox="${imgs[0]}" alt="${group.title}">
         </div>
         <div class="carousel-controls">
           <button class="carousel-btn" data-carousel-action="prev" data-carousel-id="${cid}" aria-label="上一張圖片">&#8249;</button>
@@ -747,8 +747,34 @@ document.addEventListener('click', (e) => {
   let idx = parseInt(el.getAttribute('data-index'), 10);
   idx = action === 'prev' ? (idx - 1 + imgs.length) % imgs.length : (idx + 1) % imgs.length;
   el.setAttribute('data-index', idx);
-  el.querySelector('.carousel-img').src = imgs[idx];
+  const navImg = el.querySelector('.carousel-img');
+  navImg.src = imgs[idx];
+  navImg.setAttribute('data-lightbox', imgs[idx]);
   el.querySelector('.carousel-counter').textContent = `${idx + 1} / ${imgs.length}`;
+});
+
+// 圖片放大 Lightbox：跟機台 modal（main.js openLightbox/closeLightbox）同一套互動，
+// 差異是這裡不走 inline onclick + window 掛載，用跟本檔其他 overlay 一致的 addEventListener 綁定。
+function openEventLightbox(src) {
+  document.getElementById('eventLightboxImg').src = src;
+  document.getElementById('eventLightbox').classList.add('show');
+  // GA: events_lightbox_open（event_id 取目前開著的活動詳情對應的 group，沒有就是 null）
+  const group = state.selectedGroupKey ? findGroupByKey(state.selectedGroupKey) : null;
+  gtag('event', 'events_lightbox_open', {
+    event_id: group ? group.locations.map((l) => l.id).join('+') : null,
+    device: getDeviceType(),
+  });
+}
+function closeEventLightbox() {
+  document.getElementById('eventLightbox').classList.remove('show');
+}
+document.getElementById('eventLightbox').addEventListener('click', closeEventLightbox);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeEventLightbox(); });
+
+document.addEventListener('click', (e) => {
+  const lb = e.target.closest('[data-lightbox]');
+  if (!lb) return;
+  openEventLightbox(lb.getAttribute('data-lightbox') || lb.src);
 });
 
 function eventDetailNoteRow(ev) {
@@ -794,6 +820,7 @@ function locationSectionHtml(group, locIndex) {
     <div class="modal-info-section">
       ${loc.venue ? `<div class="popup-addr">場地：${loc.venue}</div>` : ''}
       ${addr ? `<div class="popup-addr">地址：${addr}</div>` : ''}
+      ${loc.character ? `<div class="popup-addr">作品：${loc.character}</div>` : ''}
       ${loc.hours ? `<div class="popup-addr">營業時間：${loc.hours}</div>` : ''}
       ${eventDetailNoteRow(loc)}
     </div>
@@ -894,7 +921,10 @@ document.getElementById('eventDetailClose').addEventListener('click', () => clos
 function shareEvent(group, source) {
 
   const primary = group.locations[0];
-  const url = `${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(primary.id)}`;
+  // 分享出去的連結走 /api/event-share?id=xxx，讓 LINE/Threads 等平台的爬蟲能讀到
+  // 這個活動對應的 og:image（指定分享圖，沒填則用活動預設圖，見 api/event-share.js）；
+  // 真人點進來後，那支 function 會立刻導回這裡（/events.html?event=xxx），使用體驗不變。
+  const url = `${window.location.origin}/api/event-share?id=${encodeURIComponent(primary.id)}`;
   gtag('event', 'events_share_click', {
     event_id: group.locations.map((l) => l.id).join('+'),
     source, device: getDeviceType(),

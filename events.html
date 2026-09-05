@@ -145,6 +145,12 @@
     </div>
   </div>
 
+  <!-- 圖片放大 Lightbox：沿用機台 .lightbox 樣式（style.css 共用），id 換一組避免撞名，
+       關閉點擊/Escape 都用 JS 綁定（不像機台版走 inline onclick + window 掛載，這裡跟 events.js 其他 overlay 一致） -->
+  <div class="lightbox" id="eventLightbox">
+    <img id="eventLightboxImg" src="" alt="" />
+  </div>
+
   <!-- 分享連結複製成功的提示，跟首頁 #share-toast 同一套樣式，這裡獨立一份 DOM -->
   <div id="share-toast"></div>
 

@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/09/04（v32.1，活動行事曆頁 events.html 開發中、尚未 push 上線）
+**最後更新：** 2026/09/05（v33.1；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對已上線，v33.1 為活動詳情補作品欄位＋活動分享連結動態 OG 圖，尚未 push 上線）
 
 ---
 
@@ -36,7 +36,7 @@
 |----|------|------|------|
 | A | id | 流水號，僅供 Sheet 內部排序/管理，不再是分享連結的依據（手動填入，勿用公式） | ✅ |
 | B | 類型 | 機台類型（抽卡機 / 相卡機） | ✅ |
-| C | 店名 | 活動或地點名稱 | ✅ |
+| C | 店名 | 活動或地點名稱；屬於某檔期間限定活動時直接填該活動的標題，是「機台⇄活動自動比對」的比對依據之一（v33，見下方「機台⇄活動自動比對」） | ✅ |
 | D | 期間限定 | 活動日期（如：2026/05/29～2026/07/23） | ❌ |
 | E | 場地 | 所在建築或商場（如：三創生活 7F） | ❌ |
 | F | 縣市 | 縣市名稱（如：台北市） | ❌ |
@@ -47,7 +47,7 @@
 | K | 系列 | 如：第一彈,第二彈 | ❌ |
 | L | 價格與張數 | 如：50元/2張 | ❌ |
 | M | 圖片 | Cloudinary 網址（多張用逗號分隔） | ❌ |
-| N | 備註 | 補充說明 | ❌ |
+| N | 備註 | 補充說明；填入 `【不連結活動】`／`[不連結活動]` 可讓這台機台永遠不被自動比對到活動（v33，見下方「機台⇄活動自動比對」），顯示時會拿掉這段標記文字 | ❌ |
 | O | 營業時間 | 如：週一至週日 11:00–22:00 | ❌ |
 | P | 分享圖 | 社群平台分享預覽用的專屬縮圖，Cloudinary 網址（v28 新增） | ❌ |
 | Q | 永久ID | 分享連結真正比對的依據，新增資料時由 Apps Script（`permanent-id.gs`）自動產生，一旦產生絕對不能手動修改或重複使用（v30.4 新增） | 系統自動填入 |
@@ -63,7 +63,7 @@
 |----|------|------|
 | A | id | 流水號 |
 | B | 類型 | 對應 `EVENT_CATEGORIES`：POP-UP／展覽／其他／CAFÉ・餐廳／特典活動，字串需完全一致，Google 表單下拉選單要同步維護 |
-| C | 活動標題 | |
+| C | 活動標題 | 跟機台分頁「店名」欄搭配「期間限定」，是「機台⇄活動自動比對」的比對依據（v33，見下方「機台⇄活動自動比對」） |
 | D | 期間限定 | 格式同機台分頁的 `limited`（`yyyy/MM/dd～yyyy/MM/dd`） |
 | E | 場地 | |
 | F | 縣市 | |
@@ -73,7 +73,8 @@
 | K | 圖片 | Cloudinary／Drive 網址，多張用逗號分隔 |
 | L | 更多資訊 | 連結，詳情彈窗固定顯示「查看 →」 |
 | M | 營業時間 | |
-| N–O | 分享圖／永久ID | 保留欄位對照，目前功能未使用 |
+| N | 分享圖 | 社群平台分享預覽用的專屬縮圖，Cloudinary 網址，選填（v33.1 新增啟用，見下方「分享連結 OG Meta（活動版）」） |
+| O | （保留） | 保留欄位對照，目前功能未使用 |
 | P | 最後更新時間 | 只有第一列會填。**v32.1 起啟用**：跟機台分頁 R 欄比較，取較新的一個顯示（見下方「最後更新資訊」） |
 
 > 同一檔活動在多個城市開時，每個地點各自填一列；網站依「標題＋期間」自動合併成同一組（見下方「活動行事曆」章節的「分組」說明）。
@@ -287,7 +288,7 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 
 ---
 
-## 活動行事曆（`events.html`，v32 開發中，尚未 push 上線）
+## 活動行事曆（`events.html`，v32 新增，v33 起隨機台頁互相連結，v33.1 補作品欄位／分享 OG 圖，已上線）
 
 跟 `app.html` 是完全獨立的頁面（不是同頁的 overlay/modal），透過 header／右下角 FAB 互相導覽。目的是整理「非常駐機台」的實體活動：動漫快閃店、聯名展覽、簽名會、CAFÉ／餐廳聯名、特典活動。資料讀取同一份 Google Sheet 的另一個分頁（見上方「活動行事曆分頁」欄位規格）。
 
@@ -309,6 +310,25 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 
 ### 分組：同一檔活動在多地點
 資料表仍是「一列＝一個地點」；畫面渲染前用「標題＋期間」把同一檔活動的多個地點合併成一組（group），月曆橫幅／當日活動清單／拼貼卡片／詳情 Modal 都吃 group，不逐列各自畫。分組 key 用 `groupKeyMap`（`g0`、`g1`...）在第一次用到時從**未經篩選**的 `allEvents` 算一次，避免篩選切換時同一組的 key 對不起來，也避免標題含逗號等字元打斷 `data-group-key` 屬性值。這是務實做法，不用改 Google Sheet 結構；如果之後真的出現「兩檔不同活動剛好同標題同期間」的巧合，建議加一欄專用的「活動群組ID」取代字串比對。同一組裡多個地點的 `start`／`end` 理論上應該一致，但合併時仍取涵蓋範圍最大的一份，防呆表單裡地點日期填得不完全一樣的情況。
+
+### 機台⇄活動自動比對（v33，`js/event-match.js`）
+不新增 Google Sheet 欄位——靠機台分頁「店名＋期間限定」跟活動分頁「活動標題＋期間限定」兩組既有欄位字串比對。比對邏輯是 `app.html`（`main.js`／`map.js`）跟 `events.html`（`events.js`）共用的獨立檔案 `js/event-match.js`，兩邊頁面各自 `import`，不是各自複製一份——這條規則屬於「單一事實來源」很重要的類型，機台端判斷「這台有沒有活動」、活動端判斷「這個地點有哪些機台」如果各自維護一份、其中一邊改了規則忘記同步，會出現「機台說有活動、活動卻找不到這台機台」的矛盾且不容易發現。
+
+**比對規則（`matchMachineToEventRow()`）**：
+1. **正規化**（`normalizeForMatch()`）：`String.normalize('NFKC')`（全形英數字轉半形）＋ 去除空白／括號／標點（全形半形都算），轉小寫。機台「店名＋期間限定」、活動「標題＋期間」都先正規化再比對，避免全半形或標點差異造成比對失敗。
+2. 正規化後標題＋期間完全一致的活動地點列，都算候選；候選為 0 → 沒有比對到，回傳 `null`。
+3. **候選超過一筆時（同一檔活動在多城市開）依序縮小範圍**，不是同時比對多個條件：
+   - 先比縣市（機台 F 欄 vs 活動地點 F 欄）完全一致，篩到剩一筆就採用；
+   - 縣市篩不出唯一結果，再比場地（機台 E 欄 vs 活動地點 E 欄）是否有子字串相符（任一邊包含對方都算）；
+   - 場地也篩不出唯一結果，改用經緯度算最近距離（`haversineKm()`），取最近的一筆；
+   - 三段都篩不出唯一結果，或機台沒有有效經緯度 → 回傳 `null`。**寧可不標活動標籤，不要標錯**，是這套比對邏輯貫穿全程的原則。
+4. **手動排除標記**：機台分頁「備註」欄（N 欄）填入 `【不連結活動】` 或半形 `[不連結活動]`（全形/半形括號都吃）的機台，永遠不會被自動比對到任何活動，不管標題/期間多相似；顯示備註文字時用 `stripNoEventLinkTag()` 拿掉這段標記本身，使用者看不到標記文字。
+
+**比對結果用在兩個地方**：
+- **`app.html`（機台端）**：機台詳情標題（列表模式 grid modal、地圖詳情面板/側欄，`machineTitleHtml()`）比對到活動時，標題本身變成連去 `events.html?event=<地點id>` 的連結（GA4：`event_title_click`）；列表卡片／地圖 popup 版面窄，刻意不顯示這個連結，避免更擠。
+- **`events.html`（活動端）**：活動詳情 Modal 每個城市頁籤底下的「相關機台」區塊（`findRelatedMachines()`／`relatedMachinesHtml()`）反向查詢「這個地點有哪些機台」，點機台卡片跳回 `app.html` 對應機台的既有 `?id=<permId>` 分享連結（GA4：`related_machine_click`）。反查時會把整組 `group.locations` 一起傳給 `matchMachineToEventRow()` 重新消歧一次，不能只憑「同標題同期間」就把整組底下所有機台都算某一地點的相關機台——同一檔活動在多地點開時，不同地點擺的機台不一定一樣。
+
+**已知限制**：兩檔不同活動剛好「標題完全一樣、期間也完全一樣」時無法區分（機率低，目前沒有防呆機制，比對規則本身無法判斷這是巧合還是同一檔活動）。
 
 ### 月曆檢視
 - 月份格線 + 每天一格；有活動的日期以「橫幅」（`.events-bar`，淡色底 + 左側色條，色碼對應分類）顯示，同一格內超過可視高度的活動收進「+N 更多」
@@ -336,10 +356,21 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - 同一組涵蓋不只一個地點時顯示城市頁籤，切換頁籤只換內容區塊，不整份重繪 Modal——只有場地／地址／營業時間／更多資訊／Google Maps 連結這幾項因地點而異才分開，標題／圖片／分類／期間合併只畫一份
 - 「更多資訊」對應表單 L 欄，固定顯示「查看 →」文字連結
 - 圖片：K 欄可逗號分隔多張，統一轉成陣列供縮圖（只取第一張）與詳情輪播共用
+- **作品（IP，J 欄，v33.1 新增顯示）**：有填才顯示「作品：xxx」，放在場地資訊之前；欄位本身沿用既有的 `character`，先前只用在拼貼卡片/篩選/搜尋，詳情 Modal 一直沒有顯示，v33.1 補上
+- **圖片放大 Lightbox（v33.1 新增）**：單張圖／輪播圖的 `<img>` 都補上 `data-lightbox` 屬性（輪播切換時同步更新），點擊開啟共用的 `.lightbox`（`style.css` 跟機台版共用同一份樣式與 z-index 99999，蓋過詳情 Modal 的 9999），點背景或按 Escape 關閉；跟機台版的差異只在綁定方式——機台走 inline `onclick` + `window.closeLightbox` 掛載，這裡沒有這套 window 掛載慣例，改用跟 `events.js` 其他 overlay 一致的 `addEventListener`，行為結果相同；新增 `events_lightbox_open` GA 事件（`event_id`／`device`，對應機台版的 `lightbox_open`）
 
 ### 分享
-- `shareEvent()`：目前只產生 `?event=<地點 id>` 網址（多地點時固定帶第一個地點），**尚未實作**讀取這個參數還原畫面的邏輯（跟機台分享連結的 `permId` 精準比對機制不同，屬於後續規劃）
+- `shareEvent()`：產生 `?event=<地點 id>` 網址（多地點時固定帶第一個地點），載入時讀取這個參數還原畫面（開啟對應活動詳情＋城市頁籤，或顯示「已下架」toast）的邏輯已隨 v33 機台⇄活動自動比對功能上線
 - 手機 `navigator.share()`、桌機複製網址 + toast，跟機台分享互動一致
+- **v33.1 新增：網址改走 `/api/event-share?id=<地點 id>`**，讓分享連結有動態 OG 分享圖，見下方「分享連結 OG Meta（活動版）」
+
+### 分享連結 OG Meta（活動版，v33.1 新增，`api/event-share.js`）
+- 是機台「分享連結 OG Meta」（`api/share.js`）的活動版對照組，同樣是因為社群平台爬蟲不執行 JS、只讀 `<head>` 裡寫死的 `og:title`/`og:image`
+- 依 `?id=`（地點 A 欄流水號，活動沒有機台那套永久ID機制，不是 `permId`）到活動分頁 CSV 找對應列：
+  - 圖片：找到列就用該列 N 欄「分享圖」，沒填、找不到 id、或抓表失敗，一律 fallback 回專案根目錄的 `event-og.png`（活動專屬預設圖，2400×1260，OG 標籤宣告 1200×630）
+  - 標題／描述固定為行事曆頁專屬文案，不依活動動態換（跟機台版一致，只有圖片會變）
+- 導回目標：比對到 id、或抓表失敗（保守當作可能有效）都導去 `/events.html?event=<id>`；確定找不到、或根本沒帶 id，導回 `/events.html`（不帶參數）——沒有機台那套「永久ID精準比對／A欄fallback／確定找不到」三段式判斷，那是永久ID機制特有的相容設計，活動這裡沒有對應的舊格式連結問題
+- 真人訪客一樣被 JS `location.replace()` 導回正常網站，不用 `<meta http-equiv="refresh">`
 
 ### FAB（首頁 ⇄ 行事曆頁互通，v32 改版）
 - 兩邊各自放一顆 `.events-link`／`.gacha-map-link`（共用 `events.css` 的 `.events-link` class），手機／桌機統一是畫面右下角常駐 FAB，桌機 hover 展開成膠囊、顯示文字
@@ -361,13 +392,14 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 | `events_detail_open` / `events_detail_close` | 打開/關閉活動詳情 Modal | `event_id`, `location_count`(open)／`method`(close), `source`, `device` |
 | `events_city_tab_switch` | 詳情 Modal 內切換城市頁籤 | `machine_id`, `source`, `device` |
 | `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
+| `events_lightbox_open`（v33.1 新增） | 詳情 Modal 內點圖放大 | `event_id`, `device` |
 | `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
 | `events_search` | 搜尋框輸入（debounce 800ms） | `search_term`, `device` |
 | `events_filter_*`／`events_sort_*` | 篩選/排序面板開關與選取（沿用 `filter-widget.js`／`sort-widget.js` 的 `filter_click`／`filter_clear`／`filter_panel_open`／`filter_panel_close`／`sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result` 事件核心，只是 `gaPrefix` 換成 `events_filter`／`events_sort`） | 同首頁對應事件的參數 |
 | `search_box_focus` / `search_clear` | 搜尋框聚焦/清除（沿用首頁事件名稱，`source` 改用 `events_desktop_toolbar`／`events_mobile_toolbar`） | `source`, `device` |
 | `gmaps_click` | 詳情 Modal 內點「在 Google Maps 查看」 | `machine_id`, `source`, `device` |
 
-**待辦**：以上全新事件（含新增的 `events_month_nav`／`events_week_expand`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫。
+**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫；`events_lightbox_open` 用的 `event_id`／`device` 是既有維度，不用額外註冊新參數，只差把事件名稱本身登記進去。
 
 ---
 
@@ -475,5 +507,3 @@ push 至 GitHub 後 Vercel 自動重新部署，約 1 分鐘生效。
 - 距離篩選（例如「5km 內」，v22 討論過先做排序、篩選半徑之後再議）
 - 地點狀態標示（營業中 / 已結束）
 - 自訂網域
-- 活動行事曆頁 push 上線（目前只在本機開發，尚未 commit／deploy，見「活動行事曆」章節）
-- 活動分享連結（`?event=`）讀取還原畫面的邏輯，目前只產生連結，還沒有對應的解析/自動開啟

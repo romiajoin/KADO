@@ -4,7 +4,12 @@
 
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
-**⚠️ v32.1（本檔案這次更新時）尚未 commit／push**：`git status` 顯示 `app.html`／`js/filters.js`／`js/grid.js`／`js/main.js`／`js/map.js`／`js/sort.js`／`js/utils.js`／`style.css` 有未 commit 的修改，另外新增了 `events.html`／`events.css`／`js/events.js`／`js/events-data.js`／`js/events-header.js`／`js/events-scroll.js`／`js/filter-widget.js`／`js/sort-widget.js` 八個尚未 `git add` 的新檔案——全部是同一個「活動行事曆」新功能（見下方「活動行事曆頁（events.html）」章節）；v32.1 是 v32 之上的小改動（「最後更新」時間改成比較機台/活動兩分頁，見「最後更新元素」；另外修正月曆沒有活動時最後一週異常延伸的版面 bug，見「月曆卡片高度：flex:1 → flex:0 1 auto」），同樣尚未 commit。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先 `./push.sh`。
+**⚠️ v33.1（本檔案這次更新時）尚未 commit／push**：v32／v32.1（活動行事曆頁上線、月曆最後一週高度 bug 修正）跟 v33（機台⇄活動自動比對、跨頁連結＋GA4 追蹤：新增 `js/event-match.js`／`js/machines-data.js`，機台詳情標題可點連到對應活動、活動詳情列出「相關機台」，`events.html?event=<地點id>` 深連結還原，詳見 commit log）都已經 commit 上線。v33.1 是 v33 之上的小改動，`git status` 顯示 `events.html`／`js/events.js` 有未 commit 的修改，另外新增了 `api/event-share.js`／`event-og.png` 兩個尚未 `git add` 的新檔案：
+1. 活動詳情 Modal（`locationSectionHtml()`）補上「作品」欄位顯示（`loc.character`，選填，沒填不顯示），跟機台詳情彈窗的作法一致
+2. 活動分享連結新增動態 OG 分享圖機制，比照機台的 `api/share.js` 另開一支 `api/event-share.js`，見「分享（`shareEvent()`）」章節
+3. 活動詳情 Modal 的圖片補上點擊放大（Lightbox），跟機台 modal 的圖片放大互動一致，見「活動詳情 Modal」章節
+
+另外 `js/main.js` 有一筆跟這次改動無關、獨立存在的未 commit 修改（機台詳情彈窗欄位順序調整：作品／系列／價格與張數搬到營業時間之前），一併列出以求 `git status` 描述正確，不屬於 v33.1 範圍。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先 `./push.sh`。
 
 - 網站：https://kadotw.vercel.app/
 - Repo：https://github.com/romiajoin/KADO
@@ -50,6 +55,7 @@ js/
   events-header.js    # 行事曆頁專用：抓「最後更新」時間戳寫進 DOM，不 import main.js（v32 新增；v32.1 起同時比較機台/活動兩分頁時間戳，見「最後更新元素」）
   events-scroll.js    # 行事曆頁專用：手機版 #eventsTopBar 滑動隱藏，同時盯 3 種子模式的捲動容器（v32 新增）
 api/share.js          # 不受影響,原本就是獨立檔案
+api/event-share.js    # 活動分享連結 OG meta（v33.1 新增，仿 api/share.js，見「分享（shareEvent()）」章節）
 changelog.json        # 更新日誌內容（v27 新增，跟 manifest.json 同層）：date/version/text 三欄，text 可為字串或陣列（同天多筆）
 permanent-id.gs       # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，
                        # 不在這個 repo 的 push.sh 流程裡，見「分享連結永久ID機制」）
@@ -527,7 +533,7 @@ function fitOptionsWidth(container) {
 
 ---
 
-## 活動行事曆頁（`events.html`，v32，尚未 commit）
+## 活動行事曆頁（`events.html`，v32 新增，v33 起隨機台頁互相連結，v33.1 補上作品欄位／分享 OG 圖）
 
 跟 `app.html` 是完全獨立的頁面（同分頁導航過去，不是 overlay/modal），header logo／右下角 FAB 互相導覽。整理「非常駐機台」的實體活動（動漫快閃店、聯名展覽、簽名會、CAFÉ／餐廳聯名、特典活動），資料來自同一份 Google Sheet 的另一個分頁（欄位規格見上方「Google Sheet 欄位」章節旁的活動分頁說明，或 `spec.md`）。
 
@@ -554,6 +560,31 @@ function fitOptionsWidth(container) {
 
 ### 資料分組：同一檔活動在多地點
 Sheet 仍是「一列＝一個地點」，畫面渲染前用「標題＋期間」把同一檔活動的多個地點合併成一組（group）——月曆橫幅／當日活動清單／拼貼卡片／詳情 Modal 都吃 group。分組 key（`g0`/`g1`...）用 `ensureGroupKeyMap()` 在第一次用到時從**未經篩選**的 `allEvents` 算一次，不受篩選狀態影響（避免篩選切換時同一組的 key 對不起來），也不直接拿標題字串當 key（避免標題含逗號等字元打斷 `data-group-key` 屬性值）。這是務實做法，不用改 Sheet 結構；真的遇到「兩檔不同活動剛好同標題同期間」的巧合，建議加一欄專用的「活動群組ID」取代字串比對。
+
+### 機台⇄活動自動比對（v33，`js/event-match.js`）
+不新增 Google Sheet 欄位，機台「店名＋期間限定」對活動「標題＋期間」做正規化字串比對；`app.html`（`main.js`／`map.js`）跟 `events.html`（`events.js`）共用同一份 `js/event-match.js`，不各自複製一份——這條規則屬於單一事實來源很重要的類型，機台端判斷「這台有沒有活動」、活動端判斷「這個地點有哪些機台」，兩邊各自維護一份、改一邊忘記改另一邊，會出現互相矛盾的結果且不容易發現。
+
+**`normalizeForMatch()`**：`String.normalize('NFKC')`（全形英數轉半形）+ 正規表示式去除空白／全形半形括號／常見標點，轉小寫。比對前雙方欄位都先跑這個函式，避免全半形或標點差異造成比對失敗。
+
+**`matchMachineToEventRow(machine, eventRows)`**：
+- `hasNoEventLinkTag(machine.note)` 為真直接回傳 `null`（見下方排除標記）
+- 用正規化後的 `title`+`period` 篩出候選（`eventRows.filter(...)`）；候選 0 筆回傳 `null`，1 筆直接回傳該筆
+- 候選 >1 筆（同一檔活動在多地點開）依序用「篩到剩一筆就採用」的邏輯縮小範圍，不是同時 AND 三個條件：
+  1. `machine.city === ev.city`（縣市完全一致）
+  2. `ev.venue.includes(machine.venue) || machine.venue.includes(ev.venue)`（場地子字串互相包含，兩邊填法不一定對稱，誰包含誰都算）
+  3. `haversineKm()` 取最近的一筆（雙方都要有合法經緯度才會跑這段）
+  - 三段都沒篩出唯一結果 → 回傳 `null`（寧可不標，不要標錯，貫穿整套邏輯的原則）
+
+**`findRelatedMachines(eventRow, machines, groupLocations)`**：反向查詢用，`events.js` 呼叫時一定要傳完整 `group.locations`（不能只傳 `eventRow` 自己一筆），否則多地點活動裡，同標題同期間的機台會被每個地點都判定成相關——內部對每個候選機台重跑一次 `matchMachineToEventRow(m, groupLocations)` 做消歧，只留下 `match.id === eventRow.id` 的。
+
+**手動排除標記**：`NO_EVENT_LINK_MARK = /[【\[]\s*不連結活動\s*[】\]]/`，機台備註欄位（N 欄）符合就永遠跳過自動比對，不管標題/期間多相似；`stripNoEventLinkTag()` 在顯示備註文字時把標記本身拿掉（全域版 regex `replace`），使用者看不到標記文字。
+
+**渲染／埋碼串接**：
+- `machineTitleHtml(loc, { className, source })`（`main.js`/`map.js` 共用渲染函式）：比對到活動時標題變成 `<a class="event-title-link">`，inline `onclick="trackEventTitleClick(...)"` 送 `event_title_click`（比照既有的 `trackGmapsClick` 寫法，掛在 `window` 上——因為 `main.js`／`map.js` 兩邊渲染出的 HTML 都要能呼叫到，函式本身只在 `main.js` 定義一份）
+- `relatedMachinesHtml()`（`events.js`）：每張卡片加 `data-machine-id` 屬性，`bindLocationSectionEvents()` 內用 `addEventListener` 送 `related_machine_click`，寫在同函式既有的 `gmaps_click`／分享按鈕綁定旁邊，同一套綁定時機
+- 兩個事件的參數細節見下方「GA4 事件（活動行事曆專屬）」
+
+**已知限制**：兩檔不同活動剛好「標題完全一樣、期間也完全一樣」時，比對規則本身無法區分是巧合還是同一檔活動，目前沒有防呆機制（機率低，暫不處理）。
 
 ### 月曆檢視 / 總覽（拼貼）檢視
 - **月曆**：月份格線，有活動的日期顯示「橫幅」（`.events-bar`，色碼對應 `EVENT_CATEGORIES`），超過可視高度收進「+N 更多」。點橫幅或「當日活動」清單卡片開詳情 Modal。`MIN_MONTH`（2026/05）鎖住最早可翻到的月份，避免翻到早於資料建置起點的空月曆讓人誤以為系統壞了；預設仍開「當月」，不是鎖死顯示最早月份
@@ -588,10 +619,17 @@ Sheet 仍是「一列＝一個地點」，畫面渲染前用「標題＋期間�
 Drawer 頂部要跟月曆頂部切齊，量的是 `.events-page-body` 的 `getBoundingClientRect().top`（頁面本身不整頁捲動，這個 top 值等於 header + 訪客 banner 目前實際佔用的高度），寫進 CSS variable `--events-header-h`；訪客 banner 非同步出現，用 `ResizeObserver` 盯 header/banner 本身尺寸變化，不用為每個成因各自補監聽（跟首頁 `--top-bar-height` 是同一個坑、同一種修法）。
 
 ### 活動詳情 Modal
-視覺沿用機台詳情彈窗（`.grid-modal-overlay`／`.grid-modal-box`／`.popup-*`），id 換一組（`#eventDetailOverlay`/`#eventDetailContent`）避免撞名，這裡沒有 import `main.js`，是獨立一份。已結束的活動顯示「已結束」badge（沿用倒數 badge 外形只換顏色）優先於倒數 badge。同一組涵蓋不只一個地點時顯示城市頁籤（`cityTabsHtml`），切頁籤只換 `#eventDetailLocationSlot` 內容，不整份重繪。「更多資訊」對應表單 L 欄（原欄位名叫「備註」，內容已改成連結），固定顯示「查看 →」文字。K 欄圖片可逗號分隔多張，統一轉陣列（`eventImages()`）供縮圖（`eventThumbUrl()`，只取第一張）與詳情輪播共用。圖片外層包一層 `.popup-img-wrap`（灰底、12px padding、圓角），跟機台 modal 同外觀，不讓圖片直接鋪滿寬度貼齊 modal 邊緣。多圖輪播沿用跟機台 modal 同一套 `.carousel` 元件與事件委派模式（掛在 `document`，因為 modal 內容是動態塞進去的 `innerHTML`），差異是這裡沒有 lightbox 功能，圖片不加 `data-lightbox`。
+視覺沿用機台詳情彈窗（`.grid-modal-overlay`／`.grid-modal-box`／`.popup-*`），id 換一組（`#eventDetailOverlay`/`#eventDetailContent`）避免撞名，這裡沒有 import `main.js`，是獨立一份。已結束的活動顯示「已結束」badge（沿用倒數 badge 外形只換顏色）優先於倒數 badge。同一組涵蓋不只一個地點時顯示城市頁籤（`cityTabsHtml`），切頁籤只換 `#eventDetailLocationSlot` 內容，不整份重繪。「更多資訊」對應表單 L 欄（原欄位名叫「備註」，內容已改成連結），固定顯示「查看 →」文字。K 欄圖片可逗號分隔多張，統一轉陣列（`eventImages()`）供縮圖（`eventThumbUrl()`，只取第一張）與詳情輪播共用。圖片外層包一層 `.popup-img-wrap`（灰底、12px padding、圓角），跟機台 modal 同外觀，不讓圖片直接鋪滿寬度貼齊 modal 邊緣。多圖輪播沿用跟機台 modal 同一套 `.carousel` 元件與事件委派模式（掛在 `document`，因為 modal 內容是動態塞進去的 `innerHTML`）。**v33.1 新增**：`locationSectionHtml()` 的地點資訊區塊補上「作品：${loc.character}」這一行，跟其他欄位（場地／地址／營業時間）同一套「有值才渲染」寫法，放在場地之前；欄位本身是既有的 `character`（J 欄，events-data.js 的 `COL.character`），先前只用在拼貼卡片/篩選/搜尋，詳情 Modal 一直沒有顯示，這次補上。
+
+**v33.1 新增：圖片放大 Lightbox**——單張圖／輪播圖的 `<img>`（`eventDetailImageHtml()`）都補上 `data-lightbox` 屬性（輪播切換圖片的 `data-carousel-action` 監聽器裡同步更新這個屬性，不然放大出來的還是第一張），點擊開啟共用的 `.lightbox`（`events.html` 新增 `#eventLightbox`/`#eventLightboxImg`，跟機台版 `#lightbox`/`#lightboxImg` 換一組 id 避免撞名；`.lightbox` 樣式沿用 `style.css` 共用的那份，z-index 99999 蓋過詳情 Modal 的 9999，不用額外調整）。**跟機台版的綁定方式刻意不同**：機台的 `openLightbox`/`closeLightbox` 宣告在 `main.js` 裡，靠 `app.html` 寫死的 `onclick="closeLightbox()"` 呼叫，所以 `main.js` 特地把它們掛到 `window`（見「🌐 掛到 window」那段）；`events.js` 從頭到尾沒有這套 window 掛載慣例（所有 overlay 的開關都是 JS `addEventListener` 綁的，例如 `#eventDetailOverlay`/`#dayEventsOverlay`），這裡延續同樣的寫法，用 `document.getElementById('eventLightbox').addEventListener('click', closeEventLightbox)` 跟一個 `[data-lightbox]` 的 `document` 委派點擊監聽器，不新增任何 `window.X = X` 綁定，行為結果跟機台版一致。新增 `events_lightbox_open` GA 事件（`event_id` 取 `state.selectedGroupKey` 對應的 group、`device`），對應機台版的 `lightbox_open`。
 
 ### 分享（`shareEvent()`）
-目前只產生 `?event=<地點 id>` 網址（多地點時固定帶第一個地點的 id，維持跟機台單地點分享一致的網址格式），**還沒有**讀取這個參數還原畫面的邏輯——這部分不在這次改動範圍內，之後要做建議比照機台的 `permId` 精準比對機制（見「分享連結永久ID機制」），不要沿用 A 欄流水號那種會失效的做法。手機 `navigator.share()`、桌機複製網址 + toast，跟機台分享互動一致。
+`?event=<地點 id>` 網址（多地點時固定帶第一個地點的 id）本身在 v33 已經有載入時讀取還原的邏輯（比照機台 `?id=` 深連結，開啟對應的活動詳情＋城市頁籤，或顯示「已下架」toast），這裡不重複說明。
+
+**v33.1 新增：動態 OG 分享圖**——`shareEvent()` 產生的網址從原本直接指向 `events.html?event=xxx` 改成指向新的 `/api/event-share?id=xxx`（`id` 為地點 A 欄流水號；活動沒有機台那套永久ID機制，所以直接用 A 欄流水號比對，不是 `permId`）。`api/event-share.js` 是機台 `api/share.js` 的活動版對照組，同樣是給不執行 JS 的社群平台爬蟲讀 `og:image` 用，真人點擊會被 `location.replace()` 立刻導回 `events.html?event=xxx`：
+- 圖片分兩種：活動分頁 **N 欄「分享圖」**（Cloudinary 網址，選填，v33.1 新增此欄），指定了就用；沒填、找不到對應 id、或抓表失敗，一律 fallback 回專案根目錄新增的活動專屬預設圖 `event-og.png`（2400×1260，OG 標籤仍宣告 1200×630，跟機台 `/og.png` 是同一套慣例：2x 圖檔、宣告 1x 尺寸）
+- 標題／描述固定為行事曆頁專屬文案（不像圖片那樣依活動動態換），跟機台 `api/share.js` 的做法一致——不管分享哪個活動，卡片標題/描述都一樣，只有圖片會變
+- 沒有機台那套「精準比對／A欄fallback／確定找不到」三段式判斷（那是永久ID機制特有的相容設計），這裡只有兩種結果：比對到 id（或抓表失敗、保守當作可能有效）就帶 `?event=` 導回活動頁；確定找不到、或根本沒帶 id，導回 `events.html` 首頁（不帶參數）
 
 ### FAB：首頁 ⇄ 行事曆頁互通（v32）
 兩邊各自放一顆 `.events-link`（共用 `events.css` 的樣式），手機/桌機統一是畫面右下角常駐 FAB，桌機 hover 展開成膠囊顯示文字。
@@ -647,6 +685,7 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 | `events_detail_close` | 關閉活動詳情 Modal | `method`(backdrop_click/x_button), `device` |
 | `events_city_tab_switch` | 詳情 Modal 內切換城市頁籤 | `machine_id`, `source`, `device` |
 | `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
+| `events_lightbox_open`（v33.1 新增） | 詳情 Modal 內點圖放大（`data-lightbox`） | `event_id`, `device` |
 | `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
 | `events_search` | 搜尋框輸入（debounce 800ms，關鍵字長度 ≥2 才記） | `search_term`, `device` |
 | `gmaps_click` | 詳情 Modal 內點「在 Google Maps 查看」 | `machine_id`, `source`, `device` |
@@ -654,7 +693,7 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 | `filter_click`／`filter_clear`／`filter_panel_open`／`filter_panel_close`（`gaPrefix: 'events_filter'`） | 篩選 pill/面板互動（`filter-widget.js` 內部送出，事件名稱前綴由呼叫方決定，這裡實際送出的名稱是 `events_filter_click` 等） | 同首頁對應事件 |
 | `sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result`（`gaPrefix: 'events_sort'`） | 排序面板互動（`sort-widget.js` 內部送出，實際事件名稱是 `events_sort_panel_open` 等） | 同首頁對應事件 |
 
-**待辦**：以上全新事件（含新增的 `events_month_nav`／`events_week_expand`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫（`page_id`／流程見下方「外部工具筆記」）。
+**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫（`page_id`／流程見下方「外部工具筆記」）。`events_lightbox_open` 沿用既有的 `event_id`／`device` 維度，不用額外註冊新參數。
 
 ### 活動分類色碼（EVENT_CATEGORIES，events.css）
 `events-data.js` 的 `EVENT_CATEGORIES` 直接在程式碼裡寫死 hex 值，對應 Google Sheet 活動分頁 B 欄（類型）的字串值必須完全一致：POP-UP `#EA580C`、展覽 `#0066FF`、其他 `#FFCF48`、CAFÉ／餐廳 `#16A34A`、特典 `#7C3AED`。這組色碼同時被月曆橫幅左側色條（`.events-bar::before`）、分類 badge（`.events-bar-cat`／`.events-detail-type-badge`，靠 `--bar-color` 這個 CSS 變數帶進來）、拼貼卡片跟詳情 Modal 共用，改色只要動 `events-data.js` 一處。
