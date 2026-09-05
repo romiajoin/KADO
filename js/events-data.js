@@ -7,6 +7,9 @@ const COL = {
   id: 0, category: 1, title: 2, period: 3,
   venue: 4, city: 5, addr: 6, lat: 7, lng: 8,
   character: 9, image: 10, note: 11, hours: 12,
+  // N（分享圖）目前前端不需要解析，api/event-share.js 另外直接讀 CSV 那一份；
+  // O 欄是永久ID，比照機台 Q 欄機制，分享連結/機台↔活動跨頁連結真正比對的依據
+  permId: 14,
 };
 
 // ⚠️ label 同時是顯示文字也是跟 Google Sheet B 欄比對的依據，改了要連同 Google 表單下拉選單一起改，詳見 README.md「活動行事曆分頁」
@@ -81,6 +84,9 @@ export async function loadEvents() {
         image: cols[COL.image] || '',
         note: cols[COL.note],
         hours: cols[COL.hours],
+        // 永久ID：一旦產生絕不能改，分享連結（shareEvent）跟機台端「期間活動」標題連結
+        // （event-match.js 的 eventUrl()）都靠這個欄位比對，不是 A 欄流水號
+        permId: cols[COL.permId] || '',
       };
     }).filter((ev) => ev.id && ev.start);
     eventsLoaded = true;

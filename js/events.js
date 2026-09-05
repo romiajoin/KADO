@@ -571,8 +571,9 @@ const filterWidget = createFilterWidget({
   config: [
     { key: 'category', label: '類型' },
     {
+      // key 沿用 'ip'（GA filter_type 等既有分析參數值不變），只改顯示文字，比照首頁 filters.js
       key: 'ip',
-      label: 'IP',
+      label: '作品',
       panelHint: '依「數字 → 筆畫 → 英文」排序',
       sheetHint: '依「數字 → 筆畫 → 英文」排序，可滑動尋找',
     },
@@ -924,7 +925,11 @@ function shareEvent(group, source) {
   // 分享出去的連結走 /api/event-share?id=xxx，讓 LINE/Threads 等平台的爬蟲能讀到
   // 這個活動對應的 og:image（指定分享圖，沒填則用活動預設圖，見 api/event-share.js）；
   // 真人點進來後，那支 function 會立刻導回這裡（/events.html?event=xxx），使用體驗不變。
-  const url = `${window.location.origin}/api/event-share?id=${encodeURIComponent(primary.id)}`;
+  // 網址帶永久ID（O欄，見「分享連結永久ID機制（活動版）」），不是 A 欄流水號——
+  // 跟機台 shareLocation() 同一個理由，A 欄被管理者重新編號後舊連結不該連到別的活動。
+  // GA 的 event_id 維持用 A 欄 id（join 多地點），跟 events_detail_open 等其他事件的
+  // event_id 格式一致，方便在 GA4 後台串同一組活動的完整互動路徑，不因這次改動而切格式。
+  const url = `${window.location.origin}/api/event-share?id=${encodeURIComponent(primary.permId)}`;
   gtag('event', 'events_share_click', {
     event_id: group.locations.map((l) => l.id).join('+'),
     source, device: getDeviceType(),
@@ -1012,19 +1017,27 @@ document.getElementById('eventsClearSearchMobile').addEventListener('click', fun
   initEventsTopBarScroll();
   gtag('event', 'events_page_view', { device: getDeviceType() });
 
-  // 偵測 ?event=<地點id> 分享連結：機台端「期間活動」標籤、跟這裡的分享按鈕（shareEvent）都會產生這種連結。
-  // 活動地點目前沒有像機台永久ID那種「重新編號也不會變」的識別碼（N/O 欄保留給以後用，見 spec.md），
-  // 只能先用 A 欄流水號比對——找得到就直接開對應活動＋地點；找不到就跟機台分享連結一樣顯示 toast，
-  // 這裡只有「找到／找不到」兩段，沒有機台那邊 A欄/永久ID 雙軌判斷的曖昧地帶，故意簡化。
+  // 偵測 ?event=<地點永久ID> 分享連結：機台端「期間活動」標籤、跟這裡的分享按鈕（shareEvent）都會產生這種連結。
+  // 活動地點現在也有 O 欄永久ID（比照機台 Q 欄機制，見「分享連結永久ID機制（活動版）」），
+  // 三段式判斷完全比照機台 app.html 的 ?id= 解析邏輯（見 js/main.js）：
+  //   1. 永久ID精準比對成功 → 正常開啟對應活動詳情＋地點
+  //   2. 精準比對失敗、退回比對 A 欄流水號找到列（舊格式連結）→ 無法確認是不是原本那個
+  //      地點（A 欄可能被重新編號指派給別的活動），刻意安靜不顯示任何內容，只送 GA 事件
+  //   3. 永久ID、A 欄都找不到 → 這個地點已經整列被刪除，顯示「已下架」toast
   const eventUrlParams = new URLSearchParams(window.location.search);
   const eventLocId = eventUrlParams.get('event');
   if (eventLocId) {
-    const targetLoc = allEvents.find((ev) => ev.id === eventLocId);
-    if (targetLoc) {
-      const group = findGroupByKey(groupKey(targetLoc));
-      const idx = group ? group.locations.findIndex((l) => l.id === eventLocId) : -1;
+    const exactTarget = allEvents.find((ev) => ev.permId === eventLocId);
+    const legacyTarget = exactTarget ? null : allEvents.find((ev) => ev.id === eventLocId);
+
+    if (exactTarget) {
+      const group = findGroupByKey(groupKey(exactTarget));
+      const idx = group ? group.locations.findIndex((l) => l.permId === eventLocId) : -1;
       if (group) openEventDetailModal(group, 'share_link', idx < 0 ? 0 : idx);
-      gtag('event', 'events_share_link_opened', { event_id: eventLocId, device: getDeviceType() });
+      gtag('event', 'events_share_link_opened', { event_id: exactTarget.id, device: getDeviceType() });
+    } else if (legacyTarget) {
+      // 舊格式連結、靠 A 欄 fallback 找到列，但無法確認是不是原本那一個地點，刻意不顯示任何內容
+      gtag('event', 'events_share_link_legacy_fallback', { event_id: eventLocId, device: getDeviceType() });
     } else {
       showEventToast('這個活動的資訊已經下架囉');
       gtag('event', 'events_share_link_target_missing', { event_id: eventLocId, device: getDeviceType() });

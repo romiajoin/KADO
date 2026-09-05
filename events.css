@@ -23,8 +23,24 @@
   transition: width 0.22s ease, padding 0.22s ease, background 0.15s ease, box-shadow 0.15s ease, gap 0.15s ease;
 }
 
-body.map-view .events-link {
-  display: none;
+/* 手機／平板地圖模式：FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet
+   內容卡在一起（sidebar 在這個斷點下變成貼底 fixed 全寬 bottom sheet），且地圖模式
+   本身已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口，故隱藏。
+   桌機地圖模式（見下方 min-width:769px）則保留顯示——桌機側邊欄是常駐在左側的
+   400px 面板，不會跟右下角的 FAB 互相遮擋。 */
+@media (max-width: 768px) {
+  body.map-view .events-link {
+    display: none;
+  }
+}
+
+/* 桌機地圖模式下 FAB 保留顯示，但 Leaflet 預設控制項（attribution 等）z-index 是 1000，
+   FAB 平常（列表模式／events.html）維持 z-index:500 就好，這裡地圖模式下額外拉高，
+   避免跟疊在同個右下角的 Leaflet attribution 互相蓋住。 */
+@media (min-width: 769px) {
+  body.map-view .events-link {
+    z-index: 1100;
+  }
 }
 
 .events-link svg { flex-shrink: 0; }

@@ -198,8 +198,8 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       const basicRows = `
         ${loc.venue ? `<div class="popup-addr">場地：${loc.venue}</div>` : ''}
         ${loc.addr ? `<div class="popup-addr">地址：${loc.addr}</div>` : ''}
-        ${loc.character ? `<div class="popup-addr">IP：${loc.character}</div>` : ''}
-        ${loc.edition ? `<div class="popup-addr">彈數：${loc.edition}</div>` : ''}
+        ${loc.character ? `<div class="popup-addr">作品：${loc.character}</div>` : ''}
+        ${loc.edition ? `<div class="popup-addr">系列：${loc.edition}</div>` : ''}
       `;
 
       if (compact) {

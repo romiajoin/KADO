@@ -9,7 +9,7 @@
 const SITE_URL = 'https://kadotw.vercel.app';
 const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`;
 const TITLE = 'KADO！抽卡機在哪';
-const DESCRIPTION = '全台抽卡機／相卡機資訊持續更新中！';
+const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
 
 // 跟 js/main.js 的 SHEET_CSV_URL 是同一份，兩邊各自獨立宣告
 // （一個是 ES Module 給前端用，一個是這支 CommonJS serverless function，無法互相 import）

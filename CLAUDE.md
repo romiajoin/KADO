@@ -4,12 +4,15 @@
 
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
-**⚠️ v33.1（本檔案這次更新時）尚未 commit／push**：v32／v32.1（活動行事曆頁上線、月曆最後一週高度 bug 修正）跟 v33（機台⇄活動自動比對、跨頁連結＋GA4 追蹤：新增 `js/event-match.js`／`js/machines-data.js`，機台詳情標題可點連到對應活動、活動詳情列出「相關機台」，`events.html?event=<地點id>` 深連結還原，詳見 commit log）都已經 commit 上線。v33.1 是 v33 之上的小改動，`git status` 顯示 `events.html`／`js/events.js` 有未 commit 的修改，另外新增了 `api/event-share.js`／`event-og.png` 兩個尚未 `git add` 的新檔案：
-1. 活動詳情 Modal（`locationSectionHtml()`）補上「作品」欄位顯示（`loc.character`，選填，沒填不顯示），跟機台詳情彈窗的作法一致
-2. 活動分享連結新增動態 OG 分享圖機制，比照機台的 `api/share.js` 另開一支 `api/event-share.js`，見「分享（`shareEvent()`）」章節
-3. 活動詳情 Modal 的圖片補上點擊放大（Lightbox），跟機台 modal 的圖片放大互動一致，見「活動詳情 Modal」章節
+**⚠️ v33.2（本檔案這次更新時）尚未 commit／push**：v32／v32.1（活動行事曆頁上線、月曆最後一週高度 bug 修正）、v33（機台⇄活動自動比對、跨頁連結＋GA4 追蹤）、v33.1（活動詳情作品欄位、動態 OG 分享圖、圖片放大 Lightbox）都已經 commit 上線。v33.2 是 v33.1 之上的小改動，`git status` 顯示以下檔案有未 commit 的修改：
+1. **活動分享連結改用永久ID**：活動分頁新增 O 欄「永久ID」，比照機台 Q 欄機制，`js/event-match.js`／`js/events-data.js`／`js/events.js`／`api/event-share.js` 改用 permId、`?event=` 解析改成三段式判斷，詳見「分享連結永久ID機制（活動版）」章節
+2. **全站篩選「IP」更名「作品」**：`js/filters.js`（首頁）／`js/events.js`（行事曆頁）的篩選 pill 顯示文字從「IP」改成「作品」，`key`／GA `filter_type` 等既有分析參數值不變；`js/map.js` 機台詳情彈窗欄位標籤也同步從「IP：」改成「作品：」（「彈數：」順便改成「系列：」）
+3. **桌機地圖模式恢復顯示 FAB**：`events.css` 的 `.events-link` 地圖模式隱藏規則從「不分裝置一律隱藏」改成只在 ≤768px 隱藏，桌機（≥769px）保留顯示並拉高 z-index 避免被 Leaflet attribution 蓋住，詳見「FAB（`.events-link`）幾個容易忽略的 CSS 細節」章節
+4. **文件修正活動分類色碼**：`docs/spec.md`／本檔案的 `EVENT_CATEGORIES` 色碼表跟實際 `js/events-data.js` 對不上（POP-UP／其他／CAFÉ・餐廳三個顏色寫錯），這次核對程式碼後更正
 
-另外 `js/main.js` 有一筆跟這次改動無關、獨立存在的未 commit 修改（機台詳情彈窗欄位順序調整：作品／系列／價格與張數搬到營業時間之前），一併列出以求 `git status` 描述正確，不屬於 v33.1 範圍。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先 `./push.sh`。
+新增 `permanent-id.gs` 到 repo 根目錄（原本只存在於 Google Sheet 端的 Apps Script，這次補進版控留存，內容已擴充成 `SHEET_CONFIGS` 陣列同時支援機台／活動兩個分頁）。
+
+另外 `git status` 還顯示 `api/index.js`／`api/share.js` 有未 commit 的 `DESCRIPTION` 文案調整（`全台抽卡機／相卡機資訊持續更新中！` 改成提及快閃店/展覽/餐廳CAFÉ/特典活動的版本），這是跟本次 v33.2 四項改動**各自獨立**的既有未 commit 修改，一併列出以求 `git status` 描述正確。這份文件已經照實際程式碼內容更新，但實際 deploy 前記得先確認上述所有未 commit 修改都是預期中的、再 `./push.sh`。
 
 - 網站：https://kadotw.vercel.app/
 - Repo：https://github.com/romiajoin/KADO
@@ -181,7 +184,7 @@ Token 只顯示一次，外洩需立即到 GitHub Settings 撤銷並重新產生
 - 點了不同的單一地點 marker 之後又點回前一個，如果中間發生過「popup 已開啟但沒有明確關閉」的情況（例如先點 cluster 再點單一地點），要記得在單一地點分支呼叫 `map.closePopup()`，不然殘留的 cluster popup 會卡在「已開啟」狀態，導致之後點回那個 cluster marker 沒反應（見上方 bindPopup 那段的根本原因，這裡是同一個問題的另一種觸發路徑，多一層防呆）
 
 ### 篩選系統（Filter Bar，v19 重構）
-- 三個維度：機台類型（固定 `FILTER_CONFIG.fixedOptions`）、縣市（固定 `TW_CITY_ORDER` 22 縣市，不受資料是否存在影響，沒資料的縣市選了就是 0 筆）、IP（動態從資料 `new Set()` 去重取得）
+- 三個維度：機台類型（固定 `FILTER_CONFIG.fixedOptions`）、縣市（固定 `TW_CITY_ORDER` 22 縣市，不受資料是否存在影響，沒資料的縣市選了就是 0 筆）、作品（原稱「IP」，v33.2 起顯示文字改為「作品」，`key` 沿用 `ip`、GA `filter_type` 等既有分析參數值不變，動態從資料 `new Set()` 去重取得）
 - `filterState = { type: [], city: [], ip: [] }`，每個維度都是多選陣列，`applyFilters()` 用「每個維度都符合（陣列為空視為不限制）」做 AND，維度內部是 OR
 - **桌面版**：pill 點擊展開錨定 popover（`.filter-panel`，`position: absolute`），選項即時套用、不需確認按鈕
 - **手機版**：改用共用的 bottom sheet（`#filterSheet`），依 `data-key` 動態填入對應類別的選項，不是每個類別各自一個 sheet DOM
@@ -211,13 +214,13 @@ function fitOptionsWidth(container) {
 
 **面板/sheet 疊層順序（v22 修正）**：手機版篩選/排序 sheet 原本 `z-index` 是 1100/1101，v20 把 mobile `.sidebar` 的 `z-index` 從 1000 提高到 2000（為了蓋過 Leaflet 內建控制項）之後，沒有同步調整篩選 sheet，導致地圖模式下打開篩選/排序會被 sidebar 蓋住——這個問題留在 code 裡整整兩個版本才發現。v22 把 `.filter-sheet-overlay`/`.filter-sheet`（篩選跟排序共用這組 class）的 `z-index` 提高到 2200/2201，蓋過 sidebar 也蓋過 A2HS banner（2100），確認排序/篩選是使用者當下主動觸發的 modal 互動，理論上該蓋過被動顯示的 banner。之後再新增任何 fixed 定位、疊在畫面上的 UI，記得先看這個檔案裡目前所有 `z-index` 的值，不要重複踩到同一個坑。
 
-**IP 排序提示文字（v20）**：IP 選項用 `localeCompare(a, b, 'zh-Hant')` 排序，實測對中英數混合資料的結果是「數字開頭 → 中文依首字筆畫遞增 → 英文開頭殿後」（不是隨機或照輸入順序，只是肉眼不容易看出規律）。與其重新設計排序邏輯或加搜尋框（评估過覺得現階段太早），改成在 IP 篩選面板上方加一句提示文字說明排序規則：「依「數字 → 筆畫 → 英文」排序，可滑動尋找」。桌面版 popover（`.filter-panel`）跟手機版 bottom sheet（`#filterSheet`，透過 `#filterSheetHint`）是兩套獨立 DOM，這句提示要兩邊各自補一次，不會共用。
+**作品排序提示文字（v20，原稱「IP 排序提示文字」，v33.2 隨標籤更名同步改稱）**：作品選項用 `localeCompare(a, b, 'zh-Hant')` 排序，實測對中英數混合資料的結果是「數字開頭 → 中文依首字筆畫遞增 → 英文開頭殿後」（不是隨機或照輸入順序，只是肉眼不容易看出規律）。與其重新設計排序邏輯或加搜尋框（评估過覺得現階段太早），改成在作品篩選面板上方加一句提示文字說明排序規則：「依「數字 → 筆畫 → 英文」排序，可滑動尋找」。桌面版 popover（`.filter-panel`）跟手機版 bottom sheet（`#filterSheet`，透過 `#filterSheetHint`）是兩套獨立 DOM，這句提示要兩邊各自補一次，不會共用。
 
 ### 排序系統（Sort，v22 新增）
 - 位於篩選 pill 列右側（`margin-left: 4px`，疊加 `.filter-bar` 原有的 `gap: 12px` 湊出 16px 間距），純文字＋chevron 樣式，跟 pill 外觀刻意做出區隔——排序永遠單選、沒有清除的概念，跟篩選的多選/可清除是不同的心智模型，用同一種 pill 樣式容易誤導使用者以為排序也能疊加
 - `SORT_OPTIONS`（v30.2 新增 `end_date_desc`，共四個選項）：`end_date_asc`（default）、`end_date_desc`、`distance_asc`、`distance_desc`；桌面版 `#sortPanel` dropdown、手機版共用 `.filter-sheet` 這組 bottom sheet DOM（跟篩選共用同一套元件與 class，`#sortSheetOverlay`/`#sortSheet`），兩者互斥——開排序會收篩選，開篩選會收排序，`toggleDesktopSortPanel()`/`toggleDesktopPanel()` 跟 `openMobileSortSheet()`/`openMobileFilterSheet()` 互相呼叫對方的 close function
 - `sortLocations(arr)`：
-  - `end_date_asc`：沿用 `limited` 欄位（`"2026/07/01～2026/07/20"` 格式，取「～」後半段當結束日）比較，**無期限的常態機一律排最後**，彼此之間用 IP 名稱（`character` 欄位）`localeCompare('zh-Hant')` 排序（跟篩選 IP 選項同一套規則）——舊版曾經用 `getEnd()` 回傳固定 `9999/12/31` 當佔位值，這個寫法「近到遠」時剛好把無期限排最後，但如果曾經想加「遠到近」方向，同一個佔位值會讓無期限機台變成排最前面，邏輯是巧合對、不是設計對，v22 改成明確判斷 `null` 才是對的做法
+  - `end_date_asc`：沿用 `limited` 欄位（`"2026/07/01～2026/07/20"` 格式，取「～」後半段當結束日）比較，**無期限的常態機一律排最後**，彼此之間用作品名稱（`character` 欄位，篩選面板上顯示為「作品」，v33.2 前稱「IP」）`localeCompare('zh-Hant')` 排序（跟篩選作品選項同一套規則）——舊版曾經用 `getEnd()` 回傳固定 `9999/12/31` 當佔位值，這個寫法「近到遠」時剛好把無期限排最後，但如果曾經想加「遠到近」方向，同一個佔位值會讓無期限機台變成排最前面，邏輯是巧合對、不是設計對，v22 改成明確判斷 `null` 才是對的做法
   - `distance_asc`/`distance_desc`：Haversine 公式算直線距離（台灣範圍不需要更複雜的橢球模型），需要 `userCoords`（使用者座標）才能排，沒有座標時直接回傳原陣列不排序（防呆，理論上選這個選項前一定已經觸發過定位流程）
 - **定位權限流程**：`requestUserLocation()` 包一層 Promise 呼叫 `navigator.geolocation.getCurrentPosition()`，`enableHighAccuracy: false`（找機台這種場景不需要，換取更快定位）、`maximumAge: 300000`（5 分鐘內快取位置可重用）；已知拒絕過的狀態存 `localStorage`（key: `geo_permission_denied`），下次點擊直接跳過 API 呼叫（因為 iOS Safari 拒絕過就不會再跳權限視窗，重複呼叫也沒用）
 - **提示文案拆四種**（`GEO_ERROR_MESSAGES`），對應 `err.status`：已知拒絕過（本地判斷，不呼叫 API）／`denied`（本次拒絕）／`timeout`（逾時）／`unavailable`（裝置不支援或瀏覽器不支援 geolocation）——刻意不合併成一句「請確認定位權限」，因為逾時跟裝置不支援跟權限完全無關，合併文案會誤導使用者去翻手機設定
@@ -623,13 +626,34 @@ Drawer 頂部要跟月曆頂部切齊，量的是 `.events-page-body` 的 `getBo
 
 **v33.1 新增：圖片放大 Lightbox**——單張圖／輪播圖的 `<img>`（`eventDetailImageHtml()`）都補上 `data-lightbox` 屬性（輪播切換圖片的 `data-carousel-action` 監聽器裡同步更新這個屬性，不然放大出來的還是第一張），點擊開啟共用的 `.lightbox`（`events.html` 新增 `#eventLightbox`/`#eventLightboxImg`，跟機台版 `#lightbox`/`#lightboxImg` 換一組 id 避免撞名；`.lightbox` 樣式沿用 `style.css` 共用的那份，z-index 99999 蓋過詳情 Modal 的 9999，不用額外調整）。**跟機台版的綁定方式刻意不同**：機台的 `openLightbox`/`closeLightbox` 宣告在 `main.js` 裡，靠 `app.html` 寫死的 `onclick="closeLightbox()"` 呼叫，所以 `main.js` 特地把它們掛到 `window`（見「🌐 掛到 window」那段）；`events.js` 從頭到尾沒有這套 window 掛載慣例（所有 overlay 的開關都是 JS `addEventListener` 綁的，例如 `#eventDetailOverlay`/`#dayEventsOverlay`），這裡延續同樣的寫法，用 `document.getElementById('eventLightbox').addEventListener('click', closeEventLightbox)` 跟一個 `[data-lightbox]` 的 `document` 委派點擊監聽器，不新增任何 `window.X = X` 綁定，行為結果跟機台版一致。新增 `events_lightbox_open` GA 事件（`event_id` 取 `state.selectedGroupKey` 對應的 group、`device`），對應機台版的 `lightbox_open`。
 
-### 分享（`shareEvent()`）
-`?event=<地點 id>` 網址（多地點時固定帶第一個地點的 id）本身在 v33 已經有載入時讀取還原的邏輯（比照機台 `?id=` 深連結，開啟對應的活動詳情＋城市頁籤，或顯示「已下架」toast），這裡不重複說明。
+### 分享連結永久ID機制（活動版，v33.2 新增）
+比照機台「分享連結永久ID機制」（見上方機台章節），活動分頁新增 O 欄「永久ID」（`permId`），格式與產生方式相同——`permanent-id.gs` 的 `SHEET_CONFIGS` 陣列已擴充成同時支援兩個分頁各自的 `checkCol`/`permIdCol`/`headerRow` 設定：
+```js
+const SHEET_CONFIGS = [
+  { name: '抽卡 / 相卡', checkCol: 3, permIdCol: 17, headerRow: 1 },
+  { name: '活動',       checkCol: 3, permIdCol: 15, headerRow: 2 },
+];
+```
+問題根源跟機台一致：`?event=` 原本直接帶地點 A 欄流水號，A 欄同時是管理者排序/整理用的欄位，活動下架被刪除、之後新增資料剛好填到同一個編號時，舊分享連結會沒有任何警告地顯示成另一個活動地點的內容——`js/events.js`／`api/event-share.js` 的比對邏輯本身沒有 bug，單純是 A 欄的值不保證跨時間穩定對應同一個地點。
 
-**v33.1 新增：動態 OG 分享圖**——`shareEvent()` 產生的網址從原本直接指向 `events.html?event=xxx` 改成指向新的 `/api/event-share?id=xxx`（`id` 為地點 A 欄流水號；活動沒有機台那套永久ID機制，所以直接用 A 欄流水號比對，不是 `permId`）。`api/event-share.js` 是機台 `api/share.js` 的活動版對照組，同樣是給不執行 JS 的社群平台爬蟲讀 `og:image` 用，真人點擊會被 `location.replace()` 立刻導回 `events.html?event=xxx`：
+**實作**：
+- `js/events-data.js`：`COL` 對照新增 `permId: 14`（O 欄），`loadEvents()` 回傳物件補上 `permId: cols[COL.permId] || ''`
+- `js/event-match.js`：`eventUrl(eventRow)` 從帶 `eventRow.id` 改成帶 `eventRow.permId`——機台詳情標題連到對應活動這條路徑（見下方「機台⇄活動自動比對」）也要用到穩定連結，不是只有 `shareEvent()` 按鈕
+- `js/events.js`：`shareEvent()` 產生的網址帶 `primary.permId`（不是 `primary.id`）；`?event=` 解析改成**三段式判斷**（完全比照機台 `?id=` 的解析邏輯，見 `js/main.js`）：
+  1. `permId` 精準比對成功 → 正常開啟對應活動詳情＋城市頁籤，送 `events_share_link_opened`
+  2. 精準比對失敗、退回比對到 A 欄流水號有找到列（舊格式連結，機台可能還在但無法確認是不是原本那個地點）→ 刻意不開啟任何內容，安靜地正常顯示行事曆頁，送新事件 `events_share_link_legacy_fallback`
+  3. 兩者都找不到 → 顯示「這個活動的資訊已經下架囉」toast，送 `events_share_link_target_missing`
+- GA 的 `event_id` 參數維持使用 A 欄流水號（不是永久ID），跟其他 `events_*` 事件的 `event_id` 格式保持一致，方便在 GA4 後台串同一組活動的完整互動路徑，不因這次改動而切格式
+- `api/event-share.js`：`getShareInfo(id)` 的比對邏輯從 `parsed.find(cols => cols[0] === id)`（A 欄）改成比對 `PERMANENT_ID_COL`（O 欄，index 14）；**跟機台 `api/share.js` 目前版本（v30.7 起）一致，不保留 A 欄 fallback**——比對不到永久ID就直接 fallback 回預設圖 `event-og.png`，不嘗試退回比對 A 欄
+- 這個機制只保護修正上線後產生的新連結；上線前已經流出去的舊連結，靠 `events.js` 端的 A 欄 fallback 盡量還原（安靜不顯示，至少不會誤導成別的活動），`api/event-share.js` 端沒有對應 fallback（社群平台預覽縮圖比對不到就退回通用預設圖，代價比機台端小很多，見機台「分享連結永久ID機制」章節裡「不對稱設計」的說明，這裡沿用同樣的取捨）
+
+### 分享（`shareEvent()`）
+`?event=<地點永久ID>` 網址（**v33.2 起改用 O 欄永久ID，取代原本的 A 欄流水號**；多地點時固定帶第一個地點的 permId）本身在載入時讀取還原的邏輯見上方「分享連結永久ID機制（活動版）」的三段式判斷，這裡不重複說明。
+
+**v33.1 新增：動態 OG 分享圖**——`shareEvent()` 產生的網址從原本直接指向 `events.html?event=xxx` 改成指向新的 `/api/event-share?id=xxx`（**v33.2 起 `id` 為地點永久ID**，v33.1 上線時暫用 A 欄流水號，這次補上永久ID機制後改過來）。`api/event-share.js` 是機台 `api/share.js` 的活動版對照組，同樣是給不執行 JS 的社群平台爬蟲讀 `og:image` 用，真人點擊會被 `location.replace()` 立刻導回 `events.html?event=xxx`：
 - 圖片分兩種：活動分頁 **N 欄「分享圖」**（Cloudinary 網址，選填，v33.1 新增此欄），指定了就用；沒填、找不到對應 id、或抓表失敗，一律 fallback 回專案根目錄新增的活動專屬預設圖 `event-og.png`（2400×1260，OG 標籤仍宣告 1200×630，跟機台 `/og.png` 是同一套慣例：2x 圖檔、宣告 1x 尺寸）
 - 標題／描述固定為行事曆頁專屬文案（不像圖片那樣依活動動態換），跟機台 `api/share.js` 的做法一致——不管分享哪個活動，卡片標題/描述都一樣，只有圖片會變
-- 沒有機台那套「精準比對／A欄fallback／確定找不到」三段式判斷（那是永久ID機制特有的相容設計），這裡只有兩種結果：比對到 id（或抓表失敗、保守當作可能有效）就帶 `?event=` 導回活動頁；確定找不到、或根本沒帶 id，導回 `events.html` 首頁（不帶參數）
+- **v33.2 起不保留 A 欄 fallback**（見上方「分享連結永久ID機制（活動版）」）：比對到永久ID（或抓表失敗、保守當作可能有效）就帶 `?event=` 導回活動頁；確定找不到、或根本沒帶 id，導回 `events.html` 首頁（不帶參數）
 
 ### FAB：首頁 ⇄ 行事曆頁互通（v32）
 兩邊各自放一顆 `.events-link`（共用 `events.css` 的樣式），手機/桌機統一是畫面右下角常駐 FAB，桌機 hover 展開成膠囊顯示文字。
@@ -687,20 +711,32 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 | `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
 | `events_lightbox_open`（v33.1 新增） | 詳情 Modal 內點圖放大（`data-lightbox`） | `event_id`, `device` |
 | `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
+| `events_share_link_opened` | `?event=` 永久ID精準比對成功，自動開啟對應活動詳情（v33 上線，v33.2 改用永久ID） | `event_id`（A 欄流水號）, `device` |
+| `events_share_link_legacy_fallback`（v33.2 新增） | 永久ID比對失敗，退回比對到 A 欄流水號有找到列（舊格式連結）；此時刻意不開啟任何內容 | `event_id`（連結裡的 A 欄值）, `device` |
+| `events_share_link_target_missing` | 永久ID、A 欄流水號都找不到對應地點，顯示「已下架」toast（v33 上線） | `event_id`, `device` |
 | `events_search` | 搜尋框輸入（debounce 800ms，關鍵字長度 ≥2 才記） | `search_term`, `device` |
 | `gmaps_click` | 詳情 Modal 內點「在 Google Maps 查看」 | `machine_id`, `source`, `device` |
 | `search_box_focus` / `search_clear` | 搜尋框聚焦/清除（沿用首頁事件名稱） | `source`(events_desktop_toolbar/events_mobile_toolbar), `device` |
 | `filter_click`／`filter_clear`／`filter_panel_open`／`filter_panel_close`（`gaPrefix: 'events_filter'`） | 篩選 pill/面板互動（`filter-widget.js` 內部送出，事件名稱前綴由呼叫方決定，這裡實際送出的名稱是 `events_filter_click` 等） | 同首頁對應事件 |
 | `sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result`（`gaPrefix: 'events_sort'`） | 排序面板互動（`sort-widget.js` 內部送出，實際事件名稱是 `events_sort_panel_open` 等） | 同首頁對應事件 |
 
-**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫（`page_id`／流程見下方「外部工具筆記」）。`events_lightbox_open` 沿用既有的 `event_id`／`device` 維度，不用額外註冊新參數。
+**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字；`events_lightbox_open` 沿用既有的 `event_id`／`device` 維度，不用額外註冊新參數。`events_share_link_opened`／`events_share_link_legacy_fallback`／`events_share_link_target_missing` 三個事件已於 v33.2 補登記進「GA4 事件追蹤表」Notion 資料庫（`events_share_link_legacy_fallback` 是這次新增的事件，另兩個是 v33 就已上線但先前漏登記的既有事件，這次一併補登記並把內容更新成三段式判斷的最新行為；`page_id`／流程見下方「外部工具筆記」）；資料庫「新增版本」欄位 schema 選項已補上 v33／v33.2，三筆記錄的版本欄位也都設定完成（`events_share_link_opened`／`events_share_link_target_missing` 標 v33，`events_share_link_legacy_fallback` 標 v33.2）。
 
 ### 活動分類色碼（EVENT_CATEGORIES，events.css）
-`events-data.js` 的 `EVENT_CATEGORIES` 直接在程式碼裡寫死 hex 值，對應 Google Sheet 活動分頁 B 欄（類型）的字串值必須完全一致：POP-UP `#EA580C`、展覽 `#0066FF`、其他 `#FFCF48`、CAFÉ／餐廳 `#16A34A`、特典 `#7C3AED`。這組色碼同時被月曆橫幅左側色條（`.events-bar::before`）、分類 badge（`.events-bar-cat`／`.events-detail-type-badge`，靠 `--bar-color` 這個 CSS 變數帶進來）、拼貼卡片跟詳情 Modal 共用，改色只要動 `events-data.js` 一處。
+`events-data.js` 的 `EVENT_CATEGORIES` 直接在程式碼裡寫死 hex 值，對應 Google Sheet 活動分頁 B 欄（類型）的字串值必須完全一致：POP-UP `#2BADB9`、展覽 `#0066FF`、其他 `#1B813D`、CAFÉ／餐廳 `#BE185D`、特典 `#7C3AED`。這組色碼同時被月曆橫幅左側色條（`.events-bar::before`）、分類 badge（`.events-bar-cat`／`.events-detail-type-badge`，靠 `--bar-color` 這個 CSS 變數帶進來）、拼貼卡片跟詳情 Modal 共用，改色只要動 `events-data.js` 一處。**v33.2 修正**：本節先前記錄的色碼（POP-UP `#EA580C`、其他 `#FFCF48`、CAFÉ／餐廳 `#16A34A`）跟實際程式碼對不上，這次核對 `js/events-data.js` 後更正為實際值（`spec.md` 同步修正）。
 
 ### FAB（`.events-link`）幾個容易忽略的 CSS 細節
 - **`gap: 0` 不是 `6px`**：收合狀態下 `.events-label` 雖然靠 `max-width:0` 視覺上沒有寬度，但 flex `gap` 是「item 之間」的間距，不看 item 本身是不是 0 寬——圓形按鈕裡只要還有兩個 flex item（icon + label），就會多插入一段看不見的間距，`justify-content:center` 會把「icon + 這段空隙」一起置中，icon 本身被往左推大約半個 gap，肉眼看起來偏心。改成收合時 `gap:0`，只在 hover 展開成膠囊時才透過 `@media (hover:hover) and (min-width:769px)` 的規則加回 `gap:6px`（多加 `min-width:769px` 是為了避免觸控筆電這類 `hover:hover` 為真但螢幕窄的裝置，在手機排版下誤展開成長條膠囊）。
-- **`body.map-view .events-link { display:none }`**：地圖模式下桌機側邊欄貼在畫面左側、手機是貼底 bottom sheet，FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet 內容卡在一起；地圖模式本身也已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口。`events.html` 沒有地圖／列表模式的差異，這條規則對它不生效。
+- **`body.map-view .events-link` 的顯示規則（v33.2 改成依斷點區分，原本是不分裝置一律 `display:none`）**：
+  ```css
+  @media (max-width: 768px) {
+    body.map-view .events-link { display: none; }
+  }
+  @media (min-width: 769px) {
+    body.map-view .events-link { z-index: 1100; }
+  }
+  ```
+  ≤768px（手機／平板，跟全站篩選/地圖版面同一個斷點）：地圖模式隱藏 FAB——這個斷點下桌機側邊欄變成貼底 fixed 全寬 bottom sheet，FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet 內容卡在一起；地圖模式本身也已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口。≥769px（桌機）：**v33.2 起改回保留顯示**——桌機側邊欄是常駐在畫面左側的 400px 面板，不會跟右下角的 FAB 互相遮擋；額外把 `z-index` 從平常的 500 拉高到 `1100`，蓋過同樣疊在右下角、Leaflet 預設 `z-index: 1000` 的 attribution 控制項（見上方「地圖 Marker 設計」章節提過的 Leaflet 預設 z-index）。`events.html` 沒有地圖／列表模式的差異，這條規則對它不生效。
 
 ### `.filter-bar` 選擇器範圍修正（events.css，v40 重構遺留的死規則）
 `.events-filter-row .filter-bar { background:none; padding:0; }` 這條規則原本寫的是 `.events-calendar-col .filter-bar`，是 v40 重構（搜尋列／filter-row／星期列從 `.events-calendar-col` 搬進 `#eventsTopBar`／`.events-topbar-controls`）之前的舊選擇器。重構後 `#eventsFilterBar` 已經不在 `.events-calendar-col` 底下了，這條規則變成完全比對不到任何東西的死規則——安靜地失效、不報錯、肉眼也看不出差異，直到實測才發現：`filter-bar` 自己的左右 20px padding 疊加在外層 `.events-topbar-controls` 的 20px padding 上面，手機版第一個 pill 距離視窗左緣變成 40px（20+20），不是預期的 20px。改成 `.events-filter-row .filter-bar`，比對到現在實際包著 `#eventsFilterBar` 的容器，覆寫才真的生效。**教訓**：DOM 結構搬遷（v40 這類把區塊移進新 wrapper 的重構）之後，記得檢查原本綁在舊祖先選擇器上的規則有沒有變成死規則——CSS 對比對不到的選擇器不會有任何警告。
@@ -757,8 +793,9 @@ drawer 開啟時只有星期列（`#eventsWeekdayRow`）跟月曆導航（`.even
 
 **Notion**
 - fetch：用完整 URL（含 `?source=copy_link`）
-- update：用裸 UUID `372feb89-ce7e-811c-9a4e-fac174a5691f` 作為 `page_id`
+- update：用裸 UUID `372feb89-ce7e-811c-9a4e-fac174a5691f` 作為 `page_id`（「台灣抽卡機地圖 — 設計迭代紀錄」主頁）
 - 插入內容：用 `old_str`/`new_str` 鎖定標題文字作為錨點
+- 「GA4 事件追蹤表」資料庫（v33.2 記錄）：`data-source url` 為 `collection://ae0f94e1-cee0-4a1c-a072-3045c60d105d`，database page 為 `3660da53-8fea-4922-9177-d1e065d5c2f7`；每個 GA4 事件是這個 data source 底下的一個 page，schema 欄位含「事件名稱」（title）／「新增版本」（select）／「觸發位置」（multi_select）／「分類」（select）／「參數」／「觸發時機」／「分析用途」／「已知限制」／「GA4 自訂維度已註冊」（checkbox）；新增/更新事件記錄時查這個 URL，不用每次重新 search
 
 **Figma**
 - `get_design_context` 用 `fileKey: 2ZsVk3lz1VafzFInqbj8Ug`

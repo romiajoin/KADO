@@ -1,5 +1,5 @@
 // =============================================
-// filters.js — 首頁篩選 UI（機台／IP／縣市）狀態 + 資料
+// filters.js — 首頁篩選 UI（機台／作品／縣市）狀態 + 資料
 // pill／dropdown／bottom sheet 的渲染／開合／量寬／GA 事件機制已經抽到
 // filter-widget.js（跟 events.js 的活動類型篩選共用同一套，見該檔案開頭的
 // 說明），這裡只保留首頁專屬的部分：篩選選項怎麼從 locations 算出來
@@ -17,13 +17,14 @@ import { createFilterWidget } from './filter-widget.js';
 import { TW_CITY_ORDER } from './utils.js';
 
 // =============================================
-// 🔽 篩選設定（機台 / IP / 縣市）
+// 🔽 篩選設定（機台 / 作品 / 縣市）
 // =============================================
 export const FILTER_CONFIG = [
   { key: 'type', label: '機台', field: 'type', fixedOptions: ['抽卡機', '相卡機'], noSheetWidthFit: true },
   {
+    // key 沿用 'ip'（GA filter_type 等既有分析參數值不變），只改顯示文字，見「全站 filter 標籤更名」
     key: 'ip',
-    label: 'IP',
+    label: '作品',
     field: 'character',
     panelHint: '依「數字 → 筆畫 → 英文」排序',
     sheetHint: '依「數字 → 筆畫 → 英文」排序，可滑動尋找',

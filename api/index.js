@@ -23,7 +23,7 @@ const path = require('path');
 const SITE_URL = 'https://kadotw.vercel.app';
 const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`;
 const TITLE = 'KADO！抽卡機在哪';
-const DESCRIPTION = '全台抽卡機／相卡機資訊持續更新中！';
+const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
 
 // 跟 js/main.js / api/share.js 的 SHEET_CSV_URL 是同一份，三邊各自獨立宣告
 // （CommonJS serverless function 跟前端 ES Module 沒辦法互相 import）

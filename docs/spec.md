@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/09/05（v33.1；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對已上線，v33.1 為活動詳情補作品欄位＋活動分享連結動態 OG 圖，尚未 push 上線）
+**最後更新：** 2026/09/05（v33.2；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對、v33.1 活動詳情作品欄位＋分享動態 OG 圖已上線；v33.2 為活動分享連結改用永久ID、全站篩選「IP」更名「作品」、桌機地圖模式恢復顯示 FAB、活動分類色碼文件修正，尚未 push 上線）
 
 ---
 
@@ -74,7 +74,7 @@
 | L | 更多資訊 | 連結，詳情彈窗固定顯示「查看 →」 |
 | M | 營業時間 | |
 | N | 分享圖 | 社群平台分享預覽用的專屬縮圖，Cloudinary 網址，選填（v33.1 新增啟用，見下方「分享連結 OG Meta（活動版）」） |
-| O | （保留） | 保留欄位對照，目前功能未使用 |
+| O | 永久ID | 分享連結真正比對的依據，比照機台 Q 欄，由 Apps Script（`permanent-id.gs`）自動產生，一旦產生絕對不能手動修改或重複使用（v33.2 新增啟用，見下方「分享連結永久ID機制（活動版）」） |
 | P | 最後更新時間 | 只有第一列會填。**v32.1 起啟用**：跟機台分頁 R 欄比較，取較新的一個顯示（見下方「最後更新資訊」） |
 
 > 同一檔活動在多個城市開時，每個地點各自填一列；網站依「標題＋期間」自動合併成同一組（見下方「活動行事曆」章節的「分組」說明）。
@@ -345,7 +345,7 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - 距離排序取「一組活動裡離使用者最近的那個地點」，只提供「近到遠」，不提供「遠到近」（實用性低，先不做）
 
 ### 篩選 / 搜尋
-- 三個維度：類型（固定為 `EVENT_CATEGORIES` 的 5 個分類標籤）、IP（動態去重，排序邏輯跟首頁 IP 篩選一致）、縣市（固定 `TW_CITY_ORDER`）；跟首頁共用同一套 `filter-widget.js`，UI 與 GA 事件命名前綴改成 `events_filter`
+- 三個維度：類型（固定為 `EVENT_CATEGORIES` 的 5 個分類標籤）、作品（原稱「IP」，v33.2 起顯示文字改為「作品」，`key` 沿用 `ip`、GA `filter_type` 等既有分析參數值不變，動態去重，排序邏輯跟首頁一致）、縣市（固定 `TW_CITY_ORDER`）；跟首頁共用同一套 `filter-widget.js`，UI 與 GA 事件命名前綴改成 `events_filter`
 - 選取語意跟首頁一致：未選＝顯示全部，選了才篩成只顯示那幾種（曾經是「預設全選、取消代表不顯示」，是一次特意調整過的行為變更）
 - 縣市篩選比對的是「地點」的縣市，不是整組活動——同一檔活動在多城市開時，只要有任一地點落在篩選縣市內就會顯示
 - 搜尋框（v37）元件沿用 `app.html` 的 `.search-box`，比對欄位：活動標題／IP／縣市／場地
@@ -359,22 +359,35 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - **作品（IP，J 欄，v33.1 新增顯示）**：有填才顯示「作品：xxx」，放在場地資訊之前；欄位本身沿用既有的 `character`，先前只用在拼貼卡片/篩選/搜尋，詳情 Modal 一直沒有顯示，v33.1 補上
 - **圖片放大 Lightbox（v33.1 新增）**：單張圖／輪播圖的 `<img>` 都補上 `data-lightbox` 屬性（輪播切換時同步更新），點擊開啟共用的 `.lightbox`（`style.css` 跟機台版共用同一份樣式與 z-index 99999，蓋過詳情 Modal 的 9999），點背景或按 Escape 關閉；跟機台版的差異只在綁定方式——機台走 inline `onclick` + `window.closeLightbox` 掛載，這裡沒有這套 window 掛載慣例，改用跟 `events.js` 其他 overlay 一致的 `addEventListener`，行為結果相同；新增 `events_lightbox_open` GA 事件（`event_id`／`device`，對應機台版的 `lightbox_open`）
 
-### 分享
-- `shareEvent()`：產生 `?event=<地點 id>` 網址（多地點時固定帶第一個地點），載入時讀取這個參數還原畫面（開啟對應活動詳情＋城市頁籤，或顯示「已下架」toast）的邏輯已隨 v33 機台⇄活動自動比對功能上線
-- 手機 `navigator.share()`、桌機複製網址 + toast，跟機台分享互動一致
-- **v33.1 新增：網址改走 `/api/event-share?id=<地點 id>`**，讓分享連結有動態 OG 分享圖，見下方「分享連結 OG Meta（活動版）」
+### 分享連結永久ID機制（活動版，v33.2 新增）
+- 比照機台「分享連結永久ID機制」（見上方機台章節），活動分頁新增 O 欄「永久ID」，格式與產生方式相同（`permanent-id.gs` 的 `SHEET_CONFIGS` 已擴充支援機台／活動兩個分頁各自的欄位設定），一旦產生絕對不能手動修改或在該列刪除後重複使用
+- 問題根源跟機台一致：`?event=` 原本直接帶地點 A 欄流水號，A 欄同時是管理者排序/整理用的欄位，活動下架被刪除、之後新增資料剛好填到同一個編號時，舊分享連結會沒有任何警告地顯示成另一個活動地點的內容
+- **`events.html` 載入時解析 `?event=` 的三段式判斷**（完全比照機台 `?id=` 的解析邏輯）：
+  1. `permId` 精準比對成功 → 正常開啟對應活動詳情＋城市頁籤，送 `events_share_link_opened`
+  2. 精準比對失敗、退回比對到 A 欄流水號有找到列（舊格式連結，機台可能還在但無法確認是不是原本那個地點）→ 刻意不開啟任何內容，安靜地正常顯示行事曆頁，送 `events_share_link_legacy_fallback`
+  3. 兩者都找不到 → 顯示「這個活動的資訊已經下架囉」toast，送 `events_share_link_target_missing`
+- GA 的 `event_id` 參數維持使用 A 欄流水號（不是永久ID），跟其他 `events_*` 事件的 `event_id` 格式保持一致，方便在 GA4 後台串同一組活動的完整互動路徑
 
-### 分享連結 OG Meta（活動版，v33.1 新增，`api/event-share.js`）
+### 分享（`shareEvent()`）
+- 產生 `?event=<地點永久ID>` 網址（**v33.2 起改用 O 欄永久ID，取代 A 欄流水號**；多地點時固定帶第一個地點），載入時讀取這個參數還原畫面的邏輯見上方「分享連結永久ID機制（活動版）」
+- 手機 `navigator.share()`、桌機複製網址 + toast，跟機台分享互動一致
+- **v33.1 新增：網址改走 `/api/event-share?id=xxx`**，讓分享連結有動態 OG 分享圖，見下方「分享連結 OG Meta（活動版）」；**v33.2 起這個 `id` 是永久ID**
+
+### 分享連結 OG Meta（活動版，v33.1 新增，v33.2 改用永久ID，`api/event-share.js`）
 - 是機台「分享連結 OG Meta」（`api/share.js`）的活動版對照組，同樣是因為社群平台爬蟲不執行 JS、只讀 `<head>` 裡寫死的 `og:title`/`og:image`
-- 依 `?id=`（地點 A 欄流水號，活動沒有機台那套永久ID機制，不是 `permId`）到活動分頁 CSV 找對應列：
-  - 圖片：找到列就用該列 N 欄「分享圖」，沒填、找不到 id、或抓表失敗，一律 fallback 回專案根目錄的 `event-og.png`（活動專屬預設圖，2400×1260，OG 標籤宣告 1200×630）
+- **v33.2 起依 `?id=`（地點永久ID）**到活動分頁 CSV 找對應列，**不像機台 `api/share.js` 那樣保留 A 欄 fallback**——只認永久ID，比對不到就直接 fallback 回預設圖，不嘗試比對 A 欄：
+  - 圖片：找到列就用該列 N 欄「分享圖」，沒填、找不到永久ID、或抓表失敗，一律 fallback 回專案根目錄的 `event-og.png`（活動專屬預設圖，2400×1260，OG 標籤宣告 1200×630）
   - 標題／描述固定為行事曆頁專屬文案，不依活動動態換（跟機台版一致，只有圖片會變）
-- 導回目標：比對到 id、或抓表失敗（保守當作可能有效）都導去 `/events.html?event=<id>`；確定找不到、或根本沒帶 id，導回 `/events.html`（不帶參數）——沒有機台那套「永久ID精準比對／A欄fallback／確定找不到」三段式判斷，那是永久ID機制特有的相容設計，活動這裡沒有對應的舊格式連結問題
+- 導回目標：比對到永久ID、或抓表失敗（保守當作可能有效）都導去 `/events.html?event=<永久ID>`；確定找不到、或根本沒帶 id，導回 `/events.html`（不帶參數）
 - 真人訪客一樣被 JS `location.replace()` 導回正常網站，不用 `<meta http-equiv="refresh">`
 
-### FAB（首頁 ⇄ 行事曆頁互通，v32 改版）
+### FAB（首頁 ⇄ 行事曆頁互通，v32 改版，v33.2 調整地圖模式顯示範圍）
 - 兩邊各自放一顆 `.events-link`／`.gacha-map-link`（共用 `events.css` 的 `.events-link` class），手機／桌機統一是畫面右下角常駐 FAB，桌機 hover 展開成膠囊、顯示文字
 - **v32 修正**：FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡面，手機版該 wrapper 的滑動隱藏動畫用 `will-change: transform`；`will-change: transform` 效果等同真的套用 transform，會替內部 `position: fixed` 的子孫元素建立新的 containing block，導致 FAB 沒有真的貼在視窗右下角，而是貼在 `#topBar` 這個祖先元素的右下角，並隨 `#topBar` 的 `translateY` 隱藏/顯示動畫一起飄走。修法：把 FAB 移出 `#topBar`／`#eventsTopBar`，變成 `body` 的直接子元素，恢復單純的「相對視窗 `position: fixed`」
+- **`app.html` 地圖模式下的顯示規則（v33.2 調整為斷點區分，原本是不分裝置一律 `display:none`）**：
+  - `max-width: 768px`（手機／平板，跟全站篩選/地圖版面同一個斷點）：地圖模式隱藏 FAB——這個斷點下側邊欄變成貼底 fixed 全寬 bottom sheet，容易跟 FAB 互相卡住，且地圖模式本身已有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口
+  - `min-width: 769px`（桌機）：地圖模式**保留顯示** FAB——桌機側邊欄是常駐在左側的 400px 面板，不會跟右下角的 FAB 互相遮擋；額外把 `.events-link` 的 `z-index` 從平常的 500 拉高到 `1100`，避免跟同樣疊在右下角、Leaflet 預設 `z-index: 1000` 的 attribution 控制項互相蓋住
+  - `events.html` 沒有地圖／列表模式的差異，這條規則對它不生效
 
 ### 手機版頂部工具列滑動隱藏（`events-scroll.js`，v40）
 - 邏輯照抄首頁 `scroll.js` 的 `#topBar` 版本（往下滑累積超過門檻才隱藏、往上滑立刻顯示、頂部安全區強制顯示），差異在 `events.html` 沒有「地圖／列表」兩種模式各自的捲動容器，而是「月曆／拼貼格狀／拼貼列表」三種子模式各自獨立的捲動容器（`#eventsDayGrid`／`#eventsCollageGrid`／`#eventsCollageListWrap`，同一時間只有一個可見），因此同時掛在三個容器上，各自用 `Map` 追蹤自己的 `scrollTop`，不共用單一變數，避免切換子模式時把另一個容器的捲動狀態誤判成一次大幅度滑動
@@ -394,12 +407,15 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 | `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
 | `events_lightbox_open`（v33.1 新增） | 詳情 Modal 內點圖放大 | `event_id`, `device` |
 | `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
+| `events_share_link_opened` | `?event=` 永久ID精準比對成功，自動開啟對應活動詳情 | `event_id`, `device` |
+| `events_share_link_legacy_fallback`（v33.2 新增） | 永久ID比對失敗，退回比對到 A 欄流水號有找到列（舊格式連結）；此時刻意不開啟任何內容 | `event_id`（連結裡的 A 欄值）, `device` |
+| `events_share_link_target_missing` | 永久ID、A 欄流水號都找不到對應地點，顯示「已下架」toast | `event_id`, `device` |
 | `events_search` | 搜尋框輸入（debounce 800ms） | `search_term`, `device` |
 | `events_filter_*`／`events_sort_*` | 篩選/排序面板開關與選取（沿用 `filter-widget.js`／`sort-widget.js` 的 `filter_click`／`filter_clear`／`filter_panel_open`／`filter_panel_close`／`sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result` 事件核心，只是 `gaPrefix` 換成 `events_filter`／`events_sort`） | 同首頁對應事件的參數 |
 | `search_box_focus` / `search_clear` | 搜尋框聚焦/清除（沿用首頁事件名稱，`source` 改用 `events_desktop_toolbar`／`events_mobile_toolbar`） | `source`, `device` |
 | `gmaps_click` | 詳情 Modal 內點「在 Google Maps 查看」 | `machine_id`, `source`, `device` |
 
-**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字，也還沒登記進「GA4 事件追蹤表」Notion 資料庫；`events_lightbox_open` 用的 `event_id`／`device` 是既有維度，不用額外註冊新參數，只差把事件名稱本身登記進去。
+**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字；`events_lightbox_open` 用的 `event_id`／`device` 是既有維度，不用額外註冊新參數，只差把事件名稱本身登記進去。`events_share_link_opened`／`events_share_link_legacy_fallback`／`events_share_link_target_missing` 三個事件已於 v33.2 補登記進「GA4 事件追蹤表」Notion 資料庫（`events_share_link_legacy_fallback` 為 v33.2 新增事件，另兩個是 v33 就已上線但先前漏登記的既有事件，一併補上並更新內容為三段式判斷）；資料庫「新增版本」欄位 schema 選項已補上 v33／v33.2，三筆記錄的版本欄位也都設定完成。
 
 ---
 
@@ -463,13 +479,13 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 
 | 分類 | 色碼 |
 |------|------|
-| POP-UP | `#EA580C` |
+| POP-UP | `#2BADB9` |
 | 展覽 | `#0066FF` |
-| 其他 | `#FFCF48` |
-| CAFÉ／餐廳 | `#16A34A` |
+| 其他 | `#1B813D` |
+| CAFÉ／餐廳 | `#BE185D` |
 | 特典 | `#7C3AED` |
 
-> 對應 Google Sheet 活動分頁 B 欄（類型）的字串值，兩邊改動要同步；色碼寫死在 `js/events-data.js`，月曆橫幅、分類 badge、拼貼卡片、詳情 Modal 共用同一組，改色只要動一處。
+> 對應 Google Sheet 活動分頁 B 欄（類型）的字串值，兩邊改動要同步；色碼寫死在 `js/events-data.js`，月曆橫幅、分類 badge、拼貼卡片、詳情 Modal 共用同一組，改色只要動一處。**v33.2 修正**：本表先前記錄的色碼（POP-UP `#EA580C`、其他 `#FFCF48`、CAFÉ／餐廳 `#16A34A`）跟 `js/events-data.js` 實際的 `EVENT_CATEGORIES` 對不上，這次核對程式碼後更正為實際值。
 
 ---
 

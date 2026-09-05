@@ -37,7 +37,7 @@ export function normalizeForMatch(str) {
 
 // ---- 核心比對：給一台機台＋一組候選的活動地點列（未分組的原始列都可以），
 // 回傳比對到的那一筆活動地點物件，比不出來回傳 null。
-// eventRows 的每一筆至少要有 { id, title, period, city, venue, lat, lng }（events-data.js 的欄位）。
+// eventRows 的每一筆至少要有 { id, permId, title, period, city, venue, lat, lng }（events-data.js 的欄位）。
 export function matchMachineToEventRow(machine, eventRows) {
   if (!machine || !eventRows || !eventRows.length) return null;
   if (hasNoEventLinkTag(machine.note)) return null;
@@ -109,8 +109,11 @@ export function relatedMachineTypesForGroup(group, machines) {
 // ---- 機台詳情（modal／sheet／側欄）標題用：機台屬於某檔活動時，標題本身變成連去 events.html
 // 對應地點的連結；不屬於任何活動就照原樣輸出。列表卡片（grid 卡片／地圖 loc-card 列表）刻意不顯示
 // 這個連結——那些地方版面窄、卡片本身可以點進去看詳情，連結放在詳情標題就好，不用在列表卡再重複一次。
+// 網址帶的是永久ID（O欄，見「分享連結永久ID機制（活動版）」），不是 A 欄流水號——
+// 這條連結雖然不是「分享」這個主動動作產生的，但一樣是可能被使用者收藏／之後重新點擊的
+// 跨頁連結，一樣要避免 A 欄被管理者重新編號後連到別的活動。
 export function eventUrl(eventRow) {
-  return `events.html?event=${encodeURIComponent(eventRow.id)}`;
+  return `events.html?event=${encodeURIComponent(eventRow.permId)}`;
 }
 
 export function machineTitleHtml(loc, { className = 'popup-title', source = '' } = {}) {
