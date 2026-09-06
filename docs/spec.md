@@ -288,7 +288,7 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 
 ---
 
-## 活動行事曆（`events.html`，v32 新增，v33 起隨機台頁互相連結，v33.1 補作品欄位／分享 OG 圖，已上線）
+## 活動行事曆（`events.html`，v32 新增，v33 起隨機台頁互相連結，v33.1 補作品欄位／分享 OG 圖，v33.3 相關機台卡片列補左右箭頭，已上線）
 
 跟 `app.html` 是完全獨立的頁面（不是同頁的 overlay/modal），透過 header／右下角 FAB 互相導覽。目的是整理「非常駐機台」的實體活動：動漫快閃店、聯名展覽、簽名會、CAFÉ／餐廳聯名、特典活動。資料讀取同一份 Google Sheet 的另一個分頁（見上方「活動行事曆分頁」欄位規格）。
 
@@ -328,7 +328,12 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - **`app.html`（機台端）**：機台詳情標題（列表模式 grid modal、地圖詳情面板/側欄，`machineTitleHtml()`）比對到活動時，標題本身變成連去 `events.html?event=<地點id>` 的連結（GA4：`event_title_click`）；列表卡片／地圖 popup 版面窄，刻意不顯示這個連結，避免更擠。
 - **`events.html`（活動端）**：活動詳情 Modal 每個城市頁籤底下的「相關機台」區塊（`findRelatedMachines()`／`relatedMachinesHtml()`）反向查詢「這個地點有哪些機台」，點機台卡片跳回 `app.html` 對應機台的既有 `?id=<permId>` 分享連結（GA4：`related_machine_click`）。反查時會把整組 `group.locations` 一起傳給 `matchMachineToEventRow()` 重新消歧一次，不能只憑「同標題同期間」就把整組底下所有機台都算某一地點的相關機台——同一檔活動在多地點開時，不同地點擺的機台不一定一樣。
 
+**兩個連結的 `target` 刻意不同**：機台端標題連結（機台→活動）同頁跳轉；活動端相關機台卡片連結（活動→機台）`target="_blank"` 另開分頁。推測理由：機台標題連結是「看機台順便看一下對應活動」，同頁跳轉可以用瀏覽器上一頁鍵直接退回；相關機台卡片在活動 Modal 裡，使用者可能想依序比較好幾台機台，或看完機台後想回來繼續看同一活動的其他資訊，另開分頁能保留原本開著的活動 Modal 狀態。這個推測理由是事後從程式碼行為反推，不是原始 commit／文件記載的決策依據。
+
 **已知限制**：兩檔不同活動剛好「標題完全一樣、期間也完全一樣」時無法區分（機率低，目前沒有防呆機制，比對規則本身無法判斷這是巧合還是同一檔活動）。
+
+### 「相關機台」卡片列左右箭頭（v33.3 新增）
+卡片列（`.related-machines-list`）原本只能靠 trackpad／觸控滑動操作，滑鼠使用者沒有明顯的操作提示。v33.3 加上左右箭頭按鈕：按鈕固定渲染在 DOM 裡，用 `@media (pointer: fine)` 排除觸控裝置（無法區分滑鼠跟 trackpad，trackpad 使用者也會看到按鈕，屬可接受的多餘 UI），並用 JS（`initRelatedMachinesScroll()`）判斷卡片列是否真的溢出（`scrollWidth > clientWidth`）才顯示，捲到底/捲到頭時對應按鈕 disable。新增 GA4 事件 `related_machines_nav_click`（見下方「GA4 事件」）。
 
 ### 月曆檢視
 - 月份格線 + 每天一格；有活動的日期以「橫幅」（`.events-bar`，淡色底 + 左側色條，色碼對應分類）顯示，同一格內超過可視高度的活動收進「+N 更多」
@@ -406,6 +411,7 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 | `events_city_tab_switch` | 詳情 Modal 內切換城市頁籤 | `machine_id`, `source`, `device` |
 | `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
 | `events_lightbox_open`（v33.1 新增） | 詳情 Modal 內點圖放大 | `event_id`, `device` |
+| `related_machines_nav_click`（v33.3 新增） | 詳情 Modal「相關機台」卡片列左右箭頭按鈕 | `direction`(prev/next), `event_id`, `source`, `device` |
 | `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
 | `events_share_link_opened` | `?event=` 永久ID精準比對成功，自動開啟對應活動詳情 | `event_id`, `device` |
 | `events_share_link_legacy_fallback`（v33.2 新增） | 永久ID比對失敗，退回比對到 A 欄流水號有找到列（舊格式連結）；此時刻意不開啟任何內容 | `event_id`（連結裡的 A 欄值）, `device` |

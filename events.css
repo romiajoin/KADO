@@ -583,13 +583,49 @@ body.events-standalone {
    gap 也蓋掉共用的 8px，改成 title／list 之間 4px。 */
 .related-machines-section { margin-top: 16px; gap: 8px; }
 /* 橫向捲動卡片列：拿掉縮圖，多數機台本來就沒填圖片，沒圖也不會顯得空；
-   固定高度不管幾台都不會把 modal 撐高，見 event-machine-link 討論的樣式比較。 */
+   固定高度不管幾台都不會把 modal 撐高，見 event-machine-link 討論的樣式比較。
+   負 margin／padding 移到 .related-machines-wrap，讓左右箭頭按鈕能疊在捲動區塊邊緣上，
+   而不是疊在整個 modal 邊緣（見下方按鈕定位）。 */
+.related-machines-wrap {
+  position: relative;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
 .related-machines-list {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  margin: 0 -16px;
-  padding: 0 16px 0px;
+}
+/* 左右箭頭：只給滑鼠使用者看（trackpad／觸控本來就能滑動，箭頭是多餘的）；
+   同時只在卡片列真的超出可視寬度時才顯示（JS 判斷 scrollWidth，見 js/events.js
+   initRelatedMachinesScroll()），機台數量少、不會溢出就不需要按鈕佔位。
+   pointer:fine 排除手機／平板觸控，但沒辦法區分「滑鼠」跟「trackpad」——兩者對
+   瀏覽器來說都是 fine pointer，所以 trackpad 使用者也會看到按鈕，是可接受的多餘 UI，
+   不影響原本的滑動操作。 */
+.related-machines-nav-btn {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--fill-gray-16);
+  background: var(--fill-white);
+  color: var(--fill-black);
+  font-size: 16px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+  z-index: 1;
+}
+.related-machines-nav-btn.prev { left: 4px; }
+.related-machines-nav-btn.next { right: 4px; }
+.related-machines-nav-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
+@media (pointer: fine) {
+  .related-machines-wrap.has-overflow .related-machines-nav-btn { display: flex; }
 }
 .related-machine-item {
   flex: 0 0 144px; /* 卡片固定寬度，名稱太長就在卡片內換行，不會撐寬卡片本身 */

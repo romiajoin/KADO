@@ -536,7 +536,7 @@ function fitOptionsWidth(container) {
 
 ---
 
-## 活動行事曆頁（`events.html`，v32 新增，v33 起隨機台頁互相連結，v33.1 補上作品欄位／分享 OG 圖）
+## 活動行事曆頁（`events.html`，v32 新增，v33 起隨機台頁互相連結，v33.1 補上作品欄位／分享 OG 圖，v33.3 相關機台卡片列補左右箭頭）
 
 跟 `app.html` 是完全獨立的頁面（同分頁導航過去，不是 overlay/modal），header logo／右下角 FAB 互相導覽。整理「非常駐機台」的實體活動（動漫快閃店、聯名展覽、簽名會、CAFÉ／餐廳聯名、特典活動），資料來自同一份 Google Sheet 的另一個分頁（欄位規格見上方「Google Sheet 欄位」章節旁的活動分頁說明，或 `spec.md`）。
 
@@ -587,7 +587,17 @@ Sheet 仍是「一列＝一個地點」，畫面渲染前用「標題＋期間�
 - `relatedMachinesHtml()`（`events.js`）：每張卡片加 `data-machine-id` 屬性，`bindLocationSectionEvents()` 內用 `addEventListener` 送 `related_machine_click`，寫在同函式既有的 `gmaps_click`／分享按鈕綁定旁邊，同一套綁定時機
 - 兩個事件的參數細節見下方「GA4 事件（活動行事曆專屬）」
 
+**兩個跨頁連結的 `target` 刻意不同**：`machineTitleHtml()` 產生的機台標題連結（機台→活動）沒有 `target="_blank"`，同頁跳轉；`relatedMachinesHtml()` 產生的相關機台卡片連結（活動→機台）有 `target="_blank" rel="noopener"`，另開分頁。這不是疏漏，是兩邊使用情境不同：機台標題連結是「看機台時順便看一下對應活動」，同頁跳轉可以直接用瀏覽器上一頁鍵退回機台，體驗比較連續；相關機台卡片是在活動詳情 Modal 裡，使用者可能想依序點好幾台相關機台比較，或者看完某台機台後還想回來繼續看同一個活動的其他資訊（分享、地圖等），另開分頁能保留原本開著的活動 Modal 狀態，不用重新點一次進來。**這個理由是事後從程式碼行為反推、不是當初 commit 訊息或既有文件寫明的決策依據**，之後如果要調整（例如統一成同一種行為），建議先跟 Gill 確認這個推測是否符合原意。
+
 **已知限制**：兩檔不同活動剛好「標題完全一樣、期間也完全一樣」時，比對規則本身無法區分是巧合還是同一檔活動，目前沒有防呆機制（機率低，暫不處理）。
+
+### 「相關機台」卡片列左右箭頭（v33.3 新增）
+`relatedMachinesHtml()` 的卡片列（`.related-machines-list`，橫向 `overflow-x: auto`）原本只能靠 trackpad 雙指滑動或觸控滑動操作，滑鼠使用者缺乏「這裡還有更多」的視覺提示，也沒有直覺的操作方式（Shift+滾輪很少人知道）。v33.3 加上左右箭頭按鈕解決這個發現性問題：
+
+- **按鈕一律渲染在 DOM 裡**（`.related-machines-wrap` 內固定放 prev/next 兩顆 `<button>`），顯示與否交給 CSS／JS 判斷，不是動態插入 DOM。
+- **`@media (pointer: fine)`**：排除手機／平板觸控裝置（本來滑動就很自然，不需要按鈕）。⚠️ 這個 media feature 沒辦法區分「滑鼠」跟「trackpad」——瀏覽器角度兩者都是 fine pointer——所以 trackpad 使用者也會看到按鈕，是可接受的多餘 UI，不影響原本的滑動操作。跟月曆 hover 外框（見「月曆橫幅列排版與 hover 外框」章節）用的 `(hover: hover)` 不是同一個 media feature，這裡刻意選 `pointer: fine`，因為重點是排除觸控輸入而不是排除「移過去不點」的手勢能力。
+- **`initRelatedMachinesScroll(loc, source)`**（新函式，掛在 `bindLocationSectionEvents()` 裡，所以初次開 modal、切換城市 tab 都會重新判斷一次）：用 `scrollWidth > clientWidth` 判斷卡片列是否真的溢出，溢出才加 `.has-overflow` class 讓按鈕顯示；`scroll` 事件同步更新左右按鈕的 `disabled` 狀態（捲到底/捲到頭就 disable 該側，避免點了沒反應）。點擊用 `list.scrollBy({..., behavior: 'smooth'})` 一次捲兩張卡片的寬度（含 12px gap）。
+- **GA4**：新增 `related_machines_nav_click`，參數沿用 `related_machine_click` 同一套命名（`event_id`/`source`/`device`），額外帶 `direction`(prev/next)。事件細節見下方「GA4 事件（活動行事曆專屬）」。
 
 ### 月曆檢視 / 總覽（拼貼）檢視
 - **月曆**：月份格線，有活動的日期顯示「橫幅」（`.events-bar`，色碼對應 `EVENT_CATEGORIES`），超過可視高度收進「+N 更多」。點橫幅或「當日活動」清單卡片開詳情 Modal。`MIN_MONTH`（2026/05）鎖住最早可翻到的月份，避免翻到早於資料建置起點的空月曆讓人誤以為系統壞了；預設仍開「當月」，不是鎖死顯示最早月份
@@ -710,6 +720,7 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 | `events_city_tab_switch` | 詳情 Modal 內切換城市頁籤 | `machine_id`, `source`, `device` |
 | `events_carousel_nav` | 詳情 Modal 輪播圖切換 | `direction`, `device` |
 | `events_lightbox_open`（v33.1 新增） | 詳情 Modal 內點圖放大（`data-lightbox`） | `event_id`, `device` |
+| `related_machines_nav_click`（v33.3 新增） | 詳情 Modal「相關機台」卡片列左右箭頭按鈕，捲動卡片列 | `direction`(prev/next), `event_id`, `source`, `device` |
 | `events_share_click` | 點擊分享按鈕 | `event_id`, `source`, `device` |
 | `events_share_link_opened` | `?event=` 永久ID精準比對成功，自動開啟對應活動詳情（v33 上線，v33.2 改用永久ID） | `event_id`（A 欄流水號）, `device` |
 | `events_share_link_legacy_fallback`（v33.2 新增） | 永久ID比對失敗，退回比對到 A 欄流水號有找到列（舊格式連結）；此時刻意不開啟任何內容 | `event_id`（連結裡的 A 欄值）, `device` |
@@ -720,7 +731,7 @@ FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡�
 | `filter_click`／`filter_clear`／`filter_panel_open`／`filter_panel_close`（`gaPrefix: 'events_filter'`） | 篩選 pill/面板互動（`filter-widget.js` 內部送出，事件名稱前綴由呼叫方決定，這裡實際送出的名稱是 `events_filter_click` 等） | 同首頁對應事件 |
 | `sort_panel_open`／`sort_panel_close`／`sort_change`／`geo_permission_result`（`gaPrefix: 'events_sort'`） | 排序面板互動（`sort-widget.js` 內部送出，實際事件名稱是 `events_sort_panel_open` 等） | 同首頁對應事件 |
 
-**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字；`events_lightbox_open` 沿用既有的 `event_id`／`device` 維度，不用額外註冊新參數。`events_share_link_opened`／`events_share_link_legacy_fallback`／`events_share_link_target_missing` 三個事件已於 v33.2 補登記進「GA4 事件追蹤表」Notion 資料庫（`events_share_link_legacy_fallback` 是這次新增的事件，另兩個是 v33 就已上線但先前漏登記的既有事件，這次一併補登記並把內容更新成三段式判斷的最新行為；`page_id`／流程見下方「外部工具筆記」）；資料庫「新增版本」欄位 schema 選項已補上 v33／v33.2，三筆記錄的版本欄位也都設定完成（`events_share_link_opened`／`events_share_link_target_missing` 標 v33，`events_share_link_legacy_fallback` 標 v33.2）。
+**待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字；`events_lightbox_open` 沿用既有的 `event_id`／`device` 維度，不用額外註冊新參數。v33.3 新增的 `related_machines_nav_click` 同理：`direction`／`event_id`／`source`／`device` 四個參數都是既有維度（`direction` 已因 `events_carousel_nav`／`events_month_nav`／`carousel_nav` 等事件註冊過），理論上不用額外註冊新維度，但事件本身（`related_machines_nav_click` 這個事件名稱）還是要在 GA4 後台跟「GA4 事件追蹤表」Notion 資料庫各登記一次；另外**`event_title_click`／`related_machine_click`（v33 上線）這兩個事件本身也尚未登記進 Notion 資料庫**，是既有缺口不是這次新增的，一併提醒。`events_share_link_opened`／`events_share_link_legacy_fallback`／`events_share_link_target_missing` 三個事件已於 v33.2 補登記進「GA4 事件追蹤表」Notion 資料庫（`events_share_link_legacy_fallback` 是這次新增的事件，另兩個是 v33 就已上線但先前漏登記的既有事件，這次一併補登記並把內容更新成三段式判斷的最新行為；`page_id`／流程見下方「外部工具筆記」）；資料庫「新增版本」欄位 schema 選項已補上 v33／v33.2，三筆記錄的版本欄位也都設定完成（`events_share_link_opened`／`events_share_link_target_missing` 標 v33，`events_share_link_legacy_fallback` 標 v33.2）。
 
 ### 活動分類色碼（EVENT_CATEGORIES，events.css）
 `events-data.js` 的 `EVENT_CATEGORIES` 直接在程式碼裡寫死 hex 值，對應 Google Sheet 活動分頁 B 欄（類型）的字串值必須完全一致：POP-UP `#2BADB9`、展覽 `#0066FF`、其他 `#1B813D`、CAFÉ／餐廳 `#BE185D`、特典 `#7C3AED`。這組色碼同時被月曆橫幅左側色條（`.events-bar::before`）、分類 badge（`.events-bar-cat`／`.events-detail-type-badge`，靠 `--bar-color` 這個 CSS 變數帶進來）、拼貼卡片跟詳情 Modal 共用，改色只要動 `events-data.js` 一處。**v33.2 修正**：本節先前記錄的色碼（POP-UP `#EA580C`、其他 `#FFCF48`、CAFÉ／餐廳 `#16A34A`）跟實際程式碼對不上，這次核對 `js/events-data.js` 後更正為實際值（`spec.md` 同步修正）。

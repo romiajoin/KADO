@@ -806,11 +806,59 @@ function relatedMachinesHtml(loc, group) {
       </a>`;
   }).join('');
   // 橫向捲動卡片列，故意不放縮圖（多數機台本來就沒填圖片，見樣式比較討論）。
+  // 左右箭頭給滑鼠使用者用（trackpad／觸控可以直接滑動）：按鈕本身固定渲染在 DOM 裡，
+  // 顯示與否交給 CSS（events.css .related-machines-nav-btn，pointer:fine + has-overflow）
+  // 和 initRelatedMachinesScroll() 判斷是否溢出，這裡先預設 prev 是 disabled（一開始捲在最左）。
   return `
     <div class="modal-info-section related-machines-section">
       <div class="related-machines-title">相關機台（${related.length}）</div>
-      <div class="related-machines-list">${items}</div>
+      <div class="related-machines-wrap">
+        <div class="related-machines-list">${items}</div>
+        <button type="button" class="related-machines-nav-btn prev" data-nav="prev" aria-label="向左捲動相關機台" disabled>&#8249;</button>
+        <button type="button" class="related-machines-nav-btn next" data-nav="next" aria-label="向右捲動相關機台">&#8250;</button>
+      </div>
     </div>`;
+}
+
+// 「相關機台」卡片列的左右箭頭：只處理滑鼠捲動 + 邊界 disabled 狀態，
+// 顯示／隱藏交給 CSS（見 events.css .related-machines-nav-btn）。
+// 每次 location section 重新渲染（初次開 modal／切換城市 tab）都要重跑一次，
+// 所以掛在 bindLocationSectionEvents() 裡，跟其他綁定一起走。
+function initRelatedMachinesScroll(loc, source) {
+  const wrap = document.querySelector('#eventDetailLocationSlot .related-machines-wrap');
+  if (!wrap) return;
+  const list = wrap.querySelector('.related-machines-list');
+  const prevBtn = wrap.querySelector('.related-machines-nav-btn.prev');
+  const nextBtn = wrap.querySelector('.related-machines-nav-btn.next');
+  if (!list || !prevBtn || !nextBtn) return;
+
+  const updateState = () => {
+    const hasOverflow = list.scrollWidth > list.clientWidth + 1;
+    wrap.classList.toggle('has-overflow', hasOverflow);
+    prevBtn.disabled = list.scrollLeft <= 0;
+    nextBtn.disabled = list.scrollLeft + list.clientWidth >= list.scrollWidth - 1;
+  };
+
+  list.addEventListener('scroll', updateState);
+  // modal 剛塞進 DOM 時 scrollWidth 可能還沒算準，下一輪再量一次
+  requestAnimationFrame(updateState);
+  updateState();
+
+  [prevBtn, nextBtn].forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const dir = btn.dataset.nav;
+      const cardWidth = list.querySelector('.related-machine-item')?.getBoundingClientRect().width || 144;
+      const step = (cardWidth + 12) * 2; // 一次滑兩張卡片，跟卡片間距（12px，見 events.css）對齊
+      list.scrollBy({ left: dir === 'prev' ? -step : step, behavior: 'smooth' });
+      // GA: related_machines_nav_click（滑鼠使用者點左右箭頭捲動「相關機台」卡片列）
+      gtag('event', 'related_machines_nav_click', {
+        direction: dir,
+        event_id: loc.id,
+        source,
+        device: getDeviceType(),
+      });
+    });
+  });
 }
 
 function locationSectionHtml(group, locIndex) {
@@ -849,6 +897,8 @@ function bindLocationSectionEvents(group, locIndex, source) {
       });
     });
   });
+  // 左右箭頭捲動（滑鼠使用者用，見 relatedMachinesHtml()／initRelatedMachinesScroll() 註解）
+  initRelatedMachinesScroll(loc, source);
 }
 
 function openEventDetailModal(group, source = 'calendar_bar', initialLocIndex = 0) {
