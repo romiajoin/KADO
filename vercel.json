@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/api/index" }
+    { "source": "/", "destination": "/api/index" },
+    { "source": "/events.html", "destination": "/api/events" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }

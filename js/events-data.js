@@ -67,11 +67,16 @@ export async function loadEvents() {
       const cols = parseCSVRow(row);
       const period = cols[COL.period] || '';
       const { start, end } = parsePeriod(period);
+      // J 欄「作品」可能是多個 IP 聯名，用頓號分隔（例：美少女戰士、光之美少女）；
+      // characters 是完整拆分後的陣列，character 保留第一個當舊程式碼相容用（卡片預覽、
+      // 分享連結分析參數等還沒逐一改用陣列的地方，見 README「活動行事曆分頁」）。
+      const characters = String(cols[COL.character] || '').split('、').map((s) => s.trim()).filter(Boolean);
       return {
         id: cols[COL.id],
         title: cols[COL.title],
         category: cols[COL.category],
-        character: cols[COL.character],
+        character: characters[0] || '',
+        characters,
         period,
         start,
         end,

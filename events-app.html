@@ -46,11 +46,12 @@
       <!-- 月曆／總覽切換，「總覽」命名理由見 spec.md「月曆檢視 / 總覽（拼貼）檢視」 -->
       <div class="view-toggle" id="eventsViewTabs" role="tablist" aria-label="瀏覽方式">
         <button type="button" class="view-btn active" data-view="collage" role="tab" aria-selected="true" aria-label="切換到總覽檢視">
-          <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor"><path d="M324-600q-15.3 0-25.65-10.29Q288-620.58 288-635.79t10.35-25.71Q308.7-672 324-672h456q15.3 0 25.65 10.29Q816-651.42 816-636.21t-10.35 25.71Q795.3-600 780-600H324Zm0 156q-15.3 0-25.65-10.29Q288-464.58 288-479.79t10.35-25.71Q308.7-516 324-516h456q15.3 0 25.65 10.29Q816-495.42 816-480.21t-10.35 25.71Q795.3-444 780-444H324Zm0 156q-15.3 0-25.65-10.29Q288-308.58 288-323.79t10.35-25.71Q308.7-360 324-360h456q15.3 0 25.65 10.29Q816-339.42 816-324.21t-10.35 25.71Q795.3-288 780-288H324ZM180-600q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-636q0 14-10.35 25T180-600Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-480q0 14-10.35 25T180-444Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-324q0 14-10.35 25T180-288Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M324-600q-15.3 0-25.65-10.29Q288-620.58 288-635.79t10.35-25.71Q308.7-672 324-672h456q15.3 0 25.65 10.29Q816-651.42 816-636.21t-10.35 25.71Q795.3-600 780-600H324Zm0 156q-15.3 0-25.65-10.29Q288-464.58 288-479.79t10.35-25.71Q308.7-516 324-516h456q15.3 0 25.65 10.29Q816-495.42 816-480.21t-10.35 25.71Q795.3-444 780-444H324Zm0 156q-15.3 0-25.65-10.29Q288-308.58 288-323.79t10.35-25.71Q308.7-360 324-360h456q15.3 0 25.65 10.29Q816-339.42 816-324.21t-10.35 25.71Q795.3-288 780-288H324ZM180-600q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-636q0 14-10.35 25T180-600Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-480q0 14-10.35 25T180-444Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-324q0 14-10.35 25T180-288Z"/></svg>
           <span class="label">總覽</span>
         </button>
         <button type="button" class="view-btn" data-view="calendar" role="tab" aria-selected="false" aria-label="切換到月曆檢視">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          <svg class="calendar-icon-outline" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M216-96q-29.7 0-50.85-21.5Q144-139 144-168v-528q0-29 21.15-50.5T216-768h72v-60q0-15.3 10.29-25.65Q308.58-864 323.79-864t25.71 10.35Q360-843.3 360-828v60h240v-60q0-15.3 10.29-25.65Q620.58-864 635.79-864t25.71 10.35Q672-843.3 672-828v60h72q29.7 0 50.85 21.5Q816-725 816-696v528q0 29-21.15 50.5T744-96H216Zm0-72h528v-360H216v360Zm0-432h528v-96H216v96Zm0 0v-96 96Z"/></svg>
+          <svg class="calendar-icon-fill" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M216-96q-29.7 0-50.85-21.5Q144-139 144-168v-528q0-29 21.15-50.5T216-768h72v-60q0-15.3 10.29-25.65Q308.58-864 323.79-864t25.71 10.35Q360-843.3 360-828v60h240v-60q0-15.3 10.29-25.65Q620.58-864 635.79-864t25.71 10.35Q672-843.3 672-828v60h72q29.7 0 50.85 21.5Q816-725 816-696v528q0 29-21.15 50.5T744-96H216Zm0-72h528v-360H216v360Z"/></svg>
           <span class="label">月曆</span>
         </button>
       </div>
@@ -79,6 +80,27 @@
         <!-- filter-bar 跟月曆導航/拼貼排列切換合併成同一列，見 CLAUDE.md -->
         <div class="events-filter-row">
           <div class="filter-bar" id="eventsFilterBar"></div>
+          <!-- 快速篩選：今日活動、有抽卡／相卡機。這裡是初始標記位置，實際會被
+               js/events.js 的 positionQuickFilterGroup() 搬進 #eventsFilterBar 裡，
+               插在篩選 pill（filterWidget 畫的 .filter-scroll）跟排序按鈕
+               （sortWidget 動態 append 的 .sort-group）中間，見該函式註解。
+               樣式沿用 style.css 既有的 .filter-pill（點擊 toggle active／再點一次
+               取消，跟分類/作品/縣市 pill 開合下拉面板不同，這兩顆沒有面板，
+               純二元切換，見 js/events.js 的 initQuickFilters()）。 -->
+          <div class="quick-filter-group">
+            <button type="button" class="filter-pill quick-filter-pill" id="eventsTimeFilterPill" aria-pressed="false" aria-label="只顯示今日活動">
+              <span class="pill-label">今日活動</span>
+              <span class="pill-icon" data-role="icon">
+                <svg class="pill-clear" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m480-429 116 116q11 11 25.5 10.5T647-314q11-11 11-25.5T647-365L531-480l116-116q11-11 11-25.5T647-647q-11-11-25.5-11T596-647L480-531 364-647q-11-11-25-11t-25 11q-11 11-11 25.5t11 25.5l115 116-116 116q-11 11-10.5 25t11.5 25q11 11 25.5 11t25.5-11l115-115Zm0 333q-79 0-149-30t-122.5-82.5Q156-261 126-331T96-480q0-80 30-149.5t82.5-122Q261-804 331-834t149-30q80 0 149.5 30t122 82.5Q804-699 834-629.5T864-480q0 79-30 149t-82.5 122.5Q699-156 629.5-126T480-96Z"/></svg>
+              </span>
+            </button>
+            <button type="button" class="filter-pill quick-filter-pill" id="eventsMachineFilterPill" aria-pressed="false" aria-label="只顯示有抽卡／相卡機的活動">
+              <span class="pill-label">有抽卡 / 相卡機</span>
+              <span class="pill-icon" data-role="icon">
+                <svg class="pill-clear" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m480-429 116 116q11 11 25.5 10.5T647-314q11-11 11-25.5T647-365L531-480l116-116q11-11 11-25.5T647-647q-11-11-25.5-11T596-647L480-531 364-647q-11-11-25-11t-25 11q-11 11-11 25.5t11 25.5l115 116-116 116q-11 11-10.5 25t11.5 25q11 11 25.5 11t25.5-11l115-115Zm0 333q-79 0-149-30t-122.5-82.5Q156-261 126-331T96-480q0-80 30-149.5t82.5-122Q261-804 331-834t149-30q80 0 149.5 30t122 82.5Q804-699 834-629.5T864-480q0 79-30 149t-82.5 122.5Q699-156 629.5-126T480-96Z"/></svg>
+              </span>
+            </button>
+          </div>
           <!-- 月曆上/下個月：跟 .events-collage-toolbar 互斥顯示，同一個右側位置 -->
           <div class="events-toolbar" id="eventsToolbar" hidden>
             <div class="events-nav-group">

@@ -9,7 +9,7 @@
 // core.js。
 // =============================================
 
-import { getDeviceType, driveUrlToImage, getEndDate, getEndingBadge, haversineKm } from './utils.js';
+import { getDeviceType, driveUrlToImage, getEndDate, getStartDate, getEndingBadge, haversineKm } from './utils.js';
 import { openGridModal } from './main.js';
 import { sortState, userCoords } from './sort.js';
 // getEndingBadge 沿用自 utils.js（events.js 也要用，見 utils.js 開頭的說明），
@@ -90,9 +90,7 @@ export { getEndingBadge };
         `;
 
         if (hasDetail) {
-          const btn = card.querySelector('.btn-expand');
-          btn.addEventListener('click', function(e) {
-            e.stopPropagation();
+          const openDetail = function() {
             // GA: card_click
             gtag('event', 'card_click', {
               machine_id: loc.id,
@@ -102,6 +100,18 @@ export { getEndingBadge };
               device: getDeviceType(),
             });
             openGridModal(loc, imgs, googleMapsUrl, 'grid_modal');
+          };
+          // 整張卡片都可以點擊展開詳情，「在 Google Maps 查看」連結是獨立操作，
+          // 點擊時要排除掉（不能讓卡片的 click handler 也跟著把詳情彈窗打開）。
+          card.classList.add('is-clickable');
+          card.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-gmaps')) return;
+            openDetail();
+          });
+          const btn = card.querySelector('.btn-expand');
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openDetail();
           });
         }
 
@@ -130,17 +140,62 @@ export { getEndingBadge };
         return list;
       }
 
-      // end_date_asc/end_date_desc：有結束日期的依方向排序，無期限的常態機不管哪個方向都一律排最後
-      // （沒有結束日不代表「最遠」，是另一種狀態，兩個方向都不該把它排到日期區間裡），
-      // 常態機彼此之間依 IP 名稱排序（數字 → 筆畫 → 英文，跟篩選選項同一套慣例），這個順序不受方向影響
-      const dir = sortState === 'end_date_desc' ? -1 : 1;
-      list.sort((a, b) => {
-        const ea = getEndDate(a.limited);
-        const eb = getEndDate(b.limited);
-        if (ea && eb) return (ea - eb) * dir;
-        if (ea && !eb) return -1;
-        if (!ea && eb) return 1;
-        return (a.character || '').localeCompare(b.character || '', 'zh-Hant');
-      });
+      // end_date_asc（v41 起拿掉 end_date_desc，理由見 CLAUDE.md「排序系統」v41 條目）：
+      // 分三組，組間優先權固定、不能互相穿插：
+      //   1. 進行中（有 limited 且結束日 >= 今天）→ 結束日越快到排越前面
+      //   2. 常態機（無 limited）
+      //   3. 已過期未下架（有 limited 但結束日 < 今天）→ 排最後，優先權比常態機還低，
+      //      這種資料本身該更新卻還沒更新，不該讓它排到常態機前面誤導使用者
+      // 組 1、組 3 內部統一用「離今天的天數差絕對值，由小到大」排序——組 1 全部是未來/今天，
+      // abs(end-today) 效果等同「結束日越快到排越前面」；組 3 全部是過去，
+      // abs(end-today) 效果等同「結束日越接近今天排越前面」，同一條算式套用在兩組都是對的，
+      // 不用分別寫兩套邏輯
+      if (sortState === 'end_date_asc') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 只比日期，不看時分
+        const endDateGroup = (loc) => {
+          const end = getEndDate(loc.limited);
+          if (!end) return 2; // 常態機
+          return end >= today ? 1 : 3; // 進行中 vs 已過期
+        };
+        list.sort((a, b) => {
+          const ga = endDateGroup(a);
+          const gb = endDateGroup(b);
+          if (ga !== gb) return ga - gb;
+          if (ga === 2) return (a.character || '').localeCompare(b.character || '', 'zh-Hant');
+          const ea = getEndDate(a.limited);
+          const eb = getEndDate(b.limited);
+          return Math.abs(ea - today) - Math.abs(eb - today);
+        });
+        return list;
+      }
+
+      // start_date_asc（v41 新增）：分三組，組間優先權固定：
+      //   1. 已開始（有 limited 且開始日 <= 今天）→ 開始日越新（離今天越近）排越前面
+      //   2. 尚未開始（有 limited 但開始日 > 今天）→ 排在組 1 後面，組內依開始日由近到遠排
+      //      （越快開始的排越前面，等於「即將登場」），不能混進組 1，不然會被誤判成「最新上架」
+      //   3. 常態機（無 limited）→ 排最後
+      // 跟結束日排序不同，組 1／組 2 的內部排序方向剛好相反（組 1 是「離今天越近的過去日期」，
+      // 組 2 是「離今天越近的未來日期」），不能套用同一條 abs() 算式，分開寫兩支比較不會搞混
+      if (sortState === 'start_date_asc') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startDateGroup = (loc) => {
+          const start = getStartDate(loc.limited);
+          if (!start) return 3; // 常態機
+          return start <= today ? 1 : 2; // 已開始 vs 尚未開始
+        };
+        list.sort((a, b) => {
+          const ga = startDateGroup(a);
+          const gb = startDateGroup(b);
+          if (ga !== gb) return ga - gb;
+          if (ga === 3) return (a.character || '').localeCompare(b.character || '', 'zh-Hant');
+          const sa = getStartDate(a.limited);
+          const sb = getStartDate(b.limited);
+          return ga === 1 ? sb - sa : sa - sb; // 已開始：新到舊／尚未開始：近到遠
+        });
+        return list;
+      }
+
       return list;
     }

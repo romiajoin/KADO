@@ -13,7 +13,8 @@
   padding: 0 16px;
   border: none;
   border-radius: 9999px;
-  background: var(--fill-blue);
+  background: linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%);
+  backdrop-filter: blur(4px);
   color: var(--fill-white);
   text-decoration: none;
   white-space: nowrap;
@@ -26,9 +27,9 @@
 /* 手機／平板地圖模式：FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet
    內容卡在一起（sidebar 在這個斷點下變成貼底 fixed 全寬 bottom sheet），且地圖模式
    本身已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口，故隱藏。
-   桌機地圖模式（見下方 min-width:769px）則保留顯示——桌機側邊欄是常駐在左側的
+   桌機地圖模式（見下方 min-width:901px）則保留顯示——桌機側邊欄是常駐在左側的
    400px 面板，不會跟右下角的 FAB 互相遮擋。 */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   body.map-view .events-link {
     display: none;
   }
@@ -37,7 +38,7 @@
 /* 桌機地圖模式下 FAB 保留顯示，但 Leaflet 預設控制項（attribution 等）z-index 是 1000，
    FAB 平常（列表模式／events.html）維持 z-index:500 就好，這裡地圖模式下額外拉高，
    避免跟疊在同個右下角的 Leaflet attribution 互相蓋住。 */
-@media (min-width: 769px) {
+@media (min-width: 901px) {
   body.map-view .events-link {
     z-index: 1100;
   }
@@ -55,17 +56,18 @@
   transition: max-width 0.22s ease, opacity 0.15s ease;
 }
 
-@media (hover: hover) and (min-width: 769px) {
+@media (hover: hover) and (min-width: 901px) {
   .events-link:hover {
-    width: 168px;
-    padding: 0 20px 0 16px;
-    gap: 6px;
-    background: #0052D6;
+    width: auto;
+    padding: 16px;
+    gap: 8px;
+    background: linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%);
+    backdrop-filter: blur(4px);
     box-shadow: 0 10px 26px rgba(0, 102, 255, 0.45);
   }
 
   .events-link:hover .events-label {
-    max-width: 120px;
+    max-width: 156px;
     opacity: 1;
     transition: max-width 0.22s ease, opacity 0.15s ease 0.05s;
   }
@@ -125,7 +127,24 @@ body.events-standalone {
   flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .events-filter-row {
+    flex-wrap: wrap;
+  }
+
+  /* 月曆模式（.events-toolbar 顯示中）專屬：filter-scroll 上方多留 4px */
+  .events-filter-row:has(> .events-toolbar:not([hidden])) .filter-scroll {
+    margin-top: 4px;
+  }
+
+  /* 拼貼列表模式專屬：跟月曆模式的 margin-bottom 覆寫（見下方 959px 區塊）互不相干，
+     各自獨立控制，不會互相影響 */
+  body:has(#eventsCollageListWrap:not([hidden])) .events-filter-row {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 959px) {
   .events-filter-row {
     flex-wrap: wrap;
   }
@@ -148,10 +167,17 @@ body.events-standalone {
 .events-nav-group button {
   background: none;
   border: none;
+  border-radius: 50%;
   cursor: pointer;
   padding: 4px;
   display: flex;
   color: var(--fill-gray-64);
+  transition: background 0.15s, color 0.15s;
+}
+
+.events-nav-group button:hover:not(:disabled) {
+  background: var(--fill-gray6);
+  color: var(--fill-blue);
 }
 
 .events-nav-group button:disabled {
@@ -193,6 +219,12 @@ body.events-standalone {
   flex: 1;
   min-width: 0;
 }
+
+/* 這兩顆是二元切換（點擊 toggle active／再點一次取消），不像分類/作品/縣市
+   pill 有下拉面板，所以沒有 .pill-chevron／.filter-panel，但一樣有 active 時
+   顯示的清除（✕）icon（.pill-clear），沿用 style.css 既有的 .filter-pill／
+   .pill-icon／.pill-clear 顯示規則，不用額外補 CSS；padding 也直接吃
+   .filter-pill 預設值（右側已經留給 icon 的空間），不用另外覆寫。 */
 
 .events-weekday-row {
   display: grid;
@@ -399,6 +431,7 @@ body.events-standalone {
   white-space: nowrap;
   color: var(--fill-black);
   font-size: 16px;
+  font-weight: 500;
 }
 
 .events-bar:hover {
@@ -422,6 +455,13 @@ body.events-standalone {
   color: var(--fill-white);
   font-size: 12px;
   font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.events-bar-multi-badge svg {
+  flex-shrink: 0;
 }
 
 .events-week-toggle {
@@ -506,6 +546,7 @@ body.events-standalone {
   background: var(--fill-blue);
   border-color: var(--fill-blue);
   color: var(--fill-white);
+  font-weight: 500;
 }
 
 .events-list-header {
@@ -533,11 +574,15 @@ body.events-standalone {
   padding: 16px;
   border-radius: 16px;
   background: var(--fill-blue-8);
+  border: 1px solid transparent;
   cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .events-card:hover {
   border-color: var(--fill-blue);
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 0.5px var(--fill-blue), 0 8px 24px rgba(0, 102, 255, 0.16);
 }
 
 .events-card.selected {
@@ -571,6 +616,36 @@ body.events-standalone {
   white-space: nowrap;
 }
 
+/* 活動詳情 Modal「作品」清單：見 js/events.js characterChipsHtml()。刻意不做成 pill——
+   Modal 是完整資訊頁，維持跟原本單一 IP 一樣的文字＋底線連結（沿用 style.css 既有的
+   .popup-character-link），pill 樣式留給下面 loc-card 那種摘要性質的地方用。
+   超過 MODAL_CHARACTER_LIMIT（events.js，目前 4）的部分包在 .character-chips-rest
+   用 [hidden] 藏起來，展開／收合按鈕見 events.js bindLocationSectionEvents()。 */
+.character-chips-rest[hidden] { display: none; }
+
+.character-chips-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fill-blue);
+  cursor: pointer;
+}
+.character-chips-toggle:hover { text-decoration: underline; }
+.character-chips-sep { color: var(--fill-black); }
+
+/* loc-card 上的作品 pill：代表作品名稱＋「+N」合併顯示在同一個 pill 裡（不是另外開一個
+   pill 或獨立文字），「+N」用比較淺的顏色弱化，跟代表作品名稱做出視覺區隔
+   （見 js/events.js eventListCardHtml()／characterTagsForCard()） */
+.tag-more-text {
+  font-size: 14px;
+  color: var(--fill-gray-64);
+}
+
+
+
 /* 活動詳情 Modal 裡「相關機台」清單：見 js/events.js locationSectionHtml()／relatedMachinesHtml()，
    跟 event-match.js 的比對邏輯是同一份，所以這裡只是純顯示，不用再管消歧規則。 */
 .related-machines-title {
@@ -593,6 +668,7 @@ body.events-standalone {
 }
 .related-machines-list {
   display: flex;
+  align-items: stretch; /* related-machine-item 高度以最高的 item 為主 */
   gap: 12px;
   overflow-x: auto;
 }
@@ -607,19 +683,25 @@ body.events-standalone {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+  box-sizing: border-box;
   width: 28px;
   height: 28px;
+  padding: 0;
   border-radius: 50%;
-  border: 1px solid var(--fill-gray-16);
-  background: var(--fill-white);
-  color: var(--fill-black);
-  font-size: 16px;
-  line-height: 1;
+  border: 0.5px solid rgba(28, 28, 30, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  color: #000000;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+  filter: drop-shadow(0px 4px 12px rgba(28, 28, 28, 0.08));
   z-index: 1;
+}
+.related-machines-nav-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 .related-machines-nav-btn.prev { left: 4px; }
 .related-machines-nav-btn.next { right: 4px; }
@@ -630,17 +712,20 @@ body.events-standalone {
 .related-machine-item {
   flex: 0 0 144px; /* 卡片固定寬度，名稱太長就在卡片內換行，不會撐寬卡片本身 */
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 12px 12px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px; /* type-badge 與 related-machine-name 並排間距 */
+  padding: 8px 12px; /* 上下 8px、左右 12px */
   border-radius: 8px;
   background: var(--fill-white);
   border: 1px solid var(--fill-gray-16);
   text-decoration: none;
   color: var(--fill-black);
 }
-.related-machine-item:hover { border-color: var(--fill-blue); }
-.related-machine-item .type-badge { align-self: flex-start; font-size: 12px; padding: 4px 8px; }
+.related-machine-item:hover { border-color: var(--fill-blue); box-shadow: inset 0 0 0 1px var(--fill-blue); }
+/* 改用 cluster-popup-item 的 type-badge 樣式：純圖示、方形小徽章（見 style.css .cluster-popup-item .type-badge） */
+.related-machine-item .type-badge { flex-shrink: 0; padding: 4px; align-self: center; border-radius: 4px; }
+.related-machine-item .type-badge svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
 .related-machine-name { font-size: 14px; font-weight: 500; line-height: 1.35; word-break: break-word; }
 
 .events-card-title {
@@ -669,6 +754,13 @@ body.events-standalone {
 .events-collage-grid[hidden],
 .collage-list-wrap[hidden] {
   display: none !important;
+}
+
+/* .filter-pill 設了 display:inline-flex，author stylesheet 優先權蓋過瀏覽器
+   預設的 [hidden]{display:none} UA 規則，月曆檢視隱藏「今日活動」pill 時
+   （見 js/events.js setView()）要明確覆寫才會真的消失。 */
+#eventsTimeFilterPill[hidden] {
+  display: none;
 }
 
 .events-collage-toolbar {
@@ -716,7 +808,7 @@ body.events-standalone {
   align-items: flex-start;
 
   margin: 0 -20px;
-  padding-top: 20px;
+  padding-top: 8px;
 
   padding-bottom: 20px;
   width: calc(100% + 40px);
@@ -757,7 +849,20 @@ body.events-standalone {
 .collage-card-media {
   position: relative;
   overflow: hidden;
+  border-radius: 0 0 8px 8px;
   background: var(--fill-gray6);
+}
+
+.collage-grid-col .collage-card:not(:first-child) .collage-card-media {
+  border-radius: 8px;
+}
+
+.collage-grid-col:first-child .collage-card:first-child .collage-card-media {
+  border-top-left-radius: 8px;
+}
+
+.collage-grid-col:last-child .collage-card:first-child .collage-card-media {
+  border-top-right-radius: 8px;
 }
 
 .collage-card-media img {
@@ -791,6 +896,7 @@ body.events-standalone {
 .collage-card-pills .ending-badge,
 .collage-card-pills .events-multi-pill {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+  white-space: nowrap;
 }
 
 .ended-badge {
@@ -833,6 +939,7 @@ body.events-standalone {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  padding-top: 8px;
 }
 
 .collage-list-grid {
@@ -844,7 +951,7 @@ body.events-standalone {
 
   padding-bottom: 20px;
 
-  padding-top: 20px;
+  padding-top: 8px;
 }
 
 @media (max-width: 720px) {
@@ -857,7 +964,8 @@ body.events-standalone {
 .card-badge-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .collage-card.is-ended,
@@ -946,11 +1054,10 @@ body.events-standalone {
 }
 
 .day-events-body {
-
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 18px 18px;
+  padding: 4px 20px 16px;
 }
 
 @media (max-width: 720px) {
@@ -973,13 +1080,35 @@ body.events-standalone {
 
     background: var(--fill-gray6);
     border: none;
-    border-top: 1px solid var(--fill-blue);
 
     transform: translateY(100%);
   }
 
   .day-events-overlay.show .day-events-panel {
     transform: translateY(0);
+  }
+
+  /* 比照 filter-sheet-header：置中標題＋絕對定位關閉鈕 */
+  .day-events-header {
+    justify-content: center;
+    position: relative;
+    padding: 20px 20px 16px;
+  }
+
+  .day-events-title {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .day-events-close {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .day-events-body {
+    padding-top: 8px;
   }
 }
 
@@ -1000,10 +1129,12 @@ body.events-standalone {
 
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .events-day-grid,
-  .events-collage-grid,
-  .collage-list-wrap {
+  .events-collage-grid {
     padding-top: var(--events-top-bar-height, 0px);
+  }
+  .collage-list-wrap {
+    padding-top: calc(8px + var(--events-top-bar-height, 0px));
   }
 }

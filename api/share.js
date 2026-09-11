@@ -7,7 +7,8 @@
 // 跳轉的目標網址（/?id=xxx）會依機台不同。
 
 const SITE_URL = 'https://kadotw.vercel.app';
-const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`;
+const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`; // a：grid 檢視（含搜尋結果）預設圖
+const MAP_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/map-og.png`; // b：map 檢視（含搜尋結果）預設圖
 const TITLE = 'KADO！抽卡機在哪';
 const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
 
@@ -21,6 +22,19 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJ
 // cols[17] 最後更新時間
 const SHARE_IMAGE_COL = 15;
 const PERMANENT_ID_COL = 16;
+
+// P 欄（SHARE_IMAGE_COL）可以用「,」或「、」分兩張圖：第一張給 grid 檢視、
+// 第二張給 map 檢視分享用。一定要湊滿兩張才會分別套用；只填一張（不管有沒有分隔符號）
+// 或完全空白，都視為「沒有專屬分享圖」，grid 用 a、map 用 b，不會把單一那張誤套到
+// 另一個檢視。
+function pickShareImage(raw, isMapView) {
+  const fallback = isMapView ? MAP_DEFAULT_OG_IMAGE_URL : DEFAULT_OG_IMAGE_URL;
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return fallback;
+  const parts = trimmed.split(/[,、]/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 2) return fallback;
+  return (isMapView ? parts[1] : parts[0]) || fallback;
+}
 
 // 分享連結的 id 現在只認「永久ID」（Q欄），不是 A 欄流水號——這樣即使管理者
 // 事後重新整理 A 欄編號，舊的分享連結還是能對應到同一台機台，不會失效也不會顯示成別台。
@@ -52,8 +66,9 @@ function parseCSVRow(row) {
 //                    已下架、或根本不存在的 id，一律歸在這裡）
 //   'fetch-error' → 表格抓取失敗（網路問題等），無法判斷 id 是否存在
 //   'no-id'       → 沒有帶 id 參數
-async function getShareInfo(id) {
-  if (!id) return { status: 'no-id', imageUrl: DEFAULT_OG_IMAGE_URL };
+async function getShareInfo(id, isMapView) {
+  const fallback = isMapView ? MAP_DEFAULT_OG_IMAGE_URL : DEFAULT_OG_IMAGE_URL;
+  if (!id) return { status: 'no-id', imageUrl: fallback };
   try {
     const response = await fetch(SHEET_CSV_URL);
     const csvText = await response.text();
@@ -64,21 +79,21 @@ async function getShareInfo(id) {
     }
     const match = parsed.find(cols => cols[PERMANENT_ID_COL] === id);
     if (match) {
-      const shareImage = (match[SHARE_IMAGE_COL] || '').trim();
-      return { status: 'matched', imageUrl: shareImage || DEFAULT_OG_IMAGE_URL };
+      return { status: 'matched', imageUrl: pickShareImage(match[SHARE_IMAGE_COL], isMapView) };
     }
-    return { status: 'not-found', imageUrl: DEFAULT_OG_IMAGE_URL };
+    return { status: 'not-found', imageUrl: fallback };
   } catch (err) {
-    return { status: 'fetch-error', imageUrl: DEFAULT_OG_IMAGE_URL };
+    return { status: 'fetch-error', imageUrl: fallback };
   }
 }
 
 module.exports = async function handler(req, res) {
   const id = req.query.id || '';
   // 只白名單允許 view=map，其餘值一律忽略（避免把任意 query 原封轉發，保守一點）
-  const view = req.query.view === 'map' ? '&view=map' : '';
+  const isMapView = req.query.view === 'map';
+  const view = isMapView ? '&view=map' : '';
 
-  const info = await getShareInfo(id);
+  const info = await getShareInfo(id, isMapView);
   const ogImageUrl = info.imageUrl;
 
   // 只有「確定比對到永久ID」或「抓表失敗、不確定是否存在」時才導去機台頁

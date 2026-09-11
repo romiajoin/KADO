@@ -15,7 +15,7 @@
       --fill-blue-16: rgba(0,102,255,0.16);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     body {
       font-family: 'Noto Sans TC', sans-serif;
@@ -33,8 +33,8 @@
       background: var(--fill-gray6);
     }
     header {
-      background: var(--fill-gray6);
-      padding: 20px 20px 20px 12px;
+      background: var(--fill-gray-6);
+      padding: 8px 20px 0px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -51,30 +51,42 @@
     .header-right { display: flex; align-items: center; gap: 12px; }
     .header-info { font-family: 'Space Mono', monospace; font-size: 14px; color: var(--fill-black); }
     /* 桌面版：回報表單跟檢視切換之間的間距要是 16px，其餘子元素維持 header-right 既有的 12px gap，故補 4px margin 湊成 16px */
-    @media (min-width: 769px) {
+    @media (min-width: 901px) {
       .header-right .view-toggle { margin-left: 4px; }
     }
 
     /* View Toggle */
     .view-toggle {
       display: flex;
+      box-sizing: border-box;
+      padding: 4px;
       background: none; border: 1px solid var(--fill-blue);
-      border-radius: 999px;
+      border-radius: 22px;
       overflow: hidden;
     }
     .view-btn {
-      padding: 8px 16px;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      border-radius: 18px;
       font-size: 14px;
+      line-height: 17px;
       font-family: 'Noto Sans TC', sans-serif;
       font-weight: 400;
       background: none; border: none;
       color: var(--fill-black); cursor: pointer;
+      white-space: nowrap;
       transition: background 0.18s, color 0.18s, font-weight 0.18s;
-      display: flex; align-items: center; gap: 4px;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
     }
     .map-icon-fill { display: none; }
     .view-btn.active .map-icon-outline { display: none; }
     .view-btn.active .map-icon-fill { display: block; }
+    .grid-icon-fill { display: none; }
+    .view-btn.active .grid-icon-outline { display: none; }
+    .view-btn.active .grid-icon-fill { display: block; }
+    .calendar-icon-fill { display: none; }
+    .view-btn.active .calendar-icon-outline { display: none; }
+    .view-btn.active .calendar-icon-fill { display: block; }
     .view-btn:hover { color: var(--fill-blue); }
     .view-btn.active { background: var(--fill-blue); color: var(--fill-white); font-weight: 500; }
     .header-divider { width: 1px; height: 16px; background: var(--fill-gray-64); }
@@ -83,7 +95,7 @@
 
     /* ===== Toolbar ===== */
     .toolbar {
-      padding: 20px 20px;
+      padding: 12px 20px 20px 20px;
       display: flex; align-items: center; gap: 8px;
       flex-shrink: 0;
       background: var(--fill-gray6);
@@ -169,13 +181,22 @@
     .filter-pill .pill-chevron { transition: transform 0.18s; }
     .filter-pill.open .pill-chevron { transform: rotate(180deg); }
 
-    /* 排序文字按鈕 */
-    .sort-group { position: relative; flex-shrink: 0; margin-left: 4px; } /* filter-bar 既有 gap:12px + 4px = 16px */
+    /* 排序按鈕（樣式同 filter-pill） */
+    .sort-group { position: relative; flex-shrink: 0; }
     .sort-btn {
       display: inline-flex; align-items: center; gap: 2px;
-      background: none; border: none; padding: 8px 0px;
-      font-family: 'Noto Sans TC', sans-serif; font-size: 14px; line-height: 16px;
-      color: var(--fill-black); cursor: pointer; white-space: nowrap;
+      padding: 8px 12px 8px 16px;
+      font-size: 14px;
+      line-height: 1.2;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 400;
+      background: var(--fill-white);
+      border: none;
+      border-radius: 9999px;
+      color: var(--fill-black);
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+      white-space: nowrap;
     }
     .sort-btn .sort-label { display: flex; align-items: center; gap: 0px; }
     @media (hover: hover) {
@@ -183,7 +204,7 @@
     }
     .sort-btn .pill-chevron { flex-shrink: 0; transition: transform 0.18s; }
     .sort-btn.open .pill-chevron { transform: rotate(180deg); }
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .sort-btn .sort-label { flex-direction: column; align-items: flex-start; gap: 0; }
     }
 
@@ -201,6 +222,7 @@
       max-width: 320px;
       max-height: 320px;
       overflow-y: auto;
+      overflow-x: hidden;
       z-index: 1200;
     }
     .filter-panel.open { display: block; }
@@ -336,7 +358,7 @@
     }
     /* modal/detail 頭部：type-badge 跟倒數 badge 緊鄰同一列，不做 space-between
        （跟 .card-badge-row 不同用途：那個是整張卡片寬度兩端對齊，這個只是兩顆 badge 併排） */
-    .modal-badge-row { display: flex; align-items: center; gap: 8px; }
+    .modal-badge-row { display: flex; align-items: center; gap: 4px; }
 
     /* 機台詳情標題：機台屬於某檔 events.html 活動時，標題本身變成連去活動詳情的連結
        （見 js/event-match.js 的 machineTitleHtml()）。列表卡片刻意不重複顯示這個連結，見該檔案註解。 */
@@ -346,12 +368,19 @@
     }
     .popup-title.event-title-link:hover { color: var(--fill-blue); }
 
+    .popup-character-link {
+      background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit;
+      text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+      cursor: pointer;
+    }
+    .popup-character-link:hover { color: var(--fill-blue); }
+
 
     .content { flex: 1; overflow: hidden; display: flex; }
 
     /* ===== Grid View ===== */
     #gridView {
-      width: 100%; height: 100%; overflow-y: auto; padding: 20px 20px;
+      width: 100%; height: 100%; overflow-y: auto; padding: 8px 20px 20px 20px;
       display: none;
       overscroll-behavior-y: contain; /* 避免跟手機瀏覽器原生下拉手勢打架 */
     }
@@ -395,8 +424,9 @@
     .loc-card-grid:hover {
       border-color: var(--fill-blue);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px var(--fill-blue-16);
+      box-shadow: inset 0 0 0 1px var(--fill-blue), 0 8px 24px rgba(0, 102, 255, 0.16);
     }
+    .loc-card-grid.is-clickable { cursor: pointer; }
     
     .card-top { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .card-name { font-weight: 700; font-size: 16px; line-height: 1.35; color: var(--fill-black); }
@@ -475,7 +505,7 @@
       text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
     }
     .map-scroll-wrapper { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-    .location-list { padding: 20px 20px; position: relative; }
+    .location-list { padding: 8px 20px 20px 20px; position: relative; }
     .map-scroll-wrapper::-webkit-scrollbar { width: 0px; }
     .map-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
     .map-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
@@ -487,7 +517,7 @@
       cursor: pointer; border: 1px solid transparent;
       transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
     }
-    .loc-card:hover { border-color: var(--fill-blue); box-shadow: 0 8px 24px rgba(0,102,255,0.24); }
+    .loc-card:hover { border-color: var(--fill-blue); transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--fill-blue), 0 8px 24px rgba(0, 102, 255, 0.16); }
     .loc-card.active { border-color: var(--fill-blue); }
     .loc-name { font-weight: 700; font-size: 16px; color: var(--fill-black); margin-top: 12px; margin-bottom: 14px; }
     .loc-limited { font-size: 14px; color: var(--fill-black); font-weight: 500; margin-bottom: 12px; }
@@ -541,8 +571,8 @@
     }
     .cluster-popup-item:hover { border-color: var(--fill-blue); background: var(--fill-blue-8); }
     .cluster-popup-item.selected { border-color: var(--fill-blue); background: var(--fill-blue-8); }
-    .cluster-popup-item .type-badge { flex-shrink: 0; padding: 4px; align-self: center; }
-    .cluster-popup-item .type-badge svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+    .cluster-popup-item .type-badge { flex-shrink: 0; padding: 4px; align-self: center; border-radius: 4px; }
+    .cluster-popup-item .type-badge svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
     .cluster-popup-item-text {
       display: flex; flex-direction: column; gap: 4px;
       flex: 1;
@@ -701,7 +731,7 @@
     .changelog-bullets li { font-size: 14px; color: var(--fill-black); line-height: 1.5; }
 
     /* 手機：改為從底部滑出的單一高度 sheet，不做 peek/mid/full 多段拖曳（changelog 內容單純，不需要那麼多變化） */
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .changelog-overlay { align-items: flex-end; justify-content: stretch; padding: 0; }
       .changelog-panel {
         max-width: 100%; max-height: 85vh;
@@ -712,7 +742,7 @@
     /* ===== Empty ===== */
     .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--gray-64); font-size: 15px; }
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       /* 列表模式：#topBar 固定在頂端，往下滑隱藏、往上滑（哪怕滑一點點）立刻出現。
          地圖模式維持原本 flow 排版不受影響（bottom sheet 高度計算依賴 filter-bar 的位置）。*/
       body:not(.map-view) .top-bar {
@@ -736,13 +766,13 @@
       }
       .view-btn .label { display: none; }
       .view-btn { padding: 8px 16px; }
-      header { padding: 20px 20px 20px 12px; justify-content: flex-start; gap: 16px; }
+      header { padding: 20px 20px 0px 12px; justify-content: flex-start; gap: 16px; }
       .header-info { display: none; }
       .header-right .report-link,
       .header-right .changelog-link,
       .header-right .header-divider { display: none; }
       .logo { flex: 1; min-width: 0; }
-      .logo h1 { font-size: 16px; }
+      .logo h1 { font-size: 20px; }
       #gridView { padding: 12px 20px 20px; }
       .toolbar { padding: 12px 20px 12px 20px; }
       .search-box { width: 100%; flex-shrink: 1; }
@@ -763,7 +793,7 @@
       .last-updated-list-row .report-link,
       .last-updated-list-row .changelog-link { font-size: 12px; }
 
-      /* 地圖模式：bottom sheet（跟 isMobileMapLayout() 統一用同一條 768px 分界線） */
+      /* 地圖模式：bottom sheet（跟 isMobileMapLayout() 統一用同一條 900px 分界線） */
       #mapView {
         flex-direction: column;
         position: relative;
@@ -818,11 +848,16 @@
       .leaflet-popup-content { max-height: 40vh !important; overflow-y: auto !important; overflow-x: hidden !important; }
     }
 
-    /* 窄螢幕（例如 iPhone SE／小尺寸 Android，<412px）：header-right 那顆活動入口圖示
-       擠進來後標題沒地方喘息，副標題「抽卡機在哪」先收起來，只留「KADO！」品牌字，
-       避免標題被壓到換行或截斷。 */
-    @media (max-width: 412px) {
-      .logo h1 span { display: none; }
+    /* 窄螢幕（例如 iPhone SE／小尺寸 Android）：header-right 那顆活動入口圖示
+       擠進來後標題沒地方喘息，副標題「抽卡機在哪」改成獨立一行、縮小字級，
+       避免跟「KADO！」擠在同一行被壓到換行或截斷。 */
+    @media (max-width: 450px) {
+      .logo h1 {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.3;
+        font-size: 16px;
+      }
     }
 
     /* ===== Mobile ===== */

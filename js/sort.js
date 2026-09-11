@@ -18,9 +18,12 @@ import { createSortWidget } from './sort-widget.js';
 // =============================================
 // 🔽 排序設定（結束日期 / 距離）
 // =============================================
+// v41：拿掉 end_date_desc（結束日：遠到近），新增 start_date_asc（開始日：近到遠）；
+// 理由跟排序規則見 CLAUDE.md「排序系統」v41 條目——end_date_desc 排出來的「最遠結束日優先」
+// 沒有明確使用情境，且有「尚未開始的機台可能被誤判排最前面」的邏輯漏洞，一併拿掉不修
 const SORT_OPTIONS = [
   { key: 'end_date_asc', label1: '結束日', label2: '近到遠', text: '結束日：近到遠' },
-  { key: 'end_date_desc', label1: '結束日', label2: '遠到近', text: '結束日：遠到近' },
+  { key: 'start_date_asc', label1: '開始日', label2: '近到遠', text: '開始日：近到遠' },
   { key: 'distance_asc', label1: '距離', label2: '近到遠', text: '距離：近到遠', isDistance: true },
   { key: 'distance_desc', label1: '距離', label2: '遠到近', text: '距離：遠到近', isDistance: true },
 ];

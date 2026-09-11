@@ -21,7 +21,8 @@ const fs = require('fs');
 const path = require('path');
 
 const SITE_URL = 'https://kadotw.vercel.app';
-const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`;
+const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`; // a：grid 檢視（含搜尋結果）預設圖
+const MAP_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/map-og.png`; // b：map 檢視（含搜尋結果）預設圖
 const TITLE = 'KADO！抽卡機在哪';
 const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
 
@@ -32,6 +33,18 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJ
 // 欄位索引跟 api/share.js 保持一致
 const SHARE_IMAGE_COL = 15;
 const PERMANENT_ID_COL = 16;
+
+// P 欄可以用「,」或「、」分兩張圖：第一張給 grid 檢視、第二張給 map 檢視分享用。
+// 一定要湊滿兩張才會分別套用；只填一張或完全空白，grid 用 a、map 用 b（跟 api/share.js
+// 的 pickShareImage() 同一套規則，各自獨立宣告，環境不同無法共用）。
+function pickShareImage(raw, isMapView) {
+  const fallback = isMapView ? MAP_DEFAULT_OG_IMAGE_URL : DEFAULT_OG_IMAGE_URL;
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return fallback;
+  const parts = trimmed.split(/[,、]/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 2) return fallback;
+  return (isMapView ? parts[1] : parts[0]) || fallback;
+}
 
 // 跟 api/share.js / js/main.js 同一套解析規則（各自獨立一份，環境不同無法共用）
 function parseCSVRow(row) {
@@ -51,8 +64,9 @@ function parseCSVRow(row) {
 // 只在有帶 id 時才會真的打 Google Sheet（首頁絕大多數流量是沒帶 id 的一般訪客，
 // 這樣才不會每次載入首頁都多打一次 Sheet API）。
 // 找不到、欄位空白、或抓取失敗都回傳預設圖，任何失敗都不應該讓首頁整個掛掉。
-async function getShareImageUrl(id) {
-  if (!id) return DEFAULT_OG_IMAGE_URL;
+async function getShareImageUrl(id, isMapView) {
+  const fallback = isMapView ? MAP_DEFAULT_OG_IMAGE_URL : DEFAULT_OG_IMAGE_URL;
+  if (!id) return fallback;
   try {
     const response = await fetch(SHEET_CSV_URL);
     const csvText = await response.text();
@@ -64,12 +78,11 @@ async function getShareImageUrl(id) {
     // /?id= 只認永久ID（Q欄），跟 /api/share 現在的規則一致，不比對 A 欄流水號
     const match = parsed.find(cols => cols[PERMANENT_ID_COL] === id);
     if (match) {
-      const shareImage = (match[SHARE_IMAGE_COL] || '').trim();
-      return shareImage || DEFAULT_OG_IMAGE_URL;
+      return pickShareImage(match[SHARE_IMAGE_COL], isMapView);
     }
-    return DEFAULT_OG_IMAGE_URL;
+    return fallback;
   } catch (err) {
-    return DEFAULT_OG_IMAGE_URL;
+    return fallback;
   }
 }
 
@@ -92,7 +105,8 @@ function buildOgTags(ogImageUrl) {
 
 module.exports = async function handler(req, res) {
   const id = req.query.id || '';
-  const ogImageUrl = await getShareImageUrl(id);
+  const isMapView = req.query.view === 'map';
+  const ogImageUrl = await getShareImageUrl(id, isMapView);
 
   const htmlPath = path.join(process.cwd(), 'app.html');
   const html = fs.readFileSync(htmlPath, 'utf-8');

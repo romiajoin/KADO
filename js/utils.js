@@ -31,6 +31,13 @@ export function getEndDate(limited) {
   return new Date(p[p.length - 1].trim().replace(/\//g, '-'));
 }
 
+// v41 新增：開始日排序用，取「～」前半段當開始日；行為/格式假設跟 getEndDate() 完全對稱
+export function getStartDate(limited) {
+  if (!limited) return null; // null 代表無期限（常態機）
+  const p = limited.split('～');
+  return new Date(p[0].trim().replace(/\//g, '-'));
+}
+
 export function getEndingBadge(limited) {
   const end = getEndDate(limited);
   if (!end) return null;                       // 常態機、無結束日 → 不顯示

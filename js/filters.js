@@ -58,7 +58,7 @@ export function buildFilterOptions(locations) {
 }
 
 export function isMobileFilterLayout() {
-  return window.matchMedia('(max-width: 768px)').matches;
+  return window.matchMedia('(max-width: 900px)').matches;
 }
 
 // =============================================

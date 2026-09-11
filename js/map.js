@@ -198,7 +198,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       const basicRows = `
         ${loc.venue ? `<div class="popup-addr">場地：${loc.venue}</div>` : ''}
         ${loc.addr ? `<div class="popup-addr">地址：${loc.addr}</div>` : ''}
-        ${loc.character ? `<div class="popup-addr">作品：${loc.character}</div>` : ''}
+        ${loc.character ? `<div class="popup-addr">作品：<button type="button" class="popup-character-link" onclick="filterByCharacter('${loc.character.replace(/'/g, "\\'")}','${loc.id}','map_detail_panel')">${loc.character}</button></div>` : ''}
         ${loc.edition ? `<div class="popup-addr">系列：${loc.edition}</div>` : ''}
       `;
 
@@ -637,11 +637,11 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       if (el) el.classList.add('selected');
     }
 
-    // 判斷目前是不是走 mobile 地圖版型：跟篩選器的 isMobileFilterLayout() 統一用同一條 768px 分界線，
+    // 判斷目前是不是走 mobile 地圖版型：跟篩選器的 isMobileFilterLayout() 統一用同一條 900px 分界線，
     // 跟 getDeviceType()（用 pointer:coarse 判斷、給 GA 用）分開，
     // 避免「觸控筆電＋寬螢幕」這種邊界情況兩邊判斷對不上。
     export function isMobileMapLayout() {
-      return window.matchMedia('(max-width: 768px)').matches;
+      return window.matchMedia('(max-width: 900px)').matches;
     }
 
     // =============================================

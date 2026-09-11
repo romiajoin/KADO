@@ -548,7 +548,7 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
         <div class="modal-info-section">
           ${loc.venue ? `<div class="popup-addr">場地：${loc.venue}</div>` : ''}
           ${loc.addr ? `<div class="popup-addr">地址：${loc.addr}</div>` : ''}
-          ${loc.character ? `<div class="popup-addr">作品：${loc.character}</div>` : ''}
+          ${loc.character ? `<div class="popup-addr">作品：<button type="button" class="popup-character-link" onclick="filterByCharacter('${loc.character.replace(/'/g, "\\'")}','${loc.id}','${source}')">${loc.character}</button></div>` : ''}
           ${loc.edition ? `<div class="popup-addr">系列：${loc.edition}</div>` : ''}
           ${loc.perDraw ? `<div class="popup-addr">價格與張數：${loc.perDraw}</div>` : ''}
           ${loc.hours ? `<div class="popup-addr">營業時間：${loc.hours}</div>` : ''}
@@ -585,6 +585,34 @@ import { initTopBarScroll, resetTopBarScrollState } from './scroll.js';
       gtag('event', 'event_title_click', {
         machine_id: machineId,
         event_id: eventId,
+        source: source,
+        device: getDeviceType(),
+      });
+    }
+
+    // 點「作品」標籤：把該作品名稱塞進搜尋框、篩出同作品所有機台（搜尋比對邏輯本來就吃
+    // loc.character，這裡只是幫使用者代打字）。列表模式（grid modal 觸發）順便關掉 modal、
+    // 切到列表 view；地圖模式（map.js 的側邊欄／bottom sheet 觸發，source='map_detail_panel'）
+    // 刻意不切換 view——applyFilters() 內部會呼叫 renderMapLocations() → closeDetailPanel(true)，
+    // 自動把側邊欄/sheet 收回顯示篩選後的地點列表，維持使用者原本就在地圖模式的心智模型，
+    // 不要無預警跳去列表模式。
+    function filterByCharacter(character, machineId, source) {
+      const wasMapView = document.body.classList.contains('map-view');
+      if (wasMapView) {
+        window.closeDetailPanel(true); // 立刻收合詳情面板，不用等 applyFilters 內部觸發，避免畫面短暫顯示新結果還沒同步的舊詳情
+      } else {
+        closeGridModal();
+      }
+      document.getElementById('searchInput').value = character;
+      document.getElementById('searchInputMobile').value = character;
+      document.getElementById('clearSearch').style.display = 'block';
+      document.getElementById('clearSearchMobile').style.display = 'block';
+      if (!wasMapView) setView('grid');
+      applyFilters();
+      // GA: character_tag_click（作品標籤點擊，快速篩出同作品機台的使用頻率）
+      gtag('event', 'character_tag_click', {
+        character: character,
+        machine_id: machineId,
         source: source,
         device: getDeviceType(),
       });
@@ -660,6 +688,8 @@ window.closeGridModal = closeGridModal;
 window.trackGmapsClick = trackGmapsClick;
 window.trackEventTitleClick = trackEventTitleClick;
 window.shareLocation = shareLocation;
+window.syncSearchUrl = syncSearchUrl; // 讓 app.html 的 btnGrid/btnMap onclick 也能手動觸發網址同步
+window.filterByCharacter = filterByCharacter;
 
 
 // =============================================
