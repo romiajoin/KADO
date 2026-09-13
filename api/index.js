@@ -21,8 +21,8 @@ const fs = require('fs');
 const path = require('path');
 
 const SITE_URL = 'https://kadotw.vercel.app';
-const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og.png`; // a：grid 檢視（含搜尋結果）預設圖
-const MAP_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/map-og.png`; // b：map 檢視（含搜尋結果）預設圖
+const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/og.png`; // a：grid 檢視（含搜尋結果）預設圖
+const MAP_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/map-og.png`; // b：map 檢視（含搜尋結果）預設圖
 const TITLE = 'KADO！抽卡機在哪';
 const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
 

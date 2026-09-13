@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/09/11（v35 事件/搜尋結果分享預覽圖全面補強：機台 P 欄／活動 N 欄改支援依檢視/入口分開填多張分享圖、events.html 改名 events-app.html 新增 api/events.js 讓活動搜尋結果分享連結終於有預覽圖、總覽拼貼列表版面與月曆 day-events-panel 也補上網址同步與分享；v33.4；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對、v33.1 活動詳情作品欄位＋分享動態 OG 圖、v33.2 活動分享連結永久ID／全站篩選「IP」更名「作品」／桌機地圖模式恢復顯示 FAB、v33.3 相關機台卡片列左右箭頭、v33.4 events.html 初始載入效能修正＋活動搜尋結果分享連結已上線；v33.4 追加全站手機/桌機切換斷點 768px→900px、點「作品」標籤快速篩選同作品機台/活動；v34 活動新增支援多個作品／IP 聯名顯示與搜尋篩選、新增「今日活動」／「有抽卡 / 相卡機」快速篩選 pill、月曆渲染效能修正、拼貼卡片圓角邏輯再修正、月曆導航按鈕補上 hover、月份標籤改 yyyy/mm、day-events panel 手機版 header 比照篩選 sheet、首頁機台列表／活動拼貼列表卡片整張可點擊展開詳情等多項視覺細修；再追加修正手機點擊藍色 tap-highlight 閃爍、拼貼列表 `.events-filter-row` 底部間距獨立化、窄螢幕 logo 改兩行顯示）
+**最後更新：** 2026/09/14（v35.2 月曆週次日期數字列捲動時改為 sticky 固定、月曆橫幅排序改成「剩餘天數優先」（行動導向）、全站手機/桌機切換斷點 900px→991px、排序按鈕改為跟篩選 pill 一致的白底圓角樣式（手機版收成純 icon 按鈕）、events.html header／搜尋列／篩選列結構精簡到跟首頁完全對稱（拿掉 `.events-topbar-controls`／`.quick-filter-group` 兩層多餘 wrapper，篩選列間距統一改用 padding-bottom）；Icon 系統整理：修正列表 view-toggle 未啟用 icon 與搜尋框清除按鈕圖示錯誤、FAB icon 校正，並把跨檔案重複的詳情展開／分享／方向箭頭 inline SVG 抽成 `utils.js` 共用常數；v35 事件/搜尋結果分享預覽圖全面補強：機台 P 欄／活動 N 欄改支援依檢視/入口分開填多張分享圖、events.html 改名 events-app.html 新增 api/events.js 讓活動搜尋結果分享連結終於有預覽圖、總覽拼貼列表版面與月曆 day-events-panel 也補上網址同步與分享；v33.4；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對、v33.1 活動詳情作品欄位＋分享動態 OG 圖、v33.2 活動分享連結永久ID／全站篩選「IP」更名「作品」／桌機地圖模式恢復顯示 FAB、v33.3 相關機台卡片列左右箭頭、v33.4 events.html 初始載入效能修正＋活動搜尋結果分享連結已上線；v33.4 追加全站手機/桌機切換斷點 768px→900px、點「作品」標籤快速篩選同作品機台/活動；v34 活動新增支援多個作品／IP 聯名顯示與搜尋篩選、新增「今日活動」／「有抽卡 / 相卡機」快速篩選 pill、月曆渲染效能修正、拼貼卡片圓角邏輯再修正、月曆導航按鈕補上 hover、月份標籤改 yyyy/mm、day-events panel 手機版 header 比照篩選 sheet、首頁機台列表／活動拼貼列表卡片整張可點擊展開詳情等多項視覺細修；再追加修正手機點擊藍色 tap-highlight 閃爍、拼貼列表 `.events-filter-row` 底部間距獨立化、窄螢幕 logo 改兩行顯示；**再追加**：訪客計數 banner 改成一開始就用 `visibility:hidden` 保留固定高度（避免人數抓取成功那一刻讓頂部工具列高度跳動），連帶拿掉首頁頂部工具列滑動隱藏機制原本用的 `ResizeObserver`；「最後更新」時間轉換/比較邏輯、抽卡機/相卡機徽章圖示，原本首頁跟活動頁多個檔案各自複製一份逐字元相同的程式碼，統一搬進共用的 `utils.js`，並補上圖示的 Material Symbols 來源檔名註解；**再追加**：機台首頁列表／events 頁「總覽·拼貼格狀」／「總覽·列表」三處卡片格線 min-width 統一調整為 330px，「總覽·拼貼格狀」欄數邏輯改為動態量測容器寬度反推，取代原本固定斷點；地圖側邊欄／手機 bottom sheet 機台清單改成依寬度自動算欄數（跟卡片格線 330px 統一），並修掉會連機台詳情內容都被拆成多欄的排版 bug；機台詳情面板的關閉鈕改為 sticky 固定不隨內容捲動，外觀比照 grid modal 關閉鈕；修掉活動情報頁訪客計數 banner 一直不會顯示的 bug；**再追加**：圖片放大 Lightbox 核心開關邏輯搬進共用的 `utils.js`（`createLightbox()`），首頁與活動情報頁各自呼叫、不再各自複製一份重複邏輯；作品標籤點擊篩選（`filterByCharacter`）／Google Maps 點擊追蹤（`trackGmapsClick`）改用資料屬性＋事件委派取代 inline onclick／`window` 掛載，一併排除原本手動跳脫單引號才能防止作品名稱弄斷連結的風險；**再追加**：月曆 `.events-day-grid`／`.events-weekday-row` 左右留白依斷點套用 16px／20px、月曆模式捲動時 topbar 改成一律保持可見（不再跟手機版一樣滑動收合）、日期 hover 外匡上邊框被 sticky 日期數字列蓋住的 z-index 問題修正；day-events-panel（點日期展開的當日活動清單）批次調整：斷點從 720/721px 併入全站 991/992px、卡片改沿用 `.loc-card-grid` 視覺語言（已結束灰階＋tag，不顯示詳情按鈕）、排列順序對齊月曆橫幅的剩餘天數排序、標題改置中、從 panel 開活動詳情再關閉後 `.selected` 藍色外匡狀態會正確清除、桌機展開時跟月曆邊緣的 20px 間距對齊修正；**再追加**：日期 hover 外匡上邊框問題二次修正（z-index 不夠，改成在日期格子自己身上補畫三邊）、`.events-bar` 左邊統一 12px 內縮（不再只有第 1 欄的橫幅有效果）、`.day-events-body` 左右 padding 從 12px 調整為 16px、全站關閉鈕圖示統一改用 Material Symbols close icon（原本混雜 unicode ✕ 字元跟另一款 stroke 風格 SVG）；**再追加**：day-events-panel 卡片清單改成依寬度自動算欄數，只套用在 ≤991px（跟首頁／events 總覽列表／地圖側邊欄同一套 330px min-width 邏輯，桌機因 panel 固定 360px 寬沒有實質效果維持單欄）；**再追加**：修正 events 頁「總覽·拼貼格狀」可以左右滑動的 bug（`.events-collage-grid` 只設 `overflow-y` 沒設 `overflow-x` 時會被瀏覽器隱性當成 `auto`，補上明確的 `overflow-x: hidden`）)
 
 ---
 
@@ -92,23 +92,24 @@
 - API 失敗時靜默隱藏，不影響其他功能
 - v22 修正：曾被 Service Worker 誤快取導致數字凍結（`sw.js` catch-all 規則把 counter API 也當成殼層資源快取），改為指定該請求繞過快取、每次都真的打網路，詳見 `CLAUDE.md`
 - v26 起：mobile 列表模式下併入頂部工具列，跟 header/toolbar/filter-bar 一起滑動隱藏/顯示，見下方「列表模式（Grid View）」
+- v35.2 修正：`app.html` 本來就是 inline `visibility:hidden`；`events-app.html` 複製貼上時留成 `display:none`，導致一個實際的顯示 bug——`js/visitor.js` 抓到人數後只會切 `visibility`、從不動 `display`，`events-app.html` 的行內 `display:none` 蓋過 class 的 `display:flex` 且不受 `visibility` 影響，這顆 banner 在活動頁其實永遠顯示不出來。修法是兩邊統一改成 `visibility:hidden`，一開始就保留固定高度佔位（只是視覺上先隱形），抓到人數後才切回 `visibility:visible`；同時也修掉了先前「banner 非同步出現時讓頂部工具列高度跳動」的問題，連帶讓頂部工具列滑動隱藏機制不再需要 `ResizeObserver` 持續監看高度變化（改成只在初始化跟 resize 斷點切換時重算），詳見 `CLAUDE.md`
 
 ### Header
 - 右側由左至右：最後更新時間 ｜ 回報表單 ｜ 更新日誌 　[列表][地圖]（v27 新增「更新日誌」連結）
 - 回報表單：灰色文字（`--fill-gray`），hover 變藍，`target="_blank"` 開新分頁
 - 更新日誌：灰色文字（`--fill-gray`），hover 變藍（v27 新增，樣式與回報表單一致）
-- View Toggle：900px 以下隱藏文字標籤，只顯示 icon；padding 調整為 `8px 10px`（v33.4 前為 768px）
+- View Toggle：991px 以下隱藏文字標籤，只顯示 icon；padding 調整為 `8px 10px`（v33.4 前為 768px，v35.2 起共用斷點再從 900px 改為 991px）
 - 手機版列表模式：header 右側只留 icon toggle，「回報表單／更新日誌」連結改放在列表上方同一排 meta 資訊裡（跟最後更新時間同一行）
 - **View Toggle 尺寸／icon（v34 重做）**：`.view-toggle`／`.view-btn` 改成不設固定寬高，改由 padding 撐開內容（外框 `padding: 4px`，按鈕 `padding: 8px 12px`），並加上 `white-space: nowrap` 避免中文標籤在窄寬度下被拆成上下兩行；列表 icon（`#btnGrid`）比照地圖 icon（`#btnMap`）做法，補上 outline／fill 兩顆 SVG 依 active 狀態切換（`.grid-icon-outline`/`.grid-icon-fill`），fill 版用 Material Symbols `grid_view` FILL1。`events.html` 的 view toggle 共用同一份 `style.css`，樣式與尺寸自動同步；月曆 icon（`data-view="calendar"`）也比照補上 outline/fill 兩顆 SVG（`calendar_today` FILL1），總覽 icon 尺寸統一調整為 20px
 - **⚠️ v34 追加：`#btnGrid` 曾經一次顯示兩顆 icon 的 bug**：上一條補上 `.grid-icon-outline`/`.grid-icon-fill` 時，只複製了地圖 icon 的 SVG 標記，漏了對應的三條 CSS 切換規則（`.grid-icon-fill { display: none; }`／`.view-btn.active .grid-icon-outline { display: none; }`／`.view-btn.active .grid-icon-fill { display: block; }`），導致列表按鈕的 outline/fill 兩顆 icon 不論啟用狀態都一直同時疊著顯示；補上對應規則後修復
-- **窄螢幕 logo 改兩行顯示（v34 追加）**：`<450px`（原本斷點是 `<412px`）時，標題原本用 `.logo h1 span { display: none; }` 把副標題「抽卡機在哪」整個隱藏、只留「KADO！」；改成 `.logo h1` 設 `flex-direction: column` 直排兩行顯示，「KADO！」與副標題字級統一為 16px（不做主副標題字級差異）
+- **窄螢幕 logo 改兩行顯示（v34 追加，v35.2 提前生效斷點）**：v34 原本斷點是 `<450px`（原本是 `<412px`）時，標題原本用 `.logo h1 span { display: none; }` 把副標題「抽卡機在哪」整個隱藏、只留「KADO！」；改成 `.logo h1` 設 `flex-direction: column` 直排兩行顯示，「KADO！」與副標題字級統一為 16px（不做主副標題字級差異）。**v35.2 起**這個欄狀排列提前到跟全站手機/桌機斷點統一的 `<991px` 就生效（不用再等到 450px 這麼窄），原本 450px 專屬的獨立區塊已刪除（涵蓋範圍已被 991px 完全包含）
 
 ### 列表 view-btn icon bug 與其他細部樣式調整（v34 追加）
 - **`.loc-card-grid`／`.loc-card` hover 效果，經過幾輪調整才定案**：起點是 `border-color: var(--fill-blue); transform: translateY(-2px); box-shadow: 0 8px 24px var(--fill-blue-16);`；第一輪改成 inset 邊框（`box-shadow: inset 0 0 0 2px var(--fill-blue)`，拿掉外陰影與 `transform`）；第二輪補回外陰影（`0px 8px 24px rgba(0, 102, 255, 0.16)`）；第三輪（最終定案）補回 `transform: translateY(-2px)` 上移動畫、inset 邊框從 2px 改細成 1px。最終樣式：`box-shadow: inset 0 0 0 1px var(--fill-blue), 0 8px 24px rgba(0, 102, 255, 0.16); transform: translateY(-2px);`；`.loc-card:hover`（地圖模式側邊欄／mobile bottom sheet 地點清單卡片）同步套用
 - **`.collage-list-wrap` 補 `padding-top`**：events 頁拼貼列表真正裁切卡片內容的是巢狀捲動容器的內層 `.collage-list-wrap`（不是外層 `.events-page-body`），原本完全沒有 `padding-top`，第一排卡片 hover 時的位移／陰影會被自己的 `overflow-y: auto` 邊界裁掉一截；補上 `padding-top: 8px`（手機版疊加原本補償固定頂部工具列高度的值，改成 `calc(8px + var(--events-top-bar-height, 0px))`）
 - **`.filter-panel` 補 `overflow-x: hidden`**：修掉篩選桌機 dropdown 極端情況下可以左右滑動的問題（`overflow-y: auto` 沒明確指定 `overflow-x` 時會被隱含當成 `auto`）
 - `.events-bar-title`（月曆橫幅標題）補上 `font-weight: 500`
-- **`.events-multi-pill`／`.events-bar-multi-badge` icon 換成 `map_pin_heart`**：前者三處（月曆橫幅／拼貼格狀卡片／拼貼列表卡片）尺寸統一為 16×16；後者原本完全沒有 icon，補上同款 12×12 icon
+- **`.events-multi-pill`／`.events-bar-multi-badge` icon 換成 `map_pin_heart`**：前者三處（月曆橫幅／拼貼格狀卡片／拼貼列表卡片）尺寸統一為 16×16；後者原本完全沒有 icon，補上同款 12×12 icon。**v35.2 追加**：`.events-bar-multi-badge`（月曆橫幅「N 地點」徽章）配色從跟著分類變色（`background: var(--bar-color); color: var(--fill-white);`，吃跟左側色條、`.events-bar-cat` 同一顆 `--bar-color` 變數）改成固定白底藍字（`background: var(--fill-white); color: var(--fill-blue);`），跟 `.events-multi-pill` 統一；`margin-left:auto` 靠右定位、藥丸形等版型邏輯不變，只改配色
 - **手機點擊卡片/按鈕時藍色 tap-highlight 閃爍修正（v34 追加）**：全站沒有設定 `-webkit-tap-highlight-color`，WebKit 手機瀏覽器預設會在點擊有 click 事件的元素到彈窗真正開啟前，短暫顯示半透明藍色高亮方塊；在 `style.css` 全域 `* { margin: 0; padding: 0; box-sizing: border-box; }` reset 規則補上 `-webkit-tap-highlight-color: transparent` 統一關閉
 - 動到 `style.css`／`events.css`／`js/events.js`
 
@@ -219,15 +220,16 @@
 
 ### 彈窗（cluster popup、地圖側邊欄/sheet 詳情、列表模式詳情彈窗）
 內容一致，顯示以下資訊（有資料才顯示）：
-1. 店名（粗體標題，右上角固定 ✕ 關閉按鈕，跟 badge 群組同一個 flex row 垂直置中）
-   - **badge 群組（v30.5 新增倒數 badge）**：type-badge（抽卡機/相卡機）跟倒數 badge（即將結束才顯示，見下方「倒數 Badge」）用 `.modal-badge-row` 緊鄰排在一起（`gap:8px`，不做兩端對齊），這組再跟關閉鈕維持原本的 `space-between`
+1. 店名（粗體標題，右上角固定 ✕ 關閉按鈕）
+   - **badge 群組（v30.5 新增倒數 badge）**：type-badge（抽卡機/相卡機）跟倒數 badge（即將結束才顯示，見下方「倒數 Badge」）用 `.modal-badge-row` 緊鄰排在一起（`gap:8px`，不做兩端對齊）
+   - **地圖側邊欄／bottom sheet 詳情的關閉鈕改為 sticky 固定（v35.2）**：原本跟 badge 群組包在同一個 `space-between` flex row 裡，整段都是捲動內容的一部分，內容長時關閉鈕會被捲出視野；改成 badge 群組維持原本排版跟著內容捲動，關閉鈕自己包一層 `height:0` 的 sticky wrapper 固定貼在可捲動區塊右上角（`top:0; right:16px`），不佔版面空間也不會把 badge 往下推。外觀不加背景／陰影，跟列表模式 grid modal 的關閉鈕（`.grid-modal-close`）一致的純圖示樣式。grid modal（列表模式詳情彈窗）本身不會捲動整段內容（`.grid-modal-content` 內部自己 `overflow-y:auto`、關閉鈕在 `.grid-modal-box` 上用 `position:absolute` 常駐），不受這個改動影響，維持原本行為
 2. 期間限定（圓角框）
 3. 資訊欄（純文字標籤，無 icon）：場地、地址、IP、彈數、一抽張數、營業時間、備註
 4. 前往 Google Maps 查看 →（藍色連結）
 5. 圖片（width: 100%，height: auto，依原始比例顯示；多張支援輪播）
 6. **IP 標籤可點擊快速篩選（v33.4 新增）**：作品（IP）文字改成可點擊按鈕（`.popup-character-link`，虛線底線＋hover 變藍），點擊後把該作品名稱帶入搜尋框、篩出所有同作品機台；grid modal（列表模式）觸發時關閉彈窗並切到列表 view，地圖詳情面板（桌機側邊欄／mobile bottom sheet）觸發時留在地圖模式，只換成篩選後的地點列表，不強制跳轉視圖。GA4：`character_tag_click`
 
-cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 N 台機器」清單，清單項目優先顯示 IP、店名相同時隱藏重複的次要文字，選了其中一項才會顯示上面這份完整內容。
+cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 N 台機器」清單，清單項目優先顯示 IP、店名相同時隱藏重複的次要文字，選了其中一項才會顯示上面這份完整內容。**v35.2 追加**：清單項目（`.cluster-popup-item`）被選中時標題（`.cluster-popup-item-name`）補上 `font-weight: 700` 加粗區別；標題／次要文字（`.cluster-popup-item-name`／`.cluster-popup-item-sub`）都補上 `overflow: hidden; text-overflow: ellipsis;`，並在其 flex 容器 `.cluster-popup-item-text` 補上 `min-width: 0`（flex item 預設 `min-width: auto` 會擋住 ellipsis 生效），文字過長時單行截斷顯示 `...`，不再撐破卡片版面。
 
 ### 列表模式（Grid View）
 - 格狀排版（手機 1 欄、桌機響應式多欄）
@@ -235,7 +237,8 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - Tags：白色文字 + 白色邊框 + 半透明背景
 - 「詳情」按鈕：青色實心 `#00c2a8`，黑色文字，↗ 圖示；**v34 起整張卡片都可點擊開啟彈窗**（原本只有這顆按鈕可以點），按鈕保留當冗餘點擊目標，「在 Google Maps 查看」連結另外排除、點擊仍正常跳轉不受影響
 - **mobile 頂部工具列滑動隱藏（v26 新增）**：header + toolbar + filter-bar + 訪客計數 banner（`#topBar`）在手機列表模式下往下滑隱藏、往上滑（哪怕滑一點點）立刻出現，捲到頂端附近一律保持顯示；只在列表模式生效，地圖模式的工具列維持原本 static，不會跟著滑動
-- **filter-bar 到第一張卡片的間距（v26 調整）**：mobile 列表模式下為 12px（原本 24px，filter-bar 自身 padding-bottom 在列表模式歸零）；地圖模式的 filter-bar 間距未變動
+- **filter-bar 到第一張卡片的間距（v26 調整，v35.2 拿掉舊覆寫）**：v26 起 mobile 列表模式下曾經是靠 `body:not(.map-view) .filter-bar { padding-bottom: 0 }` 把 `.filter-bar` 自身 padding-bottom 強制歸零、只吃 `#gridView` 自己的 `padding-top: 12px`。v35.2 起拿掉這條覆寫，並把 `.filter-bar` 991px 以下的 padding 對齊成左右下都 16px（`0px 16px 16px 16px`，原本左右不對稱是 `0px 16px 24px 24px`）；列表模式現在跟地圖模式一致，吃到完整的 `.filter-bar` padding-bottom（16px）＋ `#gridView` 的 padding-top（12px）＝28px
+- **卡片格線 min-width 300px→330px（v35.2）**：`.grid`（`#gridView` 底下的卡片容器）`grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))` 改成 `minmax(330px, 1fr)`；events 頁「總覽·列表」的 `.collage-list-grid` 沿用同一套 `.loc-card-grid` 卡片語言，是獨立宣告，這次也同步改成 330px（見下方「總覽（拼貼）檢視」）
 
 ### 地圖模式詳情面板（v20 重做，v23 大幅改版）
 **桌面版**
@@ -278,6 +281,7 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 
 ### 排序（v22 新增）
 - 位於篩選 pill 列右側，與 pill 間隔 16px，純文字＋chevron（無 pill 外框），單選
+- **視覺改版（v35.2）**：桌機樣式改成跟篩選 pill 一致的白底圓角膠囊；991px 以下收成純 icon 按鈕（文字 label 隱藏，換成排序 icon），與事件頁共用同一顆 `sort-widget.js` 元件
 - **桌面版**：點擊展開錨定 dropdown；**手機版**：文字換行為兩行（類別／方向），點擊開 bottom sheet；兩者互斥，開一個會自動收合另一個以及篩選面板/sheet
 - 四個選項：結束日期近到遠（default）、結束日期遠到近（v30.3 新增）、距離近到遠、距離遠到近
 - **結束日期排序**：有結束日期的機台依方向排序，無期限的常態機不管哪個方向都一律排最後（沒有結束日不算「最遠」，是另一種狀態），彼此之間依 IP 名稱（`localeCompare('zh-Hant')`）排序
@@ -321,6 +325,13 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - `getEndDate()`／`getEndingBadge()`（倒數 badge 判斷，原在 `grid.js`）——`events.js` 的活動 `period` 欄位沿用跟機台 `limited` 一樣的格式，直接複用同一套判斷
 - `driveUrlToImage()`（Drive／Cloudinary 網址轉縮圖，原在 `main.js`）
 - `haversineKm()`（兩點距離公式，原在 `grid.js`）——行事曆拼貼模式的距離排序取「一組活動裡離使用者最近的那個地點」也需要
+
+**v35.2 新增兩組**（原因不同：這兩組是首頁 `main.js` 跟行事曆頁 `events-header.js`／`events.js`／`grid.js`／`map.js` 之間各自複製，不是首頁 chain 跟 events.js 之間的重複，但一樣是零依賴純邏輯，適合搬進 `utils.js`）：
+- `to24Hour()`／`parseUpdateDate()`／`buildLastUpdatedText(machineRaw, eventsRaw)`（原各自在 `main.js`／`events-header.js`）——「最後更新」時間格式轉換、兩欄時間戳比較、組出顯示文字
+- `MACHINE_TYPE_BADGE_ICON`／`machineTypeClass(type)`（原各自在 `grid.js`／`main.js`／`map.js`／`events.js`）——抽卡機/相卡機徽章圖示與顏色 class 判斷；圖示常數上補了來源註解（`抽卡機` 對應 Material Symbols `playing_cards`、`相卡機` 對應 `photo_camera`，皆 FILL1）；地圖 marker 專用的 `MARKER_ICON_SVG`（屬性不同的 `L.divIcon` 版本）刻意不共用
+
+**v35.2 再新增**：
+- `createLightbox(overlayId, imgId)`（原各自在 `main.js`／`events.js`，回傳 `{ open, close }`）——Lightbox「設定 `img.src`、toggle overlay 的 `show` class」這段核心開關邏輯，兩邊各自呼叫一次拿獨立實例；呼叫端的 GA 事件與綁定方式（機台版 inline onclick＋`window` 掛載／events 版 `addEventListener`）刻意不一起搬，只共用這一小段純 DOM 操作，見下方「圖片放大 Lightbox」章節說明
 
 `grid.js`／`main.js` 改成從 `utils.js` `import` 同一份，`grid.js` 為了不動 `main.js` 既有的 `import { getEndingBadge } from './grid.js'` 語句，額外重新 `export` 一次轉出去。
 
@@ -371,12 +382,21 @@ v33 把 `initEventsPage()` 改成 `await Promise.all([loadEvents(), loadMachines
 - 滑鼠移到有活動的日期格子時，該天整欄（從日期數字到當週橫幅區底部）浮現藍色外框，對應出這天涵蓋哪些橫幅；僅在滑鼠裝置生效，觸控裝置沒有這個 hover 手勢
 - **月曆卡片高度修正（v32.1）**：月曆容器改成依實際內容高度顯示（`flex:1` → `flex:0 1 auto`），內容不夠多時（例如篩選出 0 筆活動）卡片會收到跟內容一樣高，不會再把最後一週撐出一大段跟其他週不成比例的空白；內容真的超過可視高度時仍照舊在框內捲動，行為不變。技術細節見 `CLAUDE.md`「月曆卡片高度：flex:1 → flex:0 1 auto」
 - **星期列與日期格間距修正（v34，本節依「7 月曆 events-page-body 間距」chat 重寫）**：`.events-page-body` 殘留的 `padding-top: 8px` 移除，避免跟月曆格線自己的 `padding-top` 疊加成多餘的 8px 空隙——月曆／拼貼格狀／拼貼列表三個真正的捲動子容器都已經各自帶了自己的 8px `padding-top`，`.events-page-body` 不該再重複補一次
+- **週次日期數字列捲動時改為 sticky 固定（v35.2）**：某一週活動較多、展開「全部顯示」後 `.events-day-grid` 內部會捲動，日期數字列（`.events-week-daynums`）原本只是該週最上面一列，捲動後會跟著捲走，只剩外層固定的星期列（一二三四五六日）看得到，看不出目前捲到的是幾號；改成 `position: sticky; top: 0`，讓每週的日期數字列在該週往下捲動時黏在 `.events-day-grid` 頂端，捲到下一週再自然換成下一週的日期列
+- **`.events-day-grid`／`.events-weekday-row` 左右留白依斷點套用 16px／20px（v35.2 追加）**：≤991px 16px、>991px 20px，對齊 `.events-page-body`／`.filter-bar` 既有的「桌機 20、手機 16」慣例。**注意**：`.events-day-grid` 本身是有背景色／圓角的白底卡片，不是單純捲動容器，改左右留白不能只靠 padding（padding 畫在背景框內側，只會讓內容往內縮、背景範圍不變，視覺上等於沒留白）——要用直接的負 `margin-left`／`margin-right: -4px`（僅 ≤991px）才會讓背景卡片本身的邊界跟著內縮；`.events-weekday-row` 則單純用 `margin: 0px 16px`（≤991px）／原本的 20px（>991px）控制
+- **日期 hover 外匡上邊框被 sticky 日期數字列蓋住的 z-index 修正（v35.2，後續發現不夠、再補二次修法）**：`.events-week-daynums`（上一點的 sticky 日期數字列）設了 `z-index: 2`，蓋過了同一格內原本沒設 z-index 的 hover 外匡（`.events-week-hover-col`，用 `box-shadow` 畫出的四邊外框），導致 hover 時只看得到左右下三邊、上邊被日期數字列背景擋住；第一輪修法是 `.events-week-hover-col` 補上 `z-index: 3`，蓋過 `.events-week-daynums` 的 `z-index: 2`。**實測後發現這樣還不夠**：`.events-week-daynums` 同時是 `position: sticky` 元素，瀏覽器對 sticky 元素自己的合成層不一定完全照 z-index 排序繪製，上邊框那一段還是會被蓋住。二次修法改成不靠 z-index 硬蓋，在 `.events-day-num-cell` 自己身上（daynums 這個 sticky 元素的內部子元素，跟它同一個合成層）另外補畫上／左／右三邊：新增 `.events-day-num-cell.col-hover { box-shadow: inset 0 1.5px 0 0 var(--fill-blue), inset 1.5px 0 0 0 var(--fill-blue), inset -1.5px 0 0 0 var(--fill-blue); }`，`js/events.js` 的 `onDayCellHoverEnter()`/`onDayCellHoverLeave()` 同步加／拿掉這個 class，跟 hover-col 原本提供的左右下三邊疊在一起（左右邊重複疊一次同色線，不影響視覺）湊出完整四邊外框
+- **橫幅排序改成「剩餘天數優先」（v35.2，行動導向）**：`.events-bar` 原本排序是「開始日早的優先、同開始日跨天數長的優先」（純粹為了打包效率、列數最少），改成「距離結束剩餘天數少的（快結束的）優先排最前面」，提醒使用者「這個快沒了要趕快去」；剩餘天數相同才退回原本的橫向排列規則。代價是同一週有時會比之前多用到一兩列（打包效率變差），是刻意接受的取捨，詳見 `CLAUDE.md`「月曆橫幅排列演算法」
+- **`.events-bar` 左邊統一 12px 內縮（v35.2 追加）**：原本只有從週一（第 1 欄）開始的橫幅左邊有 12px 內縮（靠 `.events-week-bars` 的 `padding-left:12px`），對齊上面日期數字的 12px padding；第 2～7 欄開始的橫幅左邊界就是 grid 內部分隔線本身，會直接貼齊那條直向格線，沒有內縮。改成 `.events-week-bars` 拿掉 `padding-left`（改為 0）、`.events-bar` 統一補上 `margin-left: 12px`，不管從第幾欄開始都有一致的 12px 內縮。副作用：同一列裡兩個相鄰橫幅之間的間距會從單純的 8px grid gap 變成 8px+12px=20px，是刻意接受的取捨
 
 ### 總覽（拼貼）檢視（v33 新增，對外顯示文字為「總覽」）
 - 卡片式、依圖片拼貼排版，不受月份侷限，一次看到全部符合篩選條件的活動；已結束／尚未結束的活動分兩組各自排序（分組本身固定不受排序影響）
 - 內部另有「格狀／列表」次要切換（v34 新增，兩顆各自獨立的圖示按鈕，不是循環按鈕、也不是分段控制項）：格狀是預設的瀑布流拼貼卡片，列表是單欄、無縮圖的精簡卡片，沿用首頁列表卡片同一套整張卡片可點擊展開詳情的互動（v34 新增，原本只有「詳情」按鈕可以點）
 - 排序（結束日／距離）只在總覽檢視有意義，月曆檢視按日期排列沒有「排序方式」這個概念；排序 UI 掛在跟篩選 pill 同一排的 `#eventsFilterBar`，切到月曆時隱藏
+- **排序按鈕視覺改版（v35.2）**：桌機樣式從純文字＋chevron 改成跟篩選 pill 一致的白底圓角膠囊；991px 以下進一步收成純 icon 按鈕（文字 label 隱藏，換成排序 icon），下拉/bottom sheet 開合行為不變；機台首頁跟事件頁共用同一顆 `sort-widget.js` 元件，兩邊同步套用
 - 距離排序取「一組活動裡離使用者最近的那個地點」，只提供「近到遠」，不提供「遠到近」（實用性低，先不做）
+- **拼貼格狀卡片 min-width（v35.2）**：`.collage-card` 新增 `min-width: 330px`（原本沒有 min-width，寬度單純由欄位動態分配）；曾經先試過 614px，上線一測發現欄數邏輯沒跟著調整、卡片被撐爆容器造成破版，跟 Gill 確認後改成 330px。連帶把 `js/events.js` 的 `collageColumnCount()` 從純靠螢幕寬度分固定斷點（420/720/1100px）給 1～4 欄，改成量測 `#eventsCollageGrid` 實際寬度、用「能塞下幾個卡片 min-width 欄」動態反推欄數，避免欄數跟卡片最小寬度對不上時再度破版；events 頁「總覽·列表」的 `.collage-list-grid` min-width 同步從 300px 改成 330px（見上方「列表模式（Grid View）」）
+- **fix：`.events-collage-grid` 可以左右滑動（v35.2 追加）**：`.events-collage-grid` 只設了 `overflow-y: auto`，沒有明確設 `overflow-x`——CSS 規格規定一軸是 `auto`／`scroll`、另一軸沒明確指定（預設 `visible`）時，瀏覽器會把那一軸隱性當成 `auto` 處理，不是 `visible`，跟專案裡 `.filter-panel` 之前踩過的同一個坑（見「列表 view-btn icon bug 與其他細部樣式調整」章節）。配合 `.collage-grid-col` 用 `flex:1 1 0` 分欄、卡片本身又有 `min-width:330px`，欄數計算（`collageColumnCount()`）在 resize debounce（150ms）還沒跑完、或量測時機跟實際 render 有落差時，欄位會短暫跟卡片最小寬度對不上，這個隱性 `auto` 就會冒出橫向捲軸、可以左右滑動。修法：`.events-collage-grid` 明確補上 `overflow-x: hidden`，不管欄位計算有沒有完全跟上，都只會裁切、不會出現橫向滑動
+- **「總覽·列表」左右留白與上方間距改用獨立斷點控制（v35.2）**：左右留白原本直接繼承外層 `.events-page-body` 固定 20px（不分斷點），改成 `.collage-list-wrap` 自己用「負 margin（`margin: 0 -20px`）抵銷外層固定 20px、再依斷點補回 `padding-left`／`padding-right`」的方式控制：桌機（>991px）20px、手機（≤991px）16px，跟機台首頁 `.toolbar`／`.filter-bar`／`#gridView` 同一套「桌機 20、手機 16」的慣例對齊；不影響「總覽·拼貼格狀」（本來就左右貼邊不需要 padding）跟月曆檢視。上方間距原本 `.collage-list-wrap` 跟 `.collage-list-grid` 各自都有 `padding-top: 8px`，桌機疊加成 16px；改成只由 `.collage-list-grid` 一處控制（桌機 8px、手機 0px），斷點從原本的 720px 改成 991px；`.collage-list-wrap` 另一條跟 fixed top bar 高度補償相關的 `padding-top`（≤991px，功能性）維持不動。連帶把 `.events-collage-grid`（總覽·拼貼格狀）在 ≤991px 的 `padding-top` 從 `var(--events-top-bar-height, 8px)`（top bar 高度量到後就沒有額外視覺間距）改成 `calc(8px + var(--events-top-bar-height, 0px))`，補償高度之上固定再加 8px，跟 `.collage-list-wrap` 邏輯一致；>991px 桌機沿用原本固定的 8px 不變
 
 ### 篩選 / 搜尋
 - 三個維度：類型（固定為 `EVENT_CATEGORIES` 的 5 個分類標籤）、作品（原稱「IP」，v33.2 起顯示文字改為「作品」，`key` 沿用 `ip`、GA `filter_type` 等既有分析參數值不變，動態去重，排序邏輯跟首頁一致）、縣市（固定 `TW_CITY_ORDER`）；跟首頁共用同一套 `filter-widget.js`，UI 與 GA 事件命名前綴改成 `events_filter`
@@ -389,7 +409,7 @@ v33 把 `initEventsPage()` 改成 `await Promise.all([loadEvents(), loadMachines
 - **今日活動**：只顯示 `start <= 今天 <= end` 的活動（篩掉還沒開始／已結束的）；只做「今天有的活動」這一種時間篩選，因為活動列表本來就已依時間排序在最前面，做「進行中／未開始」這種篩選沒有實質意義
 - **有抽卡 / 相卡機**：只顯示能透過機台⇄活動自動比對（`findRelatedMachines()`，見上方「機台⇄活動自動比對」）找到至少一台相關機台的活動
 
-視覺沿用既有的 `.filter-pill` 樣式（跟類型／作品／縣市三顆篩選 pill 共用），不是 checkbox；點擊 toggle active／再點取消，active 時顯示跟 `filter-widget.js` 同一套清除（✕）圖示。DOM 上跟類型／作品／縣市 pill 同樣放在可橫向捲動的容器內，手機（≤900px）會跟著一起左右滑動。
+視覺沿用既有的 `.filter-pill` 樣式（跟類型／作品／縣市三顆篩選 pill 共用），不是 checkbox；點擊 toggle active／再點取消，active 時顯示跟 `filter-widget.js` 同一套清除（✕）圖示。DOM 上跟類型／作品／縣市 pill 同樣放在可橫向捲動的容器內，手機（≤991px）會跟著一起左右滑動。**v35.2 起**這兩顆按鈕拿掉了外層原本的 `.quick-filter-group` wrapper，改成 `.filter-scroll` 的兩個獨立子元素（`js/events.js` 的 `positionQuickFilterGroup()` 改成分別搬移），能吃到 `.filter-scroll` 統一的 `gap:12px`，跟其他 pill 間距完全一致（拿掉 wrapper 前這兩顆之間只有 HTML 換行留白撐出的間距，不是正式的 12px）。
 
 **檢視範圍差異**：總覽（拼貼）檢視顯示全部六顆控制項（類型／作品／縣市／今日活動／有抽卡相卡機／排序）；月曆檢視只顯示四顆（類型／作品／縣市／有抽卡相卡機），「今日活動」與「排序」都隱藏——月曆本身就是照日期瀏覽，「今日活動」篩選在這個檢視下語意重複。「今日活動」的選取狀態在月曆檢視隱藏時不會被清空，篩選條件本身也在月曆檢視下暫時不生效，切回總覽會恢復原本的選取跟篩選效果。
 
@@ -421,7 +441,9 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
 - 「更多資訊」對應表單 L 欄，固定顯示「查看 →」文字連結
 - 圖片：K 欄可逗號分隔多張，統一轉成陣列供縮圖（只取第一張）與詳情輪播共用
 - **作品（IP，J 欄，v33.1 新增顯示）**：有填才顯示「作品：xxx」，放在場地資訊之前；欄位本身沿用既有的 `character`，先前只用在拼貼卡片/篩選/搜尋，詳情 Modal 一直沒有顯示，v33.1 補上；**v33.4 新增**：這行文字改成可點擊按鈕（比照機台版 `.popup-character-link`），點擊後關掉 Modal、把作品名稱帶入搜尋框篩出同作品所有活動，刻意不強制切換月曆／總覽檢視，點擊當下在哪個檢視就留在哪個檢視。GA4：`character_tag_click`（沿用機台版事件名稱，`event_id` 取代 `machine_id`）
-- **圖片放大 Lightbox（v33.1 新增）**：單張圖／輪播圖的 `<img>` 都補上 `data-lightbox` 屬性（輪播切換時同步更新），點擊開啟共用的 `.lightbox`（`style.css` 跟機台版共用同一份樣式與 z-index 99999，蓋過詳情 Modal 的 9999），點背景或按 Escape 關閉；跟機台版的差異只在綁定方式——機台走 inline `onclick` + `window.closeLightbox` 掛載，這裡沒有這套 window 掛載慣例，改用跟 `events.js` 其他 overlay 一致的 `addEventListener`，行為結果相同；新增 `events_lightbox_open` GA 事件（`event_id`／`device`，對應機台版的 `lightbox_open`）
+- **圖片放大 Lightbox（v33.1 新增）**：單張圖／輪播圖的 `<img>` 都補上 `data-lightbox` 屬性（輪播切換時同步更新），點擊開啟共用的 `.lightbox`（`style.css` 跟機台版共用同一份樣式與 z-index 99999，蓋過詳情 Modal 的 9999），點背景或按 Escape 關閉；跟機台版的差異只在綁定方式——機台走 inline `onclick` + `window.closeLightbox` 掛載，這裡沒有這套 window 掛載慣例，改用跟 `events.js` 其他 overlay 一致的 `addEventListener`，行為結果相同；新增 `events_lightbox_open` GA 事件（`event_id`／`device`，對應機台版的 `lightbox_open`）。**v35.2 起核心開關邏輯（設定 `img.src`、toggle `show` class）搬進 `utils.js` 的 `createLightbox()` 共用，兩邊各自呼叫拿獨立實例；上述綁定方式的差異完全不受影響，刻意維持不同**
+- **badge 列 class 對齊機台版（v35.2 修正）**：Modal 頂部 badge 列原本用獨立的 `events-detail-badge-row` class，但 `events.css` 沒有對應規則（純瀏覽器預設 `<div>`，沒有 padding／flex／margin），跟機台詳情面板（沿用共用的 `.modal-badge-row.detail-badge-row`）視覺不一致、上下沒有留白；改成沿用同一組共用 class 對齊留白
+- **「+N 個作品」展開鈕字型修正（v35.2）**：`.character-chips-toggle`（`<button>`）漏補 `font-family: 'Noto Sans TC', sans-serif;`——`<button>` 元素不會自動繼承 `body` 設的字型，這顆之前吃到瀏覽器預設系統字型，跟其他按鈕不一致，這次補上
 
 ### 分享連結永久ID機制（活動版，v33.2 新增）
 - 比照機台「分享連結永久ID機制」（見上方機台章節），活動分頁新增 O 欄「永久ID」，格式與產生方式相同（`permanent-id.gs` 的 `SHEET_CONFIGS` 已擴充支援機台／活動兩個分頁各自的欄位設定），一旦產生絕對不能手動修改或在該列刪除後重複使用
@@ -455,8 +477,8 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
 - **v34（app→events 方向）**：icon 換成 Material Symbols `calendar_today` FILL1；背景改為 `linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%)` + `backdrop-filter: blur(4px)`（含 hover 狀態）；hover 展開寬度改為由 icon + 文字內容撐開（`width: auto; padding: 16px`，取代原本的固定寬度），`.events-label` 的 `max-width` 放寬為 `156px`（避免裁切文字，同時保留可過渡動畫的固定數值，`max-width` 轉場不能用 `none`）。events→app 方向的 `.events-link`（gacha 機台圖示）未變動
 - **v32 修正**：FAB 原本放在 `#topBar`／`#eventsTopBar`（滑動隱藏用的 wrapper）裡面，手機版該 wrapper 的滑動隱藏動畫用 `will-change: transform`；`will-change: transform` 效果等同真的套用 transform，會替內部 `position: fixed` 的子孫元素建立新的 containing block，導致 FAB 沒有真的貼在視窗右下角，而是貼在 `#topBar` 這個祖先元素的右下角，並隨 `#topBar` 的 `translateY` 隱藏/顯示動畫一起飄走。修法：把 FAB 移出 `#topBar`／`#eventsTopBar`，變成 `body` 的直接子元素，恢復單純的「相對視窗 `position: fixed`」
 - **`app.html` 地圖模式下的顯示規則（v33.2 調整為斷點區分，原本是不分裝置一律 `display:none`）**：
-  - `max-width: 900px`（手機／平板，跟全站篩選/地圖版面同一個斷點；v33.4 前為 768px）：地圖模式隱藏 FAB——這個斷點下側邊欄變成貼底 fixed 全寬 bottom sheet，容易跟 FAB 互相卡住，且地圖模式本身已有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口
-  - `min-width: 901px`（桌機；v33.4 前為 769px）：地圖模式**保留顯示** FAB——桌機側邊欄是常駐在左側的 400px 面板，不會跟右下角的 FAB 互相遮擋；額外把 `.events-link` 的 `z-index` 從平常的 500 拉高到 `1100`，避免跟同樣疊在右下角、Leaflet 預設 `z-index: 1000` 的 attribution 控制項互相蓋住
+  - `max-width: 991px`（手機／平板，跟全站篩選/地圖版面同一個斷點；v33.4 前為 768px，v35.2 起再從 900px 改為 991px）：地圖模式隱藏 FAB——這個斷點下側邊欄變成貼底 fixed 全寬 bottom sheet，容易跟 FAB 互相卡住，且地圖模式本身已有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口
+  - `min-width: 992px`（桌機；v33.4 前為 769px，v35.2 起再從 901px 改為 992px）：地圖模式**保留顯示** FAB——桌機側邊欄是常駐在左側的 400px 面板，不會跟右下角的 FAB 互相遮擋；額外把 `.events-link` 的 `z-index` 從平常的 500 拉高到 `1100`，避免跟同樣疊在右下角、Leaflet 預設 `z-index: 1000` 的 attribution 控制項互相蓋住
   - `events.html` 沒有地圖／列表模式的差異，這條規則對它不生效
 
 ### 卡片／徽章細部樣式調整（v34）
@@ -470,15 +492,24 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
 - `.events-nav-group`（月曆上/下個月按鈕）補上 hover 效果：灰底圓形＋icon 變藍，比照 `.day-events-close`/`.grid-modal-close` 等既有 icon button
 - `events-month-label` 顯示格式從「2026年9月」改成補零的「yyyy/mm」（例：`2026/09`）
 - `.events-card`（當日活動 drawer 卡片列表）補齊跟 `.loc-card-grid` 一致的 hover 效果（原本只設 `border-color`、沒設 `border-style`，實際上沒有任何視覺變化）
-- `.day-events-body` 左右 padding 從 16px 改成 20px；手機版（≤720px）上方 padding 另外改成 8px
-- `.events-toolbar`（月曆導航）被迫換行到 `.filter-bar` 下一行的斷點從 900px 改成 959px；`.events-filter-row` 本身允許換行的斷點（`flex-wrap: wrap`）維持 900px 不變，900～959px 這段區間 `.events-toolbar` 仍維持跟 `.filter-bar` 同一行
-- ≤900px 且月曆檢視時，`.filter-scroll`（類型／作品／縣市 pill 的捲動容器）上方多留 4px
-- **拼貼列表 `.events-filter-row` 底部間距獨立化（v34 追加）**：原本 ≤900px 只有月曆檢視換行時有專屬 `margin-bottom` 覆寫（12px），拼貼列表模式一直沒有獨立控制、吃的是基準值 20px；新增 `body:has(#eventsCollageListWrap:not([hidden])) .events-filter-row { margin-bottom: 16px; }`，跟月曆檢視的覆寫互不相干、各自獨立控制
+- `.day-events-body` 左右 padding 從 16px 改成 20px；手機版（≤720px，v35.2 起併入 ≤991px）上方 padding 另外改成 8px；**v35.2 再追加**：≤991px 這個斷點下左右 padding 再從 12px 調整為 16px（`padding: 8px 16px 24px 16px`），跟桌機版（>991px，`padding: 8px 12px 24px 12px`，左右 12px）刻意不同值
+- `.events-toolbar`（月曆導航）被迫換行到 `.filter-bar` 下一行的斷點原本是 959px、`.events-filter-row` 本身允許換行的斷點（`flex-wrap: wrap`）是 900px，中間 900～959px 這段區間 `.events-toolbar` 仍維持跟 `.filter-bar` 同一行；**v35.2 起**兩個斷點一起併入 991px（不再是兩個不同數字），中間那段「同一行但月曆導覽已經換行」的過渡區間也一併消失
+- ≤991px 且月曆檢視時，`.filter-scroll`（類型／作品／縣市 pill 的捲動容器）上方多留 4px（v35.2 起斷點從 900px 對齊為 991px）
+- **拼貼列表 `.events-filter-row` 底部間距獨立化（v34 追加，v35.2 改寫法）**：原本 ≤900px 只有月曆檢視換行時有專屬 `margin-bottom` 覆寫（12px），拼貼列表模式一直沒有獨立控制、吃的是基準值 20px；v34 新增 `body:has(#eventsCollageListWrap:not([hidden])) .events-filter-row { margin-bottom: 16px; }`，跟月曆檢視的覆寫互不相干、各自獨立控制。**v35.2**：`.events-filter-row` 撐開跟下一列距離的方式整個從 `margin-bottom` 改成 `padding-bottom`（比照 `.filter-bar` 的模式），基礎規則合併成 `padding: 0 16px 16px 16px`；上述兩條依情境覆寫規則同步改成 `padding-bottom`（拼貼列表模式 16px、月曆導覽列顯示中 12px），數值沒變，只是統一成跟 `.filter-bar` 一致的寫法
+- **`.events-topbar-controls` wrapper 拿掉（v35.2）**：events.html 的搜尋列、篩選列、星期列原本統一包在 `.events-topbar-controls` 這層 wrapper 底下、由它統一管左右 padding；v35.2 拿掉這層，改成 `.toolbar`（原 `.events-search-row`，改用跟首頁共用的 `.toolbar` class）／`.events-filter-row`／`.events-weekday-row` 各自獨立管自己的 padding／margin，結構比照首頁 `#topBar` 底下 `header`／`.toolbar`／`.filter-bar` 平行並列、互不巢狀的模式
 - 手機版（≤720px）`.day-events-panel` 的 header 改成比照 `.filter-sheet-header`：標題置中、字重從 700 降到 500、關閉鈕改成絕對定位在右側垂直置中，並拿掉原本 header 頂部的 1px 藍色 border-top
+- **斷點從 720／721px 統一併入全站 991／992px（v35.2 追加）**：`day-events-panel` 原本用自己一組獨立的 `@media (max-width: 720px)`／`(min-width: 721px)` 切換「桌機右側推開版面」跟「手機 bottom sheet」，改成 `@media (min-width: 992px)`（桌機推開）／`@media (max-width: 991px)`（bottom sheet）；上一點提到的手機版 header 樣式規則也隨之搬到 ≤991px 區塊，並改成跟桌機共用同一份置中標題基礎規則（見下一點），不再各自宣告。同一輪順手拿掉另一條完全無關、但剛好也是 `@media (max-width: 720px)` 的舊規則（`.events-day-num-cell` padding／`.events-bar` 字級／`.events-week-toggle` 字級）
+- **卡片改沿用機台首頁／events 頁「總覽·列表」共用的 `.loc-card-grid` 視覺語言（v35.2 追加）**：原本 panel 卡片是獨立一套 `.events-card` 系列 class，長得跟其他地方的卡片不一樣、也沒有已結束灰階／tag 資訊；改成沿用 `.loc-card-grid`（type-badge、已結束 `.is-ended` 灰階、角色／城市／場地 tag），但刻意不顯示「詳情」按鈕（panel 點卡片本身就是開詳情 modal，不需要再一顆按鈕）。從 `eventListCardHtml()` 抽出共用的 `locCardTopHtml(group, { ended, badge })`，panel 專用的 `eventGroupCardHtml()` 只呼叫這個函式、不接按鈕；`.events-card` 系列 dead rule 整組刪除，只留外層 wrapper `.events-card-list`
+- **panel 卡片排列順序對齊月曆橫幅排序（v35.2 追加）**：`eventsForDate(date)` 原本沒有明確排序，跟月曆 `.events-bar` 的「剩餘天數優先」排序（見上方「橫幅排序改成剩餘天數優先」）不一致，同一天在月曆上跟在 panel 清單裡可能順序不同；改成 `eventsForDate()` 也用同一組排序 key（`daysUntilEnd()` 由小到大，相同才退回開始欄位小的優先、同開始欄位橫跨天數多的優先），單日情境下貪婪列排包裝順序等同排序順序，兩處視覺一致
+- **標題改為置中，桌機／手機共用同一套定位（v35.2 追加）**：`.day-events-header` base 規則統一用 `display:flex; align-items:center; justify-content:center; position:relative;` 置中標題，`.day-events-close` 改用 `position:absolute; right:16px; top:50%; transform:translateY(-50%);` 相對 header 定位到右側（比照 `.filter-sheet-header` 既有的置中標題語言）；≤991px 只保留手機專屬的字級／padding／關閉鈕右側偏移微調
+- **從 panel 點卡片開 modal、關閉後 `.selected` 狀態沒有跟著清除的修正（v35.2 追加）**：day-events-panel 的卡片清單不是靠 `renderAll()` 整批重繪的，`.selected` class 是點擊當下手動加上去的，關閉 modal 的既有流程不會碰到這個手動加的 class；修法是 `closeEventDetailModal()` 在清空狀態、呼叫 `renderAll()` 之前，手動查找 `#dayEventsBody` 底下所有 `.loc-card-grid.selected` 並移除 `selected` class
+- **桌機（>991px）panel 展開時跟 `.events-weekday-row` 留 20px 間距（v35.2 追加）**：panel 固定貼齊視窗右緣、`max-width:360px`，`.events-page-body`／`#eventsWeekdayRow`／`.events-nav-group` 三個要推開的元素各自用不同的 `margin-right`（分別是 `360px`／`380px`／`364px`），因為三者「原本既有的右側留白」不同（`.events-page-body` 自己有 20px `padding-right`；`.events-nav-group` 所在的 `.events-filter-row` 有 16px `padding-right`；`#eventsWeekdayRow` 沒有額外 padding），margin-right 各自扣掉那份既有留白後，三者右邊界才會真的對齊在同一條線上（距視窗右緣 380px = panel 寬度 360px + 20px 間距），詳見 `CLAUDE.md`
+- **卡片清單改成依寬度自動算欄數，只套用在 ≤991px（v35.2 追加）**：`.events-card-list` 原本不分斷點一律寫死 `grid-template-columns: 1fr` 單欄，跟首頁 `.grid`／events 頁「總覽·列表」`.collage-list-grid`／地圖側邊欄 `.location-list` 那套 `repeat(auto-fill, minmax(330px, 1fr))`（見上方「卡片格線 min-width 300px→330px」）不一致；只在既有的 `@media (max-width: 991px)` 區塊（手機 bottom sheet 版型）新增一條覆寫規則改成 `repeat(auto-fill, minmax(330px, 1fr))`，桌機（>991px，base 規則）維持 `1fr` 單欄——因為 panel 本身桌機固定貼齊視窗右緣、`max-width:360px`，就算套用同一套 min-width 邏輯也頂多還是塞得下一欄，改了沒有實質視覺效果，刻意只在手機斷點生效
 
 ### 手機版頂部工具列滑動隱藏（`events-scroll.js`，v40）
 - 邏輯照抄首頁 `scroll.js` 的 `#topBar` 版本（往下滑累積超過門檻才隱藏、往上滑立刻顯示、頂部安全區強制顯示），差異在 `events.html` 沒有「地圖／列表」兩種模式各自的捲動容器，而是「月曆／拼貼格狀／拼貼列表」三種子模式各自獨立的捲動容器（`#eventsDayGrid`／`#eventsCollageGrid`／`#eventsCollageListWrap`，同一時間只有一個可見），因此同時掛在三個容器上，各自用 `Map` 追蹤自己的 `scrollTop`，不共用單一變數，避免切換子模式時把另一個容器的捲動狀態誤判成一次大幅度滑動
 - 切換月曆／拼貼／格狀／列表任一子模式時都要重置滑動隱藏狀態，確保 bar 一定可見
+- **月曆模式下改成一律保持可見，不套用捲動隱藏（v35.2 追加）**：月曆內部（`#eventsDayGrid`）自己有獨立捲動，往下捲月曆內容時，原本手機版邏輯會把整個 topBar（含月曆導覽列）一起滑走，體驗奇怪；新增 `const ALWAYS_VISIBLE_TARGET_ID = 'eventsDayGrid'`，`handleScroll()` 判斷式從 `if (!isMobile())` 改成 `if (!isMobile() || el.id === ALWAYS_VISIBLE_TARGET_ID)`，捲動來源是月曆格線本身時直接視為「不隱藏」，不受 `isMobile()` 影響；非月曆模式（拼貼／列表）維持原本手機版滑動隱藏行為不變
 
 ### GA4 事件（活動行事曆專屬，追加於下方主表）
 | 事件名稱 | 觸發時機 | 參數 |
@@ -515,10 +546,10 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
 
 | 裝置 | 版面 |
 |------|------|
-| 桌機（>900px） | Header + Toolbar + 主內容區（Grid 或 Map+Sidebar 並排） |
-| 手機（≤900px） | Header + 主內容區（地圖全螢幕 + 底部 bottom sheet） |
+| 桌機（>991px） | Header + Toolbar + 主內容區（Grid 或 Map+Sidebar 並排） |
+| 手機（≤991px） | Header + 主內容區（地圖全螢幕 + 底部 bottom sheet） |
 
-> v23 起地圖版面與篩選版面的斷點統一為同一個值（原本分別是 640px / 768px 兩組不同斷點，已合併）；v33.4 起這個共用斷點從 768px 改為 900px。
+> v23 起地圖版面與篩選版面的斷點統一為同一個值（原本分別是 640px / 768px 兩組不同斷點，已合併）；v33.4 起這個共用斷點從 768px 改為 900px；**v35.2 起再從 900px 改為 991px**（`style.css`／`events.css` media query、`js/scroll.js`／`js/events-scroll.js` 的 `MOBILE_BREAKPOINT`、`js/events.js`／`js/filters.js`／`js/map.js` 的 `matchMedia` 全部同步調整），events.html 原本另一組獨立的 959px 斷點（篩選列換行、toolbar 全寬）一併併入 991px、不再是獨立數字；events 頁行事曆／卡片列版型切換的 720px 斷點與窄螢幕 header 標題兩行顯示的斷點（v35.2 起提前到 991px 以下生效，原 450px 專屬區塊已刪除）維持獨立，未合併。
 
 ### 手機版地圖模式
 - Toolbar（搜尋框）跟列表模式共用，不再隱藏（v20 起地圖模式也會顯示）
@@ -532,7 +563,7 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
   - 內部結構由上至下：
     1. `.sheet-handle`（drag handle pill，觸控熱區上下各 16px padding）
     2. `.map-scroll-wrapper`（`flex: 1; overflow-y: auto`）
-       - `.location-list`（依狀態顯示地點列表或完整詳情，動態塞入 innerHTML）
+       - `.location-list`（依狀態顯示地點列表或完整詳情，動態塞入 innerHTML；**v35.2 起**顯示卡片清單時加上 `.card-grid` 修飾 class，`display:grid; grid-template-columns:repeat(auto-fill, minmax(330px,1fr))`，橫向夠寬時自動變多欄，顯示詳情內容時移除這個 class 退回單欄，避免詳情內容的多個區塊被一起拆欄）
 
 ---
 
@@ -566,6 +597,14 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
 
 ### View Toggle
 - 啟用狀態背景：`#00c2a8`
+
+### Icon 系統（v35.2 整理）
+全站圖示統一用 Material Symbols inline SVG（`fill="#000000"` 改 `fill="currentColor"`）。v35.2 這輪核對修正：
+- 列表 view-toggle 未啟用（outline）icon 換成正確的 `grid_view` FILL0；搜尋框清除（✕）按鈕換成 `cancel` FILL1（原本是舊版 stroke 圓圈打叉字元圖示），尺寸 16px→20px 跟全站統一
+- 幾處逐字元重複貼在多個檔案裡的 inline SVG，抽成 `js/utils.js` 共用常數：`BTN_EXPAND_ICON_SVG`（詳情展開按鈕，`expand_content` FILL1）、`SHARE_BTN_ICON_SVG`（分享按鈕，`share` FILL0）、`CAROUSEL_CHEVRON_ICON_SVG`（輪播/相關機台卡片列/月曆上下月導航共用的方向箭頭，`chevron_backward` FILL0）；方向性箭頭只準備一顆朝左的 icon，反方向靠 CSS `scaleX(-1)` 鏡射，不重複準備 forward icon
+- FAB icon 校正：`app.html`（連到活動頁）從 `calendar_today` 換成 `local_activity` FILL1；`events-app.html`（連到機台頁）核對後本來就是 `playing_cards` FILL1，沒有動
+- **全站關閉鈕統一改用 `close_20dp_000000_FILL1_wght400_GRAD0_opsz20`（v35.2 追加）**：盤點後發現全站關閉鈕圖示不一致——`.grid-modal-close`（機台首頁）跟 `js/map.js` 產生的兩顆 `.popup-close-btn`（地圖詳情面板／cluster popup）原本是裸 unicode `✕` 字元；`.filter-sheet-close`（篩選／排序 bottom sheet）、`.changelog-close`（更新日誌）、`.day-events-close`（當日活動 drawer）、events 頁的 `.grid-modal-close`（活動詳情 Modal）則是另一款 stroke 風格 X SVG。統一新增 `js/utils.js` 的 `CLOSE_BTN_ICON_SVG` 共用常數供 `js/map.js` 使用，`app.html`／`events-app.html` 裡寫死的靜態關閉鈕（共 9 顆）直接把同一段 path 字串貼進 HTML；全站合計 11 顆關閉鈕圖示現在完全一致
+- 詳細清單與各檔案改動見 `CLAUDE.md`「Icon 系統」章節
 
 ### 活動分類色碼（`EVENT_CATEGORIES`，events.html 專用）
 

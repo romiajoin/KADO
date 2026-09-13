@@ -1,0 +1,1194 @@
+.events-link {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0;
+  width: 52px;
+  height: 52px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%);
+  backdrop-filter: blur(4px);
+  color: var(--fill-white);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 102, 255, 0.35);
+  transition: width 0.22s ease, padding 0.22s ease, background 0.15s ease, box-shadow 0.15s ease, gap 0.15s ease;
+}
+
+/* 手機／平板地圖模式：FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet
+   內容卡在一起（sidebar 在這個斷點下變成貼底 fixed 全寬 bottom sheet），且地圖模式
+   本身已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口，故隱藏。
+   桌機地圖模式（見下方 min-width:992px）則保留顯示——桌機側邊欄是常駐在左側的
+   400px 面板，不會跟右下角的 FAB 互相遮擋。 */
+@media (max-width: 991px) {
+  body.map-view .events-link {
+    display: none;
+  }
+}
+
+/* 桌機地圖模式下 FAB 保留顯示，但 Leaflet 預設控制項（attribution 等）z-index 是 1000，
+   FAB 平常（列表模式／events.html）維持 z-index:500 就好，這裡地圖模式下額外拉高，
+   避免跟疊在同個右下角的 Leaflet attribution 互相蓋住。 */
+@media (min-width: 992px) {
+  body.map-view .events-link {
+    z-index: 1100;
+  }
+}
+
+.events-link svg { flex-shrink: 0; }
+
+.events-link .events-label {
+  display: inline-block;
+  max-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.22s ease, opacity 0.15s ease;
+}
+
+@media (hover: hover) and (min-width: 992px) {
+  .events-link:hover {
+    width: auto;
+    padding: 16px;
+    gap: 8px;
+    background: linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 26px rgba(0, 102, 255, 0.45);
+  }
+
+  .events-link:hover .events-label {
+    max-width: 156px;
+    opacity: 1;
+    transition: max-width 0.22s ease, opacity 0.15s ease 0.05s;
+  }
+}
+
+body.events-standalone {
+  background: var(--fill-gray6);
+  min-height: 100vh;
+}
+
+.events-logo-link {
+  text-decoration: none;
+}
+
+.events-page-body {
+
+  transition: margin-right 0.28s ease;
+
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  padding: 0 20px 24px;
+}
+
+.events-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.events-calendar-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.events-toolbar {
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.events-filter-row .events-toolbar {
+  flex-shrink: 0;
+}
+
+@media (max-width: 991px) {
+  .events-filter-row {
+    flex-wrap: wrap;
+  }
+
+  /* 月曆模式（.events-toolbar 顯示中）專屬：filter-scroll 上方多留 4px */
+  .events-filter-row:has(> .events-toolbar:not([hidden])) .filter-scroll {
+    margin-top: 0px;
+  }
+
+  /* 拼貼列表模式專屬：跟月曆模式的 padding-bottom 覆寫（見下方 991px 區塊）互不相干，
+     各自獨立控制，不會互相影響。數值現在跟 base 一樣是 16px，維持這條規則只是保留
+     「拼貼列表模式獨立控制」的意圖，之後 base 數值變動不會不小心波及這裡。 */
+  body:has(#eventsCollageListWrap:not([hidden])) .events-filter-row {
+    padding-bottom: 16px;
+  }
+}
+
+@media (max-width: 991px) {
+  .events-filter-row {
+    flex-wrap: wrap;
+  }
+
+  .events-filter-row .events-toolbar {
+    width: 100%;
+  }
+
+  .events-filter-row:has(> .events-toolbar:not([hidden])) {
+    padding-bottom: 12px;
+  }
+}
+
+.events-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.events-nav-group button {
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  color: var(--fill-gray-64);
+  transition: background 0.15s, color 0.15s;
+}
+
+.events-nav-group button:hover:not(:disabled) {
+  background: var(--fill-gray6);
+  color: var(--fill-blue);
+}
+
+/* chevron_backward icon 原生朝左：上個月直接用，下個月用 scaleX(-1) 鏡射成朝右
+   （跟 .carousel-btn／.related-machines-nav-btn 同一套慣例，共用同一顆 CAROUSEL_CHEVRON_ICON_SVG） */
+.events-nav-next .carousel-chevron { transform: scaleX(-1); }
+
+.events-nav-group button:disabled {
+  cursor: default;
+  opacity: 0.32;
+}
+
+.events-month-label {
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 96px;
+  text-align: center;
+  color: var(--fill-black);
+}
+
+.events-filter-row .filter-bar {
+  background: none;
+  padding: 0;
+}
+
+.events-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 0 16px 16px 16px;
+}
+
+.events-filter-row .filter-bar {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 這兩顆是二元切換（點擊 toggle active／再點一次取消），不像分類/作品/縣市
+   pill 有下拉面板，所以沒有 .pill-chevron／.filter-panel，但一樣有 active 時
+   顯示的清除（✕）icon（.pill-clear），沿用 style.css 既有的 .filter-pill／
+   .pill-icon／.pill-clear 顯示規則，不用額外補 CSS；padding 也直接吃
+   .filter-pill 預設值（右側已經留給 icon 的空間），不用另外覆寫。 */
+
+.events-weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--fill-white);
+  gap: 1px;
+  border: 1px solid var(--fill-white);
+  border-bottom: 1px solid var(--fill-gray5);
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+
+  flex-shrink: 0;
+  margin: 8px 20px 0px 20px;
+}
+@media (max-width: 991px) {
+  .events-weekday-row { margin: 0px 16px; }
+}
+
+.events-weekday-row div {
+  background: var(--fill-white);
+  text-align: center;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--fill-black);
+  padding: 12px 0;
+}
+
+.events-day-grid {
+  display: flex;
+  flex-direction: column;
+  background: var(--fill-white);
+  border: 0px solid var(--fill-gray5);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+
+  /* v32.2 修正：原本 flex:1（等同 flex:1 1 0%）不管內容多少，一律撐滿
+   * .events-calendar-col 剩下的高度——basis 是 0%，瀏覽器分配空間時完全不看
+   * 內容實際高度。改成 flex:0 1 auto（grow:0／shrink:1／basis:auto）：
+   * basis 改成 auto 後，這個框本身的「預設大小」就是內容（.events-weeks）
+   * 的實際高度，grow:0 代表內容不夠高時不會被硬撐大，卡片自然收到跟內容一樣
+   * 高，底下多出來的空間變成 .events-calendar-col 的留白（不在這個白底卡片
+   * 邊框裡面），不會再看起來像最後一週延伸到底部。保留 shrink:1 + 既有的
+   * min-height:0：內容真的超過可視高度時（月份週數多、展開全部橫幅…），
+   * 這個框還是會被壓縮到剩餘可視空間、靠 overflow-y:auto 內部捲動，不影響
+   * 原本「.events-day-grid 是唯一真正捲動來源」的設計（見 CLAUDE.md「月曆
+   * 捲動重做」）。 */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 實際週列的包裝層（.events-weeks）：flex-shrink:0，永遠維持自然內容高度，
+ * 不會被上面 .events-day-grid 的 flex-shrink 硬壓扁（真的需要捲動時，是
+ * .events-day-grid 這個外框變矮，內容本身高度不變，靠 overflow-y:auto 捲
+ * 出來）。直向格線背景跟「捲到底留 20px」的 padding-bottom 都放在這一層，
+ * 不放在 .events-day-grid 本身，格線只會畫到實際週列的高度為止，不會有多餘
+ * 背景延伸到卡片以外。 */
+.events-weeks {
+  flex-shrink: 0;
+  padding-bottom: 0px;
+
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc((100% + 1px) / 7 - 1px),
+    var(--fill-gray5) calc((100% + 1px) / 7 - 1px),
+    var(--fill-gray5) calc((100% + 1px) / 7)
+  );
+}
+
+.events-week-row {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--fill-gray5);
+}
+
+.events-week-body {
+  position: relative;
+}
+
+.events-week-daynums {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--fill-gray5);
+
+  /* 修正：週活動很多、該週展開（.events-week-toggle 全部顯示）時，
+   * .events-day-grid 內部會捲動，這排日期數字（1、2、3...）原本只是這週
+   * 區塊最上面的一列，捲動後跟著捲走——這時只看得到最外層固定的
+   * .events-weekday-row（週幾：一二三四五六日），看不到「今天是幾號」，
+   * 容易搞混。改成 position:sticky + top:0，讓它黏在 .events-day-grid
+   * 捲動視窗頂端，該週捲完換下一週時，下一週的日期數字列自然接續頂上
+   * （sticky 標準行為），不需要額外 JS。z-index 蓋過同一週往下捲的
+   * .events-week-bars／.events-week-hover-col。 */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.events-day-num-cell {
+  background: var(--fill-white);
+  padding: 8px 12px 4px;
+  min-height: 22px;
+}
+
+.events-day-num-cell.has-events {
+  cursor: pointer;
+}
+
+.events-day-num-cell.has-events:hover:not(.today) .events-day-num {
+  color: var(--fill-blue);
+}
+
+.events-day-num-cell.pad {
+  background: var(transparent);
+}
+
+.events-week-hover-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 要蓋過 .events-week-daynums 的 z-index:2（sticky 固定時要蓋過捲動中的
+     bars／hover-col，見該規則註解），不然外框最上面那一段（跟日期數字格
+     重疊的範圍）會被 daynums 列自己的背景蓋住，只看得到框的下半段（跟
+     bars 區重疊的部分），視覺上像是外框沒有上邊／左右邊也只剩下半截。
+     只有 .show 時才有實際可見的 box-shadow，沒 hover 時是透明的，
+     所以拉高這個 z-index 不影響其他未觸發 hover 狀態下的畫面。 */
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 0 transparent;
+  transition: box-shadow 0.15s;
+}
+
+.events-week-hover-col.show {
+  box-shadow: inset 0 0 0 1.5px var(--fill-blue);
+}
+
+/* 補強：.events-week-hover-col 的上邊框（跟 .events-day-num-cell 重疊的
+ * 那一段）疊在 position:sticky 的 .events-week-daynums 之上，z-index 雖然
+ * 比 daynums 高，但瀏覽器對「sticky 元素自己的合成層」不一定完全照 z-index
+ * 排序繪製，實測會出現上邊框被 daynums 背景蓋掉、只剩左右下三邊的狀況。
+ * 改成在 .events-day-num-cell 自己身上（daynums 這個 sticky 元素的內部
+ * 子元素，跟它同一個合成層，不會有跨層蓋掉的問題）另外補畫上／左／右三邊，
+ * 跟 hover-col 提供的左右下三邊疊在一起，湊出完整的四邊外框。 */
+.events-day-num-cell.col-hover {
+  box-shadow: inset 0 1.5px 0 0 var(--fill-blue), inset 1.5px 0 0 0 var(--fill-blue), inset -1.5px 0 0 0 var(--fill-blue);
+}
+
+.events-day-num-cell.today {
+  background: var(transparent);
+}
+
+.events-day-num {
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fill-black);
+}
+
+.events-day-num.clickable {
+  cursor: pointer;
+}
+
+.events-day-num.clickable:hover {
+  color: var(--fill-blue);
+}
+
+.events-day-num-cell.today .events-day-num {
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: var(--fill-blue);
+  color: var(--fill-white);
+}
+
+.events-week-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  /* 左邊 padding 拿掉，改由 .events-bar 自己的 margin-left 提供 12px 內縮
+     （見下方 .events-bar 註解）——container padding 只能讓「第 1 欄」的
+     bar 有這個內縮，第 2～7 欄的 bar 因為左邊界就是 grid 的內部分隔線，
+     沒有額外 padding 可吃，會直接貼齊那條直向格線，跟上面日期數字的
+     12px inset 不一致。 */
+  padding: 8px 12px 12px 0;
+}
+
+.events-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  /* 不管這個 bar 是從週一（第 1 欄）還是週中（例如第 5 欄）開始，左邊都要
+     跟上面日期數字格一樣有 12px 的視覺內縮，不能貼齊格線——原本只有第 1
+     欄的 bar 靠 .events-week-bars 的 container padding-left:12px 吃到這個
+     內縮，第 2 欄以後的 bar 左邊界就是 grid 內部分隔線本身，沒有額外空間，
+     會直接貼齊格線。改成統一在 .events-bar 自己身上加 margin-left:12px，
+     不管從第幾欄開始都有一致的 12px 內縮。副作用：同一列裡兩個相鄰的 bar
+     （例如一個橫幅在週三結束、下一個橫幅週四緊接著開始）之間的間距會從原本
+     單純的 8px grid gap，變成 8px + 12px = 20px（下一個 bar 一律吃到這個
+     margin，不分是不是緊接著前一個 bar），是刻意接受的取捨，換取「每個
+     bar 起始邊都跟日期數字對齊」的一致性。 */
+  margin-left: 12px;
+
+  padding: 4px 8px 4px 8px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bar-color) 8%, var(--fill-white));
+  font-family: inherit;
+  font-size: 11.5px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.events-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--bar-color);
+  border-radius: 8px;
+}
+
+.events-bar-cat {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--fill-white);
+  border: 1px solid var(--bar-color);
+  border-radius: 8px;
+  color: var(--bar-color);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.events-bar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fill-black);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.events-bar:hover {
+  filter: brightness(0.97);
+}
+
+.events-bar.selected {
+  box-shadow: inset 0 0 0 1.5px var(--bar-color);
+}
+
+.events-bar.selected .events-bar-title {
+  font-weight: 700;
+}
+
+.events-bar-multi-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: var(--fill-white);
+  color: var(--fill-blue);
+  font-size: 12px;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.events-bar-multi-badge svg {
+  flex-shrink: 0;
+}
+
+.events-week-toggle {
+  display: flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 3px;
+  margin: 0 12px 12px 0;
+  padding: 0px 0px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--fill-black);
+  cursor: pointer;
+}
+
+.events-week-toggle:hover {
+  color: var(--fill-blue);
+}
+
+#eventDetailContent {
+  padding: 16px;
+}
+
+#eventDetailContent .modal-header {
+  margin-top: 0px;
+}
+
+.events-detail-image-wrap {
+
+  margin-top: 12px;
+}
+
+.events-detail-badge-row {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.events-detail-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: var(--fill-white);
+  border: 1px solid var(--bar-color);
+  border-radius: 8px;
+  color: var(--bar-color);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.events-city-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.events-city-tab {
+  padding: 8px 12px;
+  border: 0px solid var(--fill-gray5);
+  border-radius: 9999px;
+  background: var(--fill-white);
+  color: var(--fill-gray-64);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.events-city-tab:hover { color: var(--fill-blue); }
+
+.events-city-tab.active {
+  background: var(--fill-blue);
+  border-color: var(--fill-blue);
+  color: var(--fill-white);
+  font-weight: 500;
+}
+
+.events-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.events-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fill-gray-64);
+  margin: 0 0 10px;
+}
+
+/* day-events-panel（當日活動 drawer）卡片清單：單欄 grid，卡片本身改沿用
+   .loc-card-grid（跟總覽·列表同一套視覺語言，見 js/events.js locCardTopHtml()／
+   eventGroupCardHtml()）。.loc-card-grid 的底色／圓角／hover 效果本來就跟這裡
+   原本 .events-card 的樣式一致（style.css），不用重複宣告；這裡只補
+   day-events-panel 專屬的 .selected 狀態（點擊清單卡片後高亮，見
+   openDayEventsPanel() 的 click handler）。 */
+.events-card-list {
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.events-card-list .loc-card-grid.selected {
+  border-color: var(--fill-blue);
+  background: var(--fill-blue-8);
+  box-shadow: inset 0 0 0 1px var(--fill-blue);
+}
+
+.events-multi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--fill-white);
+  color: var(--fill-blue);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 活動詳情 Modal「作品」清單：見 js/events.js characterChipsHtml()。刻意不做成 pill——
+   Modal 是完整資訊頁，維持跟原本單一 IP 一樣的文字＋底線連結（沿用 style.css 既有的
+   .popup-character-link），pill 樣式留給下面 loc-card 那種摘要性質的地方用。
+   超過 MODAL_CHARACTER_LIMIT（events.js，目前 4）的部分包在 .character-chips-rest
+   用 [hidden] 藏起來，展開／收合按鈕見 events.js bindLocationSectionEvents()。 */
+.character-chips-rest[hidden] { display: none; }
+
+.character-chips-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Noto Sans TC', sans-serif;
+  color: var(--fill-blue);
+  cursor: pointer;
+}
+.character-chips-toggle:hover { text-decoration: underline; }
+.character-chips-sep { color: var(--fill-black); }
+
+/* loc-card 上的作品 pill：代表作品名稱＋「+N」合併顯示在同一個 pill 裡（不是另外開一個
+   pill 或獨立文字），「+N」用比較淺的顏色弱化，跟代表作品名稱做出視覺區隔
+   （見 js/events.js eventListCardHtml()／characterTagsForCard()） */
+.tag-more-text {
+  font-size: 14px;
+  color: var(--fill-gray-64);
+}
+
+
+
+/* 活動詳情 Modal 裡「相關機台」清單：見 js/events.js locationSectionHtml()／relatedMachinesHtml()，
+   跟 event-match.js 的比對邏輯是同一份，所以這裡只是純顯示，不用再管消歧規則。 */
+.related-machines-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fill-black);
+}
+/* 跟上面「更多資訊」那一行（js/events.js eventDetailNoteRow()）之間的間距固定 16px，
+   蓋掉 .modal-info-section 共用的 margin-top:12px（見 style.css）；
+   gap 也蓋掉共用的 8px，改成 title／list 之間 4px。 */
+.related-machines-section { margin-top: 16px; gap: 8px; }
+/* 橫向捲動卡片列：拿掉縮圖，多數機台本來就沒填圖片，沒圖也不會顯得空；
+   固定高度不管幾台都不會把 modal 撐高，見 event-machine-link 討論的樣式比較。
+   負 margin／padding 移到 .related-machines-wrap，讓左右箭頭按鈕能疊在捲動區塊邊緣上，
+   而不是疊在整個 modal 邊緣（見下方按鈕定位）。 */
+.related-machines-wrap {
+  position: relative;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+.related-machines-list {
+  display: flex;
+  align-items: stretch; /* related-machine-item 高度以最高的 item 為主 */
+  gap: 12px;
+  overflow-x: auto;
+}
+/* 左右箭頭：只給滑鼠使用者看（trackpad／觸控本來就能滑動，箭頭是多餘的）；
+   同時只在卡片列真的超出可視寬度時才顯示（JS 判斷 scrollWidth，見 js/events.js
+   initRelatedMachinesScroll()），機台數量少、不會溢出就不需要按鈕佔位。
+   pointer:fine 排除手機／平板觸控，但沒辦法區分「滑鼠」跟「trackpad」——兩者對
+   瀏覽器來說都是 fine pointer，所以 trackpad 使用者也會看到按鈕，是可接受的多餘 UI，
+   不影響原本的滑動操作。 */
+.related-machines-nav-btn {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--fill-gray-8);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  color: #000000;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  filter: drop-shadow(0px 4px 12px rgba(28, 28, 28, 0.08));
+  z-index: 1;
+}
+.related-machines-nav-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+/* chevron_backward icon 原生朝左：prev 直接用，next 用 scaleX(-1) 鏡射成朝右
+   （跟首頁 carousel-btn 同一套慣例，只是換算過來這裡是 next 鏡射，見 CLAUDE.md 討論） */
+.related-machines-nav-btn.next svg { transform: scaleX(-1); }
+.related-machines-nav-btn.prev { left: 4px; }
+.related-machines-nav-btn.next { right: 4px; }
+.related-machines-nav-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
+@media (pointer: fine) {
+  .related-machines-wrap.has-overflow .related-machines-nav-btn { display: flex; }
+}
+.related-machine-item {
+  flex: 0 0 144px; /* 卡片固定寬度，名稱太長就在卡片內換行，不會撐寬卡片本身 */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px; /* type-badge 與 related-machine-name 並排間距 */
+  padding: 8px 12px; /* 上下 8px、左右 12px */
+  border-radius: 8px;
+  background: var(--fill-white);
+  border: 1px solid var(--fill-gray-16);
+  text-decoration: none;
+  color: var(--fill-black);
+}
+.related-machine-item:hover { border-color: var(--fill-blue); box-shadow: inset 0 0 0 1px var(--fill-blue); }
+/* 改用 cluster-popup-item 的 type-badge 樣式：純圖示、方形小徽章（見 style.css .cluster-popup-item .type-badge） */
+.related-machine-item .type-badge { flex-shrink: 0; padding: 4px; align-self: center; border-radius: 4px; }
+.related-machine-item .type-badge svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+.related-machine-name { font-size: 14px; font-weight: 500; line-height: 1.35; word-break: break-word; }
+
+.events-toolbar[hidden],
+.events-weekday-row[hidden],
+.events-day-grid[hidden],
+.events-collage-toolbar[hidden],
+.events-collage-grid[hidden],
+.collage-list-wrap[hidden] {
+  display: none !important;
+}
+
+/* .filter-pill 設了 display:inline-flex，author stylesheet 優先權蓋過瀏覽器
+   預設的 [hidden]{display:none} UA 規則，月曆檢視隱藏「今日活動」pill 時
+   （見 js/events.js setView()）要明確覆寫才會真的消失。 */
+#eventsTimeFilterPill[hidden] {
+  display: none;
+}
+
+.events-collage-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.collage-layout-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.collage-layout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--fill-gray-16);
+  border-radius: 999px;
+  color: var(--fill-gray-64);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.collage-layout-btn:hover {
+  color: var(--fill-blue);
+  border-color: var(--fill-blue);
+}
+.collage-layout-btn.active {
+  background: var(--fill-blue);
+  border-color: var(--fill-blue);
+  color: var(--fill-white);
+}
+.collage-layout-btn.active:hover {
+  background: var(--fill-blue);
+  color: var(--fill-white);
+}
+
+.events-collage-grid {
+
+  display: flex;
+  align-items: flex-start;
+
+  margin: 0 -20px;
+  padding-top: 8px;
+
+  padding-bottom: 24px;
+  width: calc(100% + 40px);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 只設 overflow-y、沒明確設 overflow-x 時，CSS 規格會把 overflow-x 隱性當成 auto
+     處理（跟 .filter-panel 同一個坑，見 CLAUDE.md），欄位在 resize debounce（150ms）
+     還沒跑完、或量測時機跟實際 render 有落差時，可能短暫跟 min-width:330px 的卡片對
+     不上寬度，導致這裡可以左右滑動；明確補上 overflow-x: hidden，寧可讓卡片被裁一小
+     段，也不要出現橫向捲動 */
+  overflow-x: hidden;
+}
+
+.collage-grid-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.events-collage-grid .empty-state {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .events-collage-grid {
+
+    margin: 0 -20px;
+    padding-top: 0;
+    width: calc(100% + 40px);
+  }
+}
+
+.collage-card {
+  margin: 0;
+  min-width: 330px;
+  background: var(--fill-white);
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+}
+
+.collage-card-media {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+  background: var(--fill-gray6);
+}
+
+.collage-grid-col .collage-card:not(:first-child) .collage-card-media {
+  border-radius: 8px;
+}
+
+.collage-grid-col:first-child .collage-card:first-child .collage-card-media {
+  border-top-left-radius: 16px;
+}
+
+.collage-grid-col:last-child .collage-card:first-child .collage-card-media {
+  border-top-right-radius: 16px;
+}
+
+.collage-card-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.25s ease;
+}
+
+.collage-card:hover .collage-card-media img {
+  transform: scale(1.06);
+}
+
+.collage-card-media.no-image {
+  aspect-ratio: 4 / 3;
+}
+
+.collage-card-pills {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.collage-card-pills .type-badge,
+.collage-card-pills .ending-badge,
+.collage-card-pills .events-multi-pill {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+  white-space: nowrap;
+}
+
+.ended-badge {
+  background: var(--fill-gray-64);
+  color: var(--fill-white);
+}
+
+.collage-card-body {
+  padding: 16px 16px 16px;
+}
+
+.collage-card-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fill-blue);
+  margin-bottom: 4px;
+}
+
+.collage-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--fill-black);
+}
+
+.collage-card-period {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fill-black);
+  margin-top: 8px;
+}
+
+.collage-card-venue {
+  font-size: 14px;
+  color: var(--fill-black);
+  margin-top: 8px;
+}
+
+.collage-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  /* 左右留白跟 .events-page-body 固定 20px 脫鉤，改自己控制（桌機 20 / 手機 16），
+     用負 margin 先抵銷外層固定的 20px，避免疊加成兩層 padding */
+  margin: 0 -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+@media (max-width: 991px) {
+  .collage-list-wrap {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+.collage-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 20px;
+
+  grid-auto-rows: min-content;
+
+  padding-bottom: 24px;
+
+  /* 上方視覺間距只交給這裡控制（.collage-list-wrap 不再重複疊加 8px）：
+     桌機 8px，手機 0px；跟 fixed top bar 高度相關的補償是另一件事，
+     見下方 991px 區塊的 .collage-list-wrap padding-top 覆寫 */
+  padding-top: 8px;
+}
+
+@media (max-width: 991px) {
+  .collage-list-grid {
+    padding-top: 0;
+  }
+}
+
+.card-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.collage-card.is-ended,
+.loc-card-grid.is-ended {
+  opacity: 0.6;
+}
+
+.day-events-overlay {
+  display: none;
+  position: fixed;
+  top: var(--events-header-h, 0px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 2250;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.day-events-overlay.show {
+  display: flex;
+}
+
+.day-events-panel {
+  background: var(--fill-white);
+  border-radius: 16px 0 0 16px;
+  width: 100%;
+  max-width: 360px;
+  height: 100%;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+}
+
+.day-events-overlay.show .day-events-panel {
+  transform: translateX(0);
+}
+
+#eventsWeekdayRow,
+.events-nav-group {
+  transition: margin-right 0.28s ease;
+}
+
+@media (min-width: 992px) {
+  /* panel 本身 max-width:360px、貼齊視窗右緣（.day-events-overlay 的
+     justify-content:flex-end + right:0）。要跟 panel 留 20px 間距，三個被
+     推開的元素右邊界都要落在同一個位置（panel 左緣再往左 20px = 距視窗右緣
+     380px），但三個元素各自「原本（沒推開時）就有的右側留白」不一樣，
+     margin-right 要各自扣掉那份既有留白，總和才會一致落在 380px：
+     - #eventsWeekdayRow 本身沒有額外的 padding-right，整個留白都是它自己的
+       margin 在控制，所以 margin-right 直接吃滿 380px。
+     - .events-page-body 自己另外有一份固定 20px 的 padding-right（見上面
+       .events-page-body 規則本身），margin-right 扣掉這 20px，只設 360px
+       （360+20=380）。
+     - .events-nav-group 是 .events-toolbar 唯一的 flex item，.events-toolbar
+       沒有自己的 padding，但外層 .events-filter-row 本身的 padding-right 是
+       16px（不是 20px，見上面 .events-filter-row 規則），所以 margin-right
+       要扣掉這 16px，只設 364px（364+16=380）。
+     三個算出來的總留白都是 380px，右邊界才會真的對齊。 */
+  body.day-events-open .events-page-body {
+    margin-right: 360px;
+  }
+  body.day-events-open #eventsWeekdayRow {
+    margin-right: 380px;
+  }
+  body.day-events-open .events-nav-group {
+    margin-right: 364px;
+  }
+}
+
+/* 標題置中＋關閉鈕絕對定位到右側（跟下面 ≤991px bottom sheet 版本統一，
+   不用手機/桌機各自一套；比照 .filter-sheet-header 的置中標題語言）。 */
+.day-events-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  padding: 16px 16px 16px 12px;
+}
+
+.day-events-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fill-black);
+}
+
+.day-events-close {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fill-black);
+  line-height: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.day-events-close:hover {
+  color: var(--fill-blue);
+}
+
+.day-events-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 12px 24px 12px;
+}
+
+@media (max-width: 991px) {
+  .day-events-overlay {
+
+    top: 0;
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+
+    background: rgba(0, 0, 0, 0.32);
+    pointer-events: auto;
+  }
+
+  .day-events-panel {
+    max-width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
+
+    background: var(--fill-gray6);
+    border: none;
+
+    transform: translateY(100%);
+  }
+
+  .day-events-overlay.show .day-events-panel {
+    transform: translateY(0);
+  }
+
+  /* 置中標題／絕對定位關閉鈕已經搬到上面 .day-events-header／.day-events-close
+     base 規則，桌機／手機共用；這裡只保留手機專屬的字級跟 padding／關閉鈕位置微調 */
+  .day-events-header {
+    padding: 16px 16px 16px;
+  }
+
+  .day-events-title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .day-events-close {
+    right: 20px;
+  }
+
+  .day-events-body {
+    padding: 8px 16px 24px 16px;
+  }
+
+  /* day-events-panel 卡片清單：≤991px 才依寬度自動算欄數（跟首頁 .grid／
+     events 頁 .collage-list-grid／地圖 .location-list 同一套 min-width 330px
+     邏輯，見 CLAUDE.md 第 11、12 點），能塞下幾欄就排幾欄；>991px 桌機因為
+     panel 本身 max-width:360px（見上方 .day-events-panel 規則），就算套用
+     同一套 minmax(330px,1fr) 也頂多還是塞得下一欄，所以刻意只在這個斷點內
+     覆寫，桌機維持原本 base 規則的 1fr 單欄 */
+  .events-card-list {
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  }
+}
+
+
+@media (max-width: 991px) {
+  .events-day-grid {
+    padding-top: var(--events-top-bar-height, 8px);
+
+    /* .events-day-grid 本身是有背景色/圓角的白底卡片，不是單純的捲動容器
+       （不像 .collage-list-wrap 那種「負 margin 抵銷外層 padding、再用
+       padding 內縮」的招式——那招只會內縮「內容」，元素自己的 background
+       仍會畫到 padding 底下、貼齊外層取消掉的那個邊界，卡片背景反而變貼邊）。
+       這裡改用 margin 直接讓卡片本身的框變寬 4px（20px→16px 的差額），
+       背景／圓角才會真的跟著左右留白一起內縮，並對齊 .events-weekday-row。 */
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+  .events-collage-grid {
+    padding-top: calc(8px + var(--events-top-bar-height, 0px));
+  }
+  .collage-list-wrap {
+    padding-top: calc(8px + var(--events-top-bar-height, 0px));
+  }
+}

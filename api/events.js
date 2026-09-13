@@ -33,10 +33,10 @@ const SITE_URL = 'https://kadotw.vercel.app';
 // 目前四張都先放一份跟 event-og.png 相同的暫用檔案，之後有正式設計圖時，直接覆蓋對應
 // 檔名（events-list-og.png／events-calendar-og.png／events-day-og.png）即可，不用再動
 // 這支程式。
-const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/event-og.png`; // c
-const LIST_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/events-list-og.png`; // d
-const CALENDAR_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/events-calendar-og.png`; // e
-const DAY_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/events-day-og.png`; // f
+const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/event-og.png`; // c
+const LIST_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/events-list-og.png`; // d
+const CALENDAR_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/events-calendar-og.png`; // e
+const DAY_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/events-day-og.png`; // f
 
 const TITLE = 'KADO！抽卡機在哪｜活動情報';
 const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';

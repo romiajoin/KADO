@@ -19,10 +19,10 @@ const SITE_URL = 'https://kadotw.vercel.app';
 // 跟 api/events.js 的四張預設圖是同一份，各自獨立宣告：
 //   c＝總覽·拼貼格（也是不認得 from 值時的最終 fallback）　d＝總覽·列表
 //   e＝月曆（events-bar）　f＝day-events-panel（events-card）
-const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/event-og.png`; // c
-const LIST_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/events-list-og.png`; // d
-const CALENDAR_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/events-calendar-og.png`; // e
-const DAY_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/events-day-og.png`; // f
+const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/event-og.png`; // c
+const LIST_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/events-list-og.png`; // d
+const CALENDAR_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/events-calendar-og.png`; // e
+const DAY_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/events-day-og.png`; // f
 
 const TITLE = 'KADO！抽卡機在哪｜活動情報';
 const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
