@@ -17,6 +17,9 @@ export function createSortWidget({
   onOutsideClose = () => {},
   onResizeClose = () => {},
 }) {
+  // geo_permission_result 首頁維持原名（gaPrefix 預設 'sort'）；活動頁 gaPrefix='events_sort' 則變成
+  // events_sort_geo_permission_result，讓兩頁的定位授權結果在 GA 裡分得開
+  const geoEventName = gaPrefix === 'sort' ? 'geo_permission_result' : `${gaPrefix}_geo_permission_result`;
   let sortState = initialKey;
   let userCoords = null; // { lat, lng }，成功定位後才有值
   let barEl = null;
@@ -205,13 +208,13 @@ export function createSortWidget({
       .then((coords) => {
         userCoords = coords;
         localStorage.removeItem('geo_permission_denied');
-        gtag('event', 'geo_permission_result', { geo_result: 'granted', device: getDeviceTypeGlobal() });
+        gtag('event', geoEventName, { geo_result: 'granted', device: getDeviceTypeGlobal() });
         applySortState(key);
       })
       .catch((err) => {
         const status = (err && err.status) || 'unavailable';
         if (status === 'denied') localStorage.setItem('geo_permission_denied', 'true');
-        gtag('event', 'geo_permission_result', { geo_result: status, device: getDeviceTypeGlobal() });
+        gtag('event', geoEventName, { geo_result: status, device: getDeviceTypeGlobal() });
         showSortHint(GEO_ERROR_MESSAGES[status] || GEO_ERROR_MESSAGES.unavailable);
       });
   }
@@ -224,7 +227,8 @@ export function createSortWidget({
     // 訊號被稀釋
     closeDesktopPanel();
     closeMobileSheet();
-    gtag('event', 'sort_change', { sort_key: key, device: getDeviceTypeGlobal() });
+    // 事件名稱套 gaPrefix：首頁 gaPrefix='sort' → sort_change（不變）；活動頁 'events_sort' → events_sort_change
+    gtag('event', `${gaPrefix}_change`, { sort_key: key, device: getDeviceTypeGlobal() });
     onChange(key, userCoords);
   }
 

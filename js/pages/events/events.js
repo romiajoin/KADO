@@ -392,6 +392,43 @@ function syncEventsCount() {
   if (badge) badge.textContent = visibleGroups().length;
 }
 
+// GA: events_filter_result／events_search_no_result（比照首頁 main.js 的 trackFilterResult()，debounce 800ms）
+// - events_filter_result：有套用任何篩選（類型／作品／縣市 pill、今日活動、有抽卡/相卡機）時，記錄篩選組合
+//   跟符合筆數；result_count = 0 就等於使用者看到「找不到符合篩選條件的活動」空狀態。
+// - events_search_no_result：搜尋關鍵字（>= 2 字，跟 events_search 同門檻）搜不到任何活動。
+// 只在使用者主動改變篩選／搜尋時呼叫（pill onChange、快速篩選、搜尋框），不在 renderAll() 裡呼叫，
+// 避免切月份／切檢視這類跟篩選無關的重繪也被算進去。
+let eventsFilterResultTimer;
+function trackEventsFilterResult() {
+  clearTimeout(eventsFilterResultTimer);
+  eventsFilterResultTimer = setTimeout(() => {
+    const kw = eventsSearchKeyword.trim();
+    const hasFilter = ['category', 'ip', 'city'].some((k) => eventsFilterState[k].length > 0)
+      || eventsTimeFilter.ongoingOnly
+      || eventsMachineFilter.onlyWithMachines;
+    if (!hasFilter && kw.length < 2) return;
+    const resultCount = visibleGroups().length;
+    if (hasFilter) {
+      gtag('event', 'events_filter_result', {
+        category: eventsFilterState.category.join(','),
+        ip: eventsFilterState.ip.join(','),
+        city: eventsFilterState.city.join(','),
+        ongoing_only: eventsTimeFilter.ongoingOnly ? 'on' : 'off',
+        has_related_machine: eventsMachineFilter.onlyWithMachines ? 'on' : 'off',
+        result_count: resultCount,
+        device: getDeviceType(),
+      });
+    }
+    if (kw.length >= 2 && resultCount === 0) {
+      gtag('event', 'events_search_no_result', {
+        search_term: kw.toLowerCase(),
+        has_filter: hasFilter,
+        device: getDeviceType(),
+      });
+    }
+  }, 800);
+}
+
 // 快速篩選：今日活動 & 有抽卡／相卡機。跟分類/作品/縣市 pill 共用 .filter-pill
 // 視覺樣式，但這兩顆沒有下拉面板，純粹點擊 toggle active（再點一次變回未選取＝clear），
 // 用 button 自己的 classList 當狀態來源，不用額外的 checked 屬性。
@@ -405,6 +442,7 @@ function initQuickFilters() {
       renderQuickFilters();
       renderAll();
       eventsSyncSearchUrl();
+      trackEventsFilterResult();
       gtag('event', 'events_quick_filter_toggle', { filter_type: 'ongoing_only', filter_state: eventsTimeFilter.ongoingOnly ? 'on' : 'off', device: getDeviceType() });
     });
   }
@@ -415,6 +453,7 @@ function initQuickFilters() {
       renderQuickFilters();
       renderAll();
       eventsSyncSearchUrl();
+      trackEventsFilterResult();
       gtag('event', 'events_quick_filter_toggle', { filter_type: 'has_related_machine', filter_state: eventsMachineFilter.onlyWithMachines ? 'on' : 'off', device: getDeviceType() });
     });
   }
@@ -794,7 +833,7 @@ const filterWidget = createFilterWidget({
   sheetOptionsId: 'eventsFilterSheetOptions',
   sheetCloseId: 'eventsFilterSheetClose',
   isMobileLayout: isMobileFilterLayout,
-  onChange: () => { renderAll(); eventsSyncSearchUrl(); }, // 篩選 pill 變動也要同步進網址列，見 eventsSyncSearchUrl()
+  onChange: () => { renderAll(); eventsSyncSearchUrl(); trackEventsFilterResult(); }, // 篩選 pill 變動也要同步進網址列，見 eventsSyncSearchUrl()
   gaPrefix: 'events_filter',
 
   onTogglePanel: () => sortWidget.closeDesktopPanel(),
@@ -990,7 +1029,7 @@ document.addEventListener('click', (e) => {
 
 function eventDetailNoteRow(ev) {
   if (!ev.note) return '';
-  return `<div class="popup-addr">更多資訊：<a href="${ev.note.trim()}" target="_blank" rel="noopener" style="color:var(--fill-black);text-decoration:underline;">查看</a></div>`;
+  return `<div class="popup-addr">更多資訊：<a href="${ev.note.trim()}" target="_blank" rel="noopener" class="event-note-link" style="color:var(--fill-black);text-decoration:underline;">查看</a></div>`;
 }
 
 function cityTabsHtml(group, activeIndex = 0) {
@@ -1126,6 +1165,14 @@ function bindLocationSectionEvents(group, locIndex, source) {
   document.getElementById('eventDetailGmaps').addEventListener('click', () => {
     gtag('event', 'gmaps_click', { machine_id: loc.id, source, device: getDeviceType() });
   });
+  // GA: event_note_link_click（「更多資訊：查看」外連，note 欄是每個地點各自的網址；event_id 用該地點的 A 欄 id，
+  // 跟同一個函式裡的 gmaps_click／character_tag_click 一致）
+  const noteLink = document.querySelector('#eventDetailLocationSlot .event-note-link');
+  if (noteLink) {
+    noteLink.addEventListener('click', () => {
+      gtag('event', 'event_note_link_click', { event_id: loc.id, source, device: getDeviceType() });
+    });
+  }
   document.getElementById('eventDetailShare').addEventListener('click', () => shareEvent(group, source));
   // 點任一個「作品」chip：關掉詳情 Modal、切到總覽（列表能一次看到全部結果，月曆還要挑月份翻）、
   // 把該 IP 名稱塞進搜尋框篩出同 IP 所有活動，比照 app.html 機台詳情彈窗的 filterByCharacter()。
@@ -1274,10 +1321,22 @@ function shareEvent(group, source) {
     event_id: group.locations.map((l) => l.id).join('+'),
     source, device: getDeviceType(),
   });
+  // GA: events_share_result（events_share_click 只代表「按下按鈕」，這個補上實際結果：
+  // shared＝系統分享面板完成／cancelled＝使用者取消（AbortError）／copied＝已複製連結／failed＝其他失敗）
+  const eventId = group.locations.map((l) => l.id).join('+');
+  const trackShareResult = (result) => {
+    gtag('event', 'events_share_result', { event_id: eventId, source, result, device: getDeviceType() });
+  };
   if (navigator.share) {
-    navigator.share({ title: group.title, url });
+    navigator.share({ title: group.title, url }).then(
+      () => trackShareResult('shared'),
+      (err) => trackShareResult(err && err.name === 'AbortError' ? 'cancelled' : 'failed'),
+    );
   } else {
-    navigator.clipboard.writeText(url).then(() => showEventToast('已複製連結！'));
+    navigator.clipboard.writeText(url).then(
+      () => { showEventToast('已複製連結！'); trackShareResult('copied'); },
+      () => trackShareResult('failed'),
+    );
   }
 }
 
@@ -1347,6 +1406,7 @@ function setEventsSearchKeyword(value) {
   document.getElementById('eventsClearSearchMobile').style.display = value ? 'block' : 'none';
   renderAll();
   eventsSyncSearchUrl(); // 網址列即時反映目前的搜尋/篩選狀態，複製網址列就等於分享這個結果
+  trackEventsFilterResult();
 }
 
 // 點活動詳情 Modal 裡的「作品」標籤觸發（見 bindLocationSectionEvents()）：關掉 Modal、
@@ -1388,6 +1448,25 @@ document.getElementById('eventsClearSearch').addEventListener('click', function 
 document.getElementById('eventsClearSearchMobile').addEventListener('click', function () {
   setEventsSearchKeyword('');
   gtag('event', 'search_clear', { source: 'events_mobile_toolbar', device: getDeviceType() });
+});
+
+// GA: report_click（活動頁的回報表單連結，桌機／手機各一；首頁版在 main.js，這頁不載入 main.js）
+document.querySelectorAll('.report-link').forEach((link) => {
+  link.addEventListener('click', () => {
+    gtag('event', 'report_click', { source: 'events_page', device: getDeviceType() });
+  });
+});
+
+// GA: cross_page_nav_click（活動頁 → 首頁機台地圖：FAB／左上角 logo）。同分頁導頁，事件可能來不及送出，
+// 所以指定 transport_type: 'beacon'（sendBeacon 不會被換頁中斷）。
+[['#gachaMapLink', 'fab'], ['.events-logo-link', 'logo']].forEach(([selector, source]) => {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  el.addEventListener('click', () => {
+    gtag('event', 'cross_page_nav_click', {
+      from_page: 'events', to_page: 'home', source, device: getDeviceType(), transport_type: 'beacon',
+    });
+  });
 });
 
 (async function initEventsPage() {

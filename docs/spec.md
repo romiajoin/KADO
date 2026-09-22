@@ -143,7 +143,7 @@
 | `sheet_toggle` | 手機地圖模式拖拉 bottom sheet（v24 補上 `device`） | `state`（v23 起為 `peek`/`mid`/`full`/`content`，取代原本的 `open`/`peek`）, `device` |
 | `sheet_auto_expand`（v23） | 搜尋/篩選出結果，sheet 從 peek 自動展開到 mid | `device` |
 | `detail_panel_close`（v23） | 使用者主動關閉詳情面板/sheet（篩選/搜尋改變觸發的重置不算） | `method`（`x_button`/`empty_map_tap`/`popup_native_close`）, `device` |
-| `report_click` | 點擊回報表單連結（v24 補上 `device`） | `device` |
+| `report_click` | 點擊回報表單連結（v24 補上 `device`；埋碼補漏後首頁／活動頁都會送，用 `source` 區分） | `source`（home_page/events_page）, `device` |
 | `auto_refresh`（v24） | 回到前景後，通過節流門檻（距上次抓取超過 30 分鐘）、真的觸發背景刷新 | `device` |
 | `pull_to_refresh`（v24） | 列表模式下拉手勢超過觸發門檻（60px）放開 | `device` |
 | `data_refresh_error`（v24） | 靜默刷新失敗（auto 或 pull 觸發的刷新，初次載入失敗不算） | `trigger`（auto/pull）, `device` |
@@ -156,8 +156,8 @@
 | `a2hs_prompt_result`（v21，⚠️ v31 停用） | ~~Android 原生安裝視窗的使用者選擇~~——不再觸發 | `outcome`, `platform` |
 | `pwa_installed`（v21，⚠️ v31 停用） | ~~PWA 安裝完成~~——不再觸發 | `platform`, `source` |
 | `pwa_launch_mode`（v21，⚠️ v31 停用） | ~~每次載入判斷 standalone/browser 開啟~~——不再觸發 | `mode` |
-| `sort_change` | 選擇排序方式並實際套用（v22） | `sort_key`, `device` |
-| `geo_permission_result` | 距離排序觸發定位請求後取得結果（v22） | `geo_result`, `device` |
+| `sort_change` | 選擇排序方式並實際套用（v22）；活動頁改名為 `events_sort_change`（套 `gaPrefix`，見「GA4 事件（活動行事曆專屬）」） | `sort_key`, `device` |
+| `geo_permission_result` | 距離排序觸發定位請求後取得結果（v22）；活動頁改名為 `events_sort_geo_permission_result` | `geo_result`, `device` |
 | `changelog_open`（v27） | 打開更新日誌 modal/sheet | `source`（header_desktop/header_mobile_list）, `device` |
 | `changelog_close`（v27） | 關閉更新日誌 modal/sheet | `method`（x_button/backdrop_click）, `device` |
 | `sort_panel_open`（v30.3） | 打開排序 dropdown（桌機）或 bottom sheet（手機） | `device` |
@@ -166,6 +166,9 @@
 | `grid_modal_close`（v30.3） | 關閉列表模式的機台詳情彈窗 | `method`（x_button/backdrop_click）, `device` |
 | `search_url_restored`（v30.8） | 帶著搜尋/篩選參數（`?q=`/`?type=`/`?city=`/`?ip=`）的網址被打開、狀態被還原的那一刻 | `has_keyword`, `has_filter`, `view`（map/grid）, `device` |
 | `character_tag_click`（v33.4） | 點擊詳情彈窗/面板的「作品」標籤，快速篩出同作品所有機台 | `character`, `machine_id`, `source`（grid_modal/map_detail_panel）, `device` |
+| `cross_page_nav_click`（埋碼補漏） | 首頁點 FAB 前往活動情報頁（活動頁 → 首頁的 FAB／logo 也用同一事件，見活動專屬表）；用 `transport_type: 'beacon'` 避免換頁時事件被中斷 | `from_page`（home/events）, `to_page`（events/home）, `source`（fab/logo）, `device` |
+| `share_result`（埋碼補漏） | 分享的實際結果（`share_click` 只代表按下按鈕） | `machine_id`, `source`, `result`（shared/cancelled/copied/failed）, `device` |
+| `search_no_result`（埋碼補漏） | 關鍵字（≥2 字）搜尋不到任何機台，debounce 800ms；補上 `filter_result` 在沒套篩選時刻意跳過所造成的缺口 | `search_term`, `has_filter`, `device` |
 
 詳細觸發規則與防誤觸機制見 `CLAUDE.md`。
 
@@ -536,7 +539,16 @@ GA4 新增 `events_quick_filter_toggle`，見下方「GA4 事件（活動行事�
 | `character_tag_click`（v33.4 新增，沿用機台版事件名） | 詳情 Modal 內點「作品」標籤，篩出同作品所有活動 | `character`, `event_id`, `source`, `device` |
 | `character_chips_toggle`（v34 新增） | 詳情 Modal 內「+N 個作品」展開／收合按鈕 | `expanded`(true/false), `event_id`, `source`, `device` |
 | `events_quick_filter_toggle`（v34 新增） | 「今日活動」／「有抽卡 / 相卡機」快速篩選 pill 點擊 toggle | `filter_type`(ongoing_only/has_related_machine), `filter_state`(on/off), `device` |
+| `events_filter_result`（埋碼補漏） | 套用任何篩選（類型／作品／縣市 pill、今日活動、有抽卡/相卡機）後的符合筆數，debounce 800ms；`result_count = 0` 即使用者看到「找不到符合篩選條件的活動」空狀態 | `category`, `ip`, `city`, `ongoing_only`(on/off), `has_related_machine`(on/off), `result_count`, `device` |
+| `events_search_no_result`（埋碼補漏） | 關鍵字（≥2 字）搜尋不到任何活動 | `search_term`, `has_filter`, `device` |
+| `event_note_link_click`（埋碼補漏） | 詳情 Modal「更多資訊：查看」外連（note 欄網址） | `event_id`（該地點 A 欄 id）, `source`, `device` |
+| `events_share_result`（埋碼補漏） | 分享的實際結果（`events_share_click` 只代表按下按鈕） | `event_id`, `source`, `result`(shared/cancelled/copied/failed), `device` |
+| `cross_page_nav_click`（埋碼補漏） | 活動頁點 FAB／左上角 logo 回首頁 | `from_page`(events), `to_page`(home), `source`(fab/logo), `device` |
+| `report_click`（埋碼補漏） | 活動頁回報表單連結（桌機／手機各一；活動頁不載入 `main.js`，所以由 `events.js` 自己綁） | `source`(events_page), `device` |
+| `events_sort_change`／`events_sort_geo_permission_result`（埋碼補漏） | 活動頁排序套用／定位授權結果，原本跟首頁共用 `sort_change`／`geo_permission_result` 而分不出頁面，改成套 `gaPrefix`（`sort-widget.js`，首頁 `gaPrefix='sort'` 事件名不變） | 同首頁 `sort_change`／`geo_permission_result` |
 | `gmaps_click` | 詳情 Modal 內點「在 Google Maps 查看」 | `machine_id`, `source`, `device` |
+
+**待辦（埋碼補漏批次）**：`cross_page_nav_click`／`share_result`／`events_share_result`／`search_no_result`／`events_search_no_result`／`events_filter_result`／`event_note_link_click`／`events_sort_change`／`events_sort_geo_permission_result` 尚未登記進 GA4 後台與「GA4 事件追蹤表」Notion 資料庫；新參數 `from_page`／`to_page`／`result`／`has_filter`／`ongoing_only`／`has_related_machine`／`category`／`city` 需要到「自訂定義」註冊（`source`／`event_id`／`machine_id`／`search_term`／`result_count`／`ip`／`device` 是既有維度）。⚠️ 活動頁的排序事件改名後，GA 裡活動頁的 `sort_change`／`geo_permission_result` 歷史資料會停在舊名稱，之後看活動頁排序要看 `events_sort_change`。
 
 **待辦**：以上全新事件（含 `events_month_nav`／`events_week_expand`／v33.1 新增的 `events_lightbox_open`）尚未到 GA4 後台「自訂定義」註冊自訂維度／參數說明文字；`events_lightbox_open` 用的 `event_id`／`device` 是既有維度，不用額外註冊新參數，只差把事件名稱本身登記進去。`events_share_link_opened`／`events_share_link_legacy_fallback`／`events_share_link_target_missing` 三個事件已於 v33.2 補登記進「GA4 事件追蹤表」Notion 資料庫（`events_share_link_legacy_fallback` 為 v33.2 新增事件，另兩個是 v33 就已上線但先前漏登記的既有事件，一併補上並更新內容為三段式判斷）；資料庫「新增版本」欄位 schema 選項已補上 v33／v33.2，三筆記錄的版本欄位也都設定完成。`character_chips_toggle`（v34 新增）尚未到 GA4 後台「自訂定義」註冊 `expanded` 這個全新參數，也還沒登記進「GA4 事件追蹤表」Notion 資料庫；`event_id`／`source`／`device` 都是既有維度不用重新註冊。 `events_quick_filter_toggle`（v34 新增）同理尚未到 GA4 後台「自訂定義」註冊 `filter_type`／`filter_state` 這兩個全新參數，也還沒登記進「GA4 事件追蹤表」Notion 資料庫；`device` 是既有維度不用重新註冊。
 

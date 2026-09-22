@@ -341,6 +341,19 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
         }
       }
       trackFilterResult(currentFiltered.length);
+      trackSearchNoResult(kw, currentFiltered.length);
+    }
+
+    // GA: search_no_result（純關鍵字搜尋搜不到任何機台；filter_result 在沒套篩選時會刻意跳過，
+    // 所以這種情況原本完全不會被記錄）。門檻跟 search 事件一致（>= 2 字），debounce 800ms。
+    let searchNoResultTimer;
+    function trackSearchNoResult(kw, resultCount) {
+      clearTimeout(searchNoResultTimer);
+      if (kw.length < 2 || resultCount > 0) return;
+      searchNoResultTimer = setTimeout(() => {
+        const hasFilter = FILTER_CONFIG.some(cfg => filterState[cfg.key].length > 0);
+        gtag('event', 'search_no_result', { search_term: kw, has_filter: hasFilter, device: getDeviceType() });
+      }, 800);
     }
 
     // GA: filter_result（debounce，避免打字搜尋時瘋狂觸發）
@@ -617,10 +630,21 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
       const url = `${window.location.origin}/api/share?id=${permId}${isMapView ? '&view=map' : ''}`;
       // GA: share_click
       gtag('event', 'share_click', { machine_id: machineId, source: source || 'unknown', device: getDeviceType() });
+      // GA: share_result（share_click 只代表按下按鈕，這個補上實際結果：
+      // shared＝系統分享面板完成／cancelled＝使用者取消（AbortError）／copied＝已複製連結／failed＝其他失敗）
+      const trackShareResult = (result) => {
+        gtag('event', 'share_result', { machine_id: machineId, source: source || 'unknown', result, device: getDeviceType() });
+      };
       if (navigator.share) {
-        navigator.share({ title: 'KADO！抽卡機在哪', url });
+        navigator.share({ title: 'KADO！抽卡機在哪', url }).then(
+          () => trackShareResult('shared'),
+          (err) => trackShareResult(err && err.name === 'AbortError' ? 'cancelled' : 'failed'),
+        );
       } else {
-        navigator.clipboard.writeText(url).then(() => showToast('已複製連結！'));
+        navigator.clipboard.writeText(url).then(
+          () => { showToast('已複製連結！'); trackShareResult('copied'); },
+          () => trackShareResult('failed'),
+        );
       }
     }
 
@@ -652,10 +676,21 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
     }
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
+    // GA: cross_page_nav_click（首頁 → 活動情報頁 FAB）。同分頁導頁，事件可能來不及送出，
+    // 所以指定 transport_type: 'beacon'（sendBeacon 不會被換頁中斷）。
+    const eventsLinkEl = document.getElementById('eventsLink');
+    if (eventsLinkEl) {
+      eventsLinkEl.addEventListener('click', () => {
+        gtag('event', 'cross_page_nav_click', {
+          from_page: 'home', to_page: 'events', source: 'fab', device: getDeviceType(), transport_type: 'beacon',
+        });
+      });
+    }
+
     // GA: report_click（所有回報表單連結）
     document.querySelectorAll('.report-link').forEach(link => {
       link.addEventListener('click', () => {
-        gtag('event', 'report_click', { device: getDeviceType() });
+        gtag('event', 'report_click', { source: 'home_page', device: getDeviceType() });
       });
     });
 
