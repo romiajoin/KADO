@@ -184,3 +184,100 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
     + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+// =============================================
+// 📣 機台狀態回報（「這台還在／不在了」按鈕，grid modal／地圖詳情面板共用）
+// 一鍵送出、刻意不做表單——痛點是「懶得填表單」，多一步都會流失。
+// 本機用 localStorage 記「這台機台最近回報過」防止同一瀏覽器短時間內重複回報；
+// 資料實際寫進 Cloudflare Worker 的 KV（跟 visitor-counter 共用同一支 worker，見
+// scripts/worker.js 的 /report 路徑），Worker 收到後同步發 Discord 通知。
+// 回報清單暫時不做管理頁面／寫進 Sheet，先看 Discord 通知就好，量大了再評估要不要升級。
+// =============================================
+export const MACHINE_REPORT_API_URL = 'https://visitor-counter.gillsponge-601.workers.dev/report';
+export const MACHINE_REPORT_DEDUPE_DAYS = 3; // 同一瀏覽器對同一台機台，這幾天內只能回報一次（不分「還在」／「不在了」）
+// 跟 app.html 首頁／活動頁 .report-link 同一份回報表單網址，各自獨立宣告（app.html 是 inline href，
+// 這裡是動態產生的 HTML 字串，沒有共用的地方可以 import，故意重複一份，改的話兩邊要一起改）
+const MACHINE_REPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSefuFSIqJ3qbJ245-snAD5MR6xHYHhkzzGGtpNXBvUVyZoZWQ/viewform?usp=dialog';
+
+function machineReportStorageKey(machineId) {
+  return `machineReport:${machineId}`;
+}
+
+// 讀本機「這台機台最近有沒有回報過」的狀態；超過防重複窗口就當作沒有（順便清掉過期紀錄）。
+// localStorage 不可用時（無痕模式等）一律當作沒回報過，不因此擋住按鈕。
+export function getMachineReportState(machineId) {
+  try {
+    const raw = localStorage.getItem(machineReportStorageKey(machineId));
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    const ageMs = Date.now() - state.at;
+    if (ageMs > MACHINE_REPORT_DEDUPE_DAYS * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(machineReportStorageKey(machineId));
+      return null;
+    }
+    return state; // { type: 'gone' | 'still', at: timestamp }
+  } catch (e) {
+    return null;
+  }
+}
+
+function setMachineReportState(machineId, type) {
+  try {
+    localStorage.setItem(machineReportStorageKey(machineId), JSON.stringify({ type, at: Date.now() }));
+  } catch (e) {
+    // 存不進去就算了，不影響這次回報本身有沒有送出
+  }
+}
+
+// 已回報過的狀態文字：main.js 的委派 click handler 收到回報後，也用這個把按鈕組換成同樣的文字。
+// 固定附上「回報表單」連結——一鍵回報只能傳「還在／不在」這個二元訊號，使用者如果有更詳細的
+// 資訊想講（例如機台位置搬了、營業時間變了），這裡順手給個管道，不用另外去首頁找連結。
+export function machineReportedText(type) {
+  const base = type === 'gone' ? '已回報「不在了」，謝謝提醒！' : '已回報「還在」，謝謝確認！';
+  return `${base}如有更多資訊，歡迎填<a href="${MACHINE_REPORT_FORM_URL}" target="_blank" rel="noopener" class="popup-report-link" data-report-form-link data-source="machine_report_confirmation">回報表單</a>`;
+}
+
+// 判斷「系列」欄位（loc.edition）是不是只填了單一個值——多值分隔符比照 scripts/worker.js
+// pickShareImage() 既有的「,」／「、」慣例（P 欄分享圖用同一套分隔規則）。只有單一系列的機台
+// 才顯示回報按鈕：Gill 判斷「掛多個系列／沒填系列」的機台歸屬不夠明確，回報時容易搞不清楚
+// 「不在了」指的是整台機器還是其中一個系列的活動已經結束，先只開放在單一系列的機台上。
+function hasSingleEdition(loc) {
+  const parts = (loc.edition || '').split(/[,、]/).map(s => s.trim()).filter(Boolean);
+  return parts.length <= 1; // 沒填（0 個）視為單一／不限定，一樣顯示；只有填了 2 個以上才隱藏
+}
+
+// grid modal（main.js openGridModal()）／地圖詳情面板（map.js buildDetailContentHtml()）共用：
+// 回傳 .popup-actions 下方那排回報按鈕的 HTML。系列欄位填了 2 個以上（多系列聯名）才完全不顯示
+// （見上方 hasSingleEdition() 註解，沒填欄位一樣顯示）；已經在防重複窗口內回報過的話，顯示已回報
+// 文字，不重複顯示按鈕（避免看起來像可以一直點）。
+export function machineReportButtonsHtml(loc, source) {
+  if (!hasSingleEdition(loc)) return '';
+  const existing = getMachineReportState(loc.id);
+  if (existing) {
+    return `<div class="popup-report-group popup-report-done">${machineReportedText(existing.type)}</div>`;
+  }
+  // permId／venue／type 一起帶在按鈕的 data-* 上，回報時原封不動送給 Worker，讓 Discord 通知能
+  // 附上機台類型、場地、還有指回這台機台的永久連結（見 submitMachineReport() 註解）。
+  return `
+    <div class="popup-report-group" data-report-group>
+      <button type="button" class="popup-report-btn popup-report-btn-still" data-machine-report data-report-type="still" data-machine-id="${loc.id}" data-machine-name="${loc.name}" data-source="${source}" data-perm-id="${loc.permId || ''}" data-venue="${loc.venue || ''}" data-machine-type="${loc.type || ''}">✓ 機台還在</button>
+      <button type="button" class="popup-report-btn popup-report-btn-gone" data-machine-report data-report-type="gone" data-machine-id="${loc.id}" data-machine-name="${loc.name}" data-source="${source}" data-perm-id="${loc.permId || ''}" data-venue="${loc.venue || ''}" data-machine-type="${loc.type || ''}">✕ 機台不在了</button>
+    </div>`;
+}
+
+// 實際送出：本機立刻標記已回報（樂觀更新，呼叫端不等這支 promise 就能馬上換按鈕文字），
+// 背景打 Worker、失敗也不用管使用者——這本來就是「順手回報」的低風險小功能，
+// 不值得為了失敗重試/告知使用者增加複雜度，Worker 那邊沒收到，之後使用者路過還會再報一次。
+// extra（permId／venue／machineType）是選填的補充資訊，讓 Worker 發的 Discord 通知可以更詳細
+// （附機台類型、場地、指回這台機台的永久連結），缺其中任何一項也不影響回報本身送出。
+export function submitMachineReport(machineId, machineName, type, source, extra = {}) {
+  setMachineReportState(machineId, type);
+  fetch(MACHINE_REPORT_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      machineId, machineName, type, source,
+      permId: extra.permId || '', venue: extra.venue || '', machineType: extra.machineType || '',
+    }),
+  }).catch(() => {});
+}

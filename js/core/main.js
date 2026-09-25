@@ -5,14 +5,14 @@
 // 同時同步 grid 跟地圖」的協調中心。
 // =============================================
 
-import { getDeviceType, driveUrlToImage, buildLastUpdatedText, MACHINE_TYPE_BADGE_ICON, machineTypeClass, SHARE_BTN_ICON_SVG, CAROUSEL_CHEVRON_ICON_SVG, createLightbox } from '../shared/utils.js';
+import { getDeviceType, driveUrlToImage, buildLastUpdatedText, MACHINE_TYPE_BADGE_ICON, machineTypeClass, SHARE_BTN_ICON_SVG, CAROUSEL_CHEVRON_ICON_SVG, createLightbox, machineReportButtonsHtml, submitMachineReport, machineReportedText } from '../shared/utils.js';
 import { loadEvents } from './events-data.js';
 import { matchMachineToEventRow, machineTitleHtml, stripNoEventLinkTag } from './event-match.js';
 import { renderGrid, sortLocations, getEndingBadge } from '../ui/grid.js';
 import { renderSortControl, closeDesktopSortPanel, closeMobileSortSheet } from '../pages/machines/sort.js';
 import { buildFilterOptions, renderFilterBar, FILTER_CONFIG, filterState } from '../pages/machines/filters.js';
 import { map, renderMapLocations, initMap, initBottomSheet, applySheetLevel, sheetLevel, isMobileMapLayout, openMobileSheetSummary, openDesktopSidebar } from '../ui/map.js';
-import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scroll.js';
+import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } from '../pages/machines/scroll.js';
 
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
     // 活動行事曆分頁（events-data.js 的 EVENTS_SHEET_CSV_URL 同一份，這裡重複定義一份是延續專案既有「各檔案自帶所需常數」的慣例）——
@@ -119,9 +119,16 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
       try {
         // 活動分頁只用來比「最後更新時間」，這條 fetch 失敗不該讓整個機台清單載入失敗，
         // 所以獨立 catch 成 null，後面比較時當作「沒有活動分頁時間可比」處理。
+        // cache: 'no-store'（Gill 回報：剛打開網站排序看起來是錯的，要重新整理才會變對）——
+        // 一般 reload 時瀏覽器對整個導覽/子資源會強制重新驗證（revalidate），但這裡是 JS
+        // 執行期間才發出的 fetch()，預設 cache 模式仍然可能吃到瀏覽器/中間快取存的舊版 CSV，
+        // 不像整頁 reload 那樣被強制重新驗證，導致「排序依據的資料本身」在第一次載入時是舊的，
+        // 剛好照舊資料算出來的分組/順序跟編輯後的新資料不同，看起來像「排序邏輯錯了」；
+        // 加上 no-store 讓每次呼叫 loadFromSheet()（初次載入／背景自動刷新／下拉刷新皆同一支函式）
+        // 都強制打一次全新請求，不會吃到本地快取的舊 CSV。
         const [response, eventsResponse] = await Promise.all([
-          fetch(SHEET_CSV_URL),
-          fetch(EVENTS_SHEET_CSV_URL).catch(() => null),
+          fetch(SHEET_CSV_URL, { cache: 'no-store' }),
+          fetch(EVENTS_SHEET_CSV_URL, { cache: 'no-store' }).catch(() => null),
         ]);
         const csvText = await response.text();
         const rows = csvText.trim().split('\n');
@@ -183,6 +190,11 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
         renderGrid(currentFiltered);
         buildFilterOptions(locations);
         renderFilterBar();
+        // filter-bar 是非同步塞進來的 pill，會撐高 #topBar 的實際高度；
+        // initTopBarScroll() 在資料回來前就量過一次（那時 filter-bar 還是空的），
+        // 這裡補量一次，避免 mobile 列表模式下 #gridView 的 padding-top 沒跟上，
+        // 讓 fixed 定位的 #topBar 蓋住列表最上面那排「最後更新」資訊。
+        updateTopBarHeightExternal();
 
         // 偵測分享連結 ?id=xxx（只在真正的初次載入處理一次；靜默背景刷新/下拉刷新不重跑，
         // 不然使用者關掉彈窗後，只要背景刷新一次就又被彈回來）
@@ -476,6 +488,30 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
         trackGmapsClick(gmapsLink.dataset.machineId, gmapsLink.dataset.source);
         return;
       }
+
+      // 機台回報確認文字裡的「回報表單」連結：比照上面 gmaps 連結的寫法，原生 <a target="_blank">
+      // 自己負責導頁，這裡只送 GA，不 preventDefault。跟既有「回報表單」連結共用同一個事件名稱
+      // report_click（見下方 .report-link 那段），只是 source 換成 machine_report_confirmation，
+      // 方便在 GA 後台分清楚這次點擊是不是從機台回報確認文字點進來的。
+      const reportFormLink = e.target.closest('[data-report-form-link]');
+      if (reportFormLink) {
+        gtag('event', 'report_click', { source: reportFormLink.dataset.source, device: getDeviceType() });
+        return;
+      }
+
+      // 機台狀態回報（「這台還在／不在了」，grid modal／地圖詳情面板共用同一顆按鈕，
+      // 比照上面作品標籤／gmaps 連結的 data-* + 委派寫法，不用 inline onclick + window 掛載）：
+      // 樂觀更新——點下去立刻把整組按鈕換成「已回報」文字，不等 API 回應（見 utils.js
+      // submitMachineReport() 註解，這本來就是低風險小功能，失敗了使用者路過還會再報一次）。
+      const reportBtn = e.target.closest('[data-machine-report]');
+      if (reportBtn) {
+        const { machineId, machineName, reportType, source: reportSource, permId, venue, machineType } = reportBtn.dataset;
+        submitMachineReport(machineId, machineName, reportType, reportSource, { permId, venue, machineType });
+        gtag('event', 'machine_report', { machine_id: machineId, report_type: reportType, source: reportSource, device: getDeviceType() });
+        const group = reportBtn.closest('[data-report-group]');
+        if (group) group.outerHTML = `<div class="popup-report-group popup-report-done">${machineReportedText(reportType)}</div>`;
+        return;
+      }
     });
 
     // Map popup: carousel + lightbox（capture mode，原始版）
@@ -557,6 +593,7 @@ import { initTopBarScroll, resetTopBarScrollState } from '../pages/machines/scro
           <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link" data-gmaps-track data-machine-id="${loc.id}" data-source="${source}"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-191q119-107 179.5-197T720-549q0-105-68.5-174T480-792q-103 0-171.5 69T240-549q0 71 60.5 161T480-191Zm-24.5 67.5Q444-128 433-137q-40-35-86.5-82T260-320q-40-54-66-112.5T168-549q0-134 89-224.5T480-864q133 0 222.5 90.5T792-549q0 58-26.5 117t-66 113q-39.5 54-86 100.5T527-137q-11 9-22.5 13.5T480-119q-13 0-24.5-4.5ZM480-552Zm0 164q62-56 88-81t41-44q14-17 20.5-35.5T636-587q0-35-25.5-60.5T550-673q-21 0-40 9t-30 23q-12-14-30.5-23t-39.5-9q-35 0-60.5 25.5T324-587q0 19 6.5 36t20.5 36q16 21 44 48.5t85 78.5Z"/></svg> 在 Google Maps 查看 →</a>
           <button class="popup-share-btn" onclick="shareLocation('${loc.permId}','${loc.id}','${source}')">分享 ${SHARE_BTN_ICON_SVG}</button>
         </div>
+        ${machineReportButtonsHtml(loc, source)}
         ${imgHtml}
       `;
       document.getElementById('gridModal').classList.add('show');

@@ -656,6 +656,27 @@
       transition: opacity 0.2s; white-space: nowrap; flex-shrink: 0;
     }
     .popup-share-btn:hover { opacity: 0.85; }
+
+    /* 機台狀態回報（「這台還在／不在了」）：比 popup-share-btn 小一號、但顏色本身要辨識得出來——
+       跟 .type-badge.photocard 同一套「白底＋色框＋色字」語言（v1 只靠 hover 才顯色，預設灰色字＋灰色
+       細框在淺色背景上幾乎看不見，改成預設就是色框＋色字，不用 hover 才看得到） */
+    .popup-report-group { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .popup-report-btn {
+      padding: 8px 12px; background: none; border: 1px solid var(--fill-gray-64);
+      border-radius: 999px; color: var(--fill-gray-64); font-size: 12px; font-weight: 400;
+      font-family: 'Noto Sans TC', sans-serif; cursor: pointer;
+      transition: opacity 0.2s, color 0.2s, border-color 0.2s, background 0.2s; white-space: nowrap;
+    }
+    .popup-report-btn-still { border-color: var(--fill-green); color: var(--fill-green); }
+    .popup-report-btn-still:hover { opacity: 0.8; background: rgba(22,163,74,0.08); }
+    .popup-report-btn-gone { border-color: var(--fill-red); color: var(--fill-red); }
+    .popup-report-btn-gone:hover { opacity: 0.8; background: rgba(220,38,38,0.08); }
+    .popup-report-done { margin-top: 12px; font-size: 12px; font-weight: 400; color: var(--fill-gray-64); }
+    .popup-report-link {
+      font: inherit; color: inherit; text-decoration: underline; text-decoration-style: solid;
+      text-underline-offset: 3px; transition: color 0.15s;
+    }
+    .popup-report-link:hover { color: var(--fill-blue); }
     #share-toast {
       position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(8px);
       background: var(--fill-black); color: var(--fill-white);

@@ -11,7 +11,7 @@
 // 所以沒有跟著搬過來。
 // =============================================
 
-import { getDeviceType, MACHINE_TYPE_BADGE_ICON, machineTypeClass, SHARE_BTN_ICON_SVG, CAROUSEL_CHEVRON_ICON_SVG, CLOSE_BTN_ICON_SVG } from '../shared/utils.js';
+import { getDeviceType, MACHINE_TYPE_BADGE_ICON, machineTypeClass, SHARE_BTN_ICON_SVG, CAROUSEL_CHEVRON_ICON_SVG, CLOSE_BTN_ICON_SVG, machineReportButtonsHtml } from '../shared/utils.js';
 import { getEndingBadge } from './grid.js';
 import { driveUrlToImage } from '../shared/utils.js';
 import { allLocations, currentFiltered } from '../core/main.js';
@@ -246,6 +246,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
           <a href="${googleMapsUrl}" target="_blank" class="popup-gmaps-link" data-gmaps-track data-machine-id="${loc.id}" data-source="map_detail_panel"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-191q119-107 179.5-197T720-549q0-105-68.5-174T480-792q-103 0-171.5 69T240-549q0 71 60.5 161T480-191Zm-24.5 67.5Q444-128 433-137q-40-35-86.5-82T260-320q-40-54-66-112.5T168-549q0-134 89-224.5T480-864q133 0 222.5 90.5T792-549q0 58-26.5 117t-66 113q-39.5 54-86 100.5T527-137q-11 9-22.5 13.5T480-119q-13 0-24.5-4.5ZM480-552Zm0 164q62-56 88-81t41-44q14-17 20.5-35.5T636-587q0-35-25.5-60.5T550-673q-21 0-40 9t-30 23q-12-14-30.5-23t-39.5-9q-35 0-60.5 25.5T324-587q0 19 6.5 36t20.5 36q16 21 44 48.5t85 78.5Z"/></svg> 前往 Google Maps 查看 →</a>
           <button class="popup-share-btn" onclick="shareLocation('${loc.permId}','${loc.id}','map_detail_panel')">分享 ${SHARE_BTN_ICON_SVG}</button>
         </div>
+        ${machineReportButtonsHtml(loc, 'map_detail_panel')}
         ${imgHtml}
       `;
     }

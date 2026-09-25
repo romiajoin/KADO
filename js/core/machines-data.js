@@ -27,7 +27,7 @@ export let machinesLoaded = false;
 export async function loadMachines() {
   if (machinesLoaded) return allMachines;
   try {
-    const res = await fetch(SHEET_CSV_URL);
+    const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' }); // 同 main.js loadFromSheet()，避免吃到瀏覽器/中間快取的舊版 CSV
     const text = await res.text();
     const rows = text.trim().split('\n').slice(1);
     allMachines = rows.map((row) => {

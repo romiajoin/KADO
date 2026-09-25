@@ -68,7 +68,7 @@ function parsePeriod(period) {
 export async function loadEvents() {
   if (eventsLoaded) return allEvents;
   try {
-    const res = await fetch(EVENTS_SHEET_CSV_URL);
+    const res = await fetch(EVENTS_SHEET_CSV_URL, { cache: 'no-store' }); // 同 main.js loadFromSheet()，避免吃到瀏覽器/中間快取的舊版 CSV
     const text = await res.text();
     const rows = text.split('\n').slice(1).filter((r) => r.trim());
     allEvents = rows.map((row) => {

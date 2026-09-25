@@ -1044,12 +1044,17 @@ function cityTabsHtml(group, activeIndex = 0) {
 function relatedMachinesHtml(loc, group) {
   const related = findRelatedMachines(loc, allMachines, group.locations);
   if (!related.length) return '';
+  // 手機/桌機的 target 刻意不同：桌機另開分頁，讓使用者可以依序點好幾台相關機台比較、
+  // 或看完機台後回來繼續看同一個活動 Modal 的其他資訊，不用重新點一次進來；
+  // 手機螢幕小，另開分頁等於整個切到另一個分頁、活動 Modal 也不會留在背景給使用者「切回來」的直覺，
+  // 體驗上比較像是不小心跳出去，所以手機一律用同頁跳轉（Gill 回報：切換機台與活動不要另開分頁）。
+  const relatedMachineTarget = isMobileFilterLayout() ? '' : ' target="_blank" rel="noopener"';
   const items = related.map((m) => {
     const href = `/?id=${encodeURIComponent(m.permId || m.id)}`;
     // 作品（IP）欄是選填，機台沒填時退回顯示機台名稱，避免卡片空白
     const label = m.character || m.name;
     return `
-      <a class="related-machine-item" href="${href}" target="_blank" rel="noopener" data-machine-id="${m.id}">
+      <a class="related-machine-item" href="${href}"${relatedMachineTarget} data-machine-id="${m.id}">
         <span class="type-badge ${machineTypeClass(m.type)}">${MACHINE_TYPE_BADGE_ICON[m.type] || ''}</span>
         <span class="related-machine-name">${label}</span>
       </a>`;

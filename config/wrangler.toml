@@ -6,3 +6,8 @@ compatibility_date = "2026-08-08"
 [[kv_namespaces]]
 binding = "VISITOR_KV"
 id = "d29af239a4e14cb199904a8671665e24"
+
+# 機台狀態回報用的 Discord webhook 網址是密鑰，不放在這個檔案裡（會被 commit 進版控）。
+# 部署後執行一次：
+#   wrangler secret put DISCORD_WEBHOOK_URL
+# 貼上 Discord 頻道的 webhook 網址即可，worker.js 用 env.DISCORD_WEBHOOK_URL 讀取。

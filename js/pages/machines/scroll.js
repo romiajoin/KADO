@@ -79,6 +79,12 @@ function handleScroll() {
   lastScrollTop = st;
 }
 
+// 供外部（main.js）在 #topBar 實際高度可能變動之後（例如 filter-bar 非同步塞入篩選 pill）
+// 重新量測一次，避免 CSS variable 卡在初次量測時的舊值，導致 fixed top-bar 蓋住底下內容。
+export function updateTopBarHeightExternal() {
+  updateTopBarHeight();
+}
+
 // 切換 view（grid ↔ map）或跨越 breakpoint 時呼叫，確保狀態乾淨、bar 一定可見
 export function resetTopBarScrollState() {
   downAccum = 0;

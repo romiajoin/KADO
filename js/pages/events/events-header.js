@@ -28,8 +28,8 @@ function parseCSVRow(row) {
     // 活動分頁 fetch 失敗不該讓「最後更新」整個消失，獨立 catch 成 null，
     // 後面比較時當作「沒有活動分頁時間可比」處理，退回只顯示機台分頁那欄。
     const [res, eventsRes] = await Promise.all([
-      fetch(SHEET_CSV_URL),
-      fetch(EVENTS_SHEET_CSV_URL).catch(() => null),
+      fetch(SHEET_CSV_URL, { cache: 'no-store' }),
+      fetch(EVENTS_SHEET_CSV_URL, { cache: 'no-store' }).catch(() => null),
     ]);
     const csvText = await res.text();
     const rows = csvText.trim().split('\n');
