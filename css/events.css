@@ -1192,3 +1192,40 @@ body.events-standalone {
     padding-top: calc(8px + var(--events-top-bar-height, 0px));
   }
 }
+
+
+/* =============================================
+   活動頁 Skeleton（基礎 .sk／.sk-card 樣式在 style.css）
+   ============================================= */
+
+/* 拼貼格狀：欄數在 JS 量測後才知道，skeleton 用 CSS grid 近似——每欄至少 330px、最多 4 欄
+   （minmax 裡的 25% 保證不會超過 4 欄），圖片高度輪流用三種比例做出錯落感 */
+.sk-collage {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(330px, 25%), 1fr));
+  gap: 0 2px;
+  width: 100%;
+  align-items: start;
+  position: relative;
+}
+.sk-collage-card { background: var(--fill-white); pointer-events: none; }
+.sk-collage-media { aspect-ratio: 4 / 3; border-radius: 0 0 8px 8px; }
+.sk-collage-card:nth-child(3n + 2) .sk-collage-media { aspect-ratio: 1 / 1; }
+.sk-collage-card:nth-child(3n) .sk-collage-media { aspect-ratio: 3 / 4; }
+.sk-collage-card .collage-card-body { display: flex; flex-direction: column; gap: 8px; }
+
+/* 月曆：五週，每週一排日期數字＋兩條活動橫幅 */
+.sk-week { padding-bottom: 12px; pointer-events: none; }
+.sk-week-nums,
+.sk-week-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.sk-week-nums { padding: 8px 0; }
+.sk-daynum { width: 18px; height: 16px; margin-left: 12px; border-radius: 4px; }
+.sk-week-bars { row-gap: 6px; }
+.sk-bar {
+  height: 24px; margin: 0 4px; border-radius: 6px;
+  /* 不透明底色：半透明的話會透出 .events-weeks 畫的直向格線，橫幅看起來像被切斷 */
+  background-color: #EDEDF0;
+}

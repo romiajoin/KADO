@@ -5,7 +5,7 @@
 // 同時同步 grid 跟地圖」的協調中心。
 // =============================================
 
-import { getDeviceType, driveUrlToImage, buildLastUpdatedText, MACHINE_TYPE_BADGE_ICON, machineTypeClass, SHARE_BTN_ICON_SVG, CAROUSEL_CHEVRON_ICON_SVG, createLightbox, machineReportButtonsHtml, submitMachineReport, machineReportedText } from '../shared/utils.js';
+import { getDeviceType, driveUrlToImage, buildLastUpdatedText, fetchSheetCsv, MACHINE_TYPE_BADGE_ICON, machineTypeClass, SHARE_BTN_ICON_SVG, CAROUSEL_CHEVRON_ICON_SVG, createLightbox, machineReportButtonsHtml, submitMachineReport, machineReportedText } from '../shared/utils.js';
 import { loadEvents } from './events-data.js';
 import { matchMachineToEventRow, machineTitleHtml, stripNoEventLinkTag } from './event-match.js';
 import { renderGrid, sortLocations, getEndingBadge } from '../ui/grid.js';
@@ -113,9 +113,8 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
       const silent = !!opts.silent;
       const trigger = opts.trigger || 'initial'; // 'initial' | 'auto' | 'pull'
       lastFetchTime = Date.now();
-      if (!silent) {
-        document.getElementById('grid').innerHTML = '<div class="empty-state">⏳ 載入資料中...</div>';
-      }
+      // 初次載入的 skeleton 直接寫在 app.html 的 #grid／#locationList 裡（首屏就看得到，不用等這支 module），
+      // 這裡不需要再塞載入中文字；「載入失敗後按重試」才會用下面的快照還原同一份 skeleton。
       try {
         // 活動分頁只用來比「最後更新時間」，這條 fetch 失敗不該讓整個機台清單載入失敗，
         // 所以獨立 catch 成 null，後面比較時當作「沒有活動分頁時間可比」處理。
@@ -126,31 +125,39 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
         // 剛好照舊資料算出來的分組/順序跟編輯後的新資料不同，看起來像「排序邏輯錯了」；
         // 加上 no-store 讓每次呼叫 loadFromSheet()（初次載入／背景自動刷新／下拉刷新皆同一支函式）
         // 都強制打一次全新請求，不會吃到本地快取的舊 CSV。
-        const [response, eventsResponse] = await Promise.all([
-          fetch(SHEET_CSV_URL, { cache: 'no-store' }),
-          fetch(EVENTS_SHEET_CSV_URL, { cache: 'no-store' }).catch(() => null),
-        ]);
+        // v36.2：活動分頁的兩個請求（「最後更新」時間戳、機台↔活動比對用的完整活動資料）跟機台請求同時發出，
+        // 但都不擋住列表渲染——列表卡片只需要機台資料，這兩份只影響「最後更新」文字跟詳情彈窗裡的活動連結。
+        // 原本是「機台＋活動時間戳」都回來、再等 loadEvents() 重抓一次活動，才第一次渲染列表。
+        // 活動請求失敗不該讓機台清單載入失敗，各自獨立 catch（時間戳→空字串，比對資料→空陣列）。
+        const eventsTimestampPromise = fetchSheetCsv('events', EVENTS_SHEET_CSV_URL)
+          .then(async (res) => {
+            if (!res || !res.ok) return '';
+            const eventsRows = (await res.text()).trim().split('\n');
+            return parseCSVRow(eventsRows[1] || '')[15] || ''; // 活動分頁 P 欄
+          })
+          .catch(() => '');
+        const eventRowsPromise = loadEvents().catch(() => []);
+
+        const response = await fetchSheetCsv('machines', SHEET_CSV_URL);
+        // Sheet 沒有公開發布或暫時掛掉時會回 4xx／5xx 的 HTML 頁面，不擋掉的話會被當成「0 筆資料」，
+        // 初次載入畫面變成「找不到符合的地點」、背景刷新甚至會把使用者正在看的清單清空，
+        // 所以非 2xx 一律當成載入失敗，交給下面 catch 處理。
+        if (!response.ok) throw new Error('HTTP ' + response.status);
         const csvText = await response.text();
         const rows = csvText.trim().split('\n');
 
         const firstRow = parseCSVRow(rows[1] || '');
         const machineLastUpdatedRaw = firstRow[17] || ''; // R 欄
 
-        // 活動分頁 P 欄（機台分頁 CLAUDE.md 早已放棄的「跳過不解析」在這裡例外：
-        // 只取這一格文字比較時間，不解析整份活動資料，避免拖進 events-data.js 那條鏈）
-        let eventsLastUpdatedRaw = '';
-        if (eventsResponse && eventsResponse.ok) {
-          const eventsCsvText = await eventsResponse.text();
-          const eventsRows = eventsCsvText.trim().split('\n');
-          const eventsFirstRow = parseCSVRow(eventsRows[1] || '');
-          eventsLastUpdatedRaw = eventsFirstRow[15] || ''; // P 欄
-        }
-
-        const lastUpdatedText = buildLastUpdatedText(machineLastUpdatedRaw, eventsLastUpdatedRaw);
-        ['lastUpdated', 'listLastUpdated'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.textContent = lastUpdatedText;
-        });
+        // 先只用機台分頁自己的時間顯示「最後更新」；活動分頁較新時，等活動請求回來再換（見下方 applyEventsData）
+        const setLastUpdated = (eventsRaw) => {
+          const lastUpdatedText = buildLastUpdatedText(machineLastUpdatedRaw, eventsRaw);
+          ['lastUpdated', 'listLastUpdated'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = lastUpdatedText;
+          });
+        };
+        setLastUpdated('');
 
         const locations = rows.slice(1).map(row => {
           const cols = parseCSVRow(row);
@@ -175,19 +182,18 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
           };
         }).filter(loc => loc.name && !isNaN(loc.lat) && !isNaN(loc.lng));
 
-        // 機台↔活動自動比對（見 js/event-match.js）：活動分頁資料透過 events-data.js 的 loadEvents() 拿，
-        // 跟上面「只比時間戳」那段各自獨立的 fetch 不衝突——這裡要的是完整內容，不只 P 欄時間。
-        // loadEvents() 內部只抓一次、之後重複呼叫吃快取，代表活動資料在這個分頁存活期間不會再更新，
-        // 機台的自動刷新仍正常運作，只是「機台↔活動」的比對結果要重新整理分頁才會反映活動端的異動。
-        const eventRowsForMatch = await loadEvents().catch(() => []);
-        locations.forEach(loc => {
-          loc.eventMatch = matchMachineToEventRow(loc, eventRowsForMatch);
-          loc.note = stripNoEventLinkTag(loc.note); // 顯示用備註要拿掉手動排除標記本身
-        });
-
         allLocations = locations;
         currentFiltered = sortLocations(locations);
         renderGrid(currentFiltered);
+        // 地圖側邊清單／bottom sheet 的 skeleton：資料到了就清掉。如果使用者資料回來前就先打開了地圖，
+        // initMap() 當時沒資料可畫、skeleton 被保留下來（見 map.js 的空狀態判斷），這裡補畫一次真實清單。
+        // 只在清單裡真的還留著 skeleton 時才做，背景自動刷新不會因此重設使用者正在看的地圖／面板狀態。
+        const locationListEl = document.getElementById('locationList');
+        if (locationListEl && locationListEl.querySelector('.sk-card')) {
+          locationListEl.innerHTML = '';
+          locationListEl.classList.remove('card-grid');
+          if (map) renderMapLocations(currentFiltered);
+        }
         buildFilterOptions(locations);
         renderFilterBar();
         // filter-bar 是非同步塞進來的 pill，會撐高 #topBar 的實際高度；
@@ -195,6 +201,23 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
         // 這裡補量一次，避免 mobile 列表模式下 #gridView 的 padding-top 沒跟上，
         // 讓 fixed 定位的 #topBar 蓋住列表最上面那排「最後更新」資訊。
         updateTopBarHeightExternal();
+
+        // 機台↔活動自動比對（見 js/event-match.js）：活動資料回來後才補上，不擋列表渲染。
+        // loadEvents() 內部只抓一次、之後重複呼叫吃快取，代表活動資料在這個分頁存活期間不會再更新，
+        // 機台的自動刷新仍正常運作，只是「機台↔活動」的比對結果要重新整理分頁才會反映活動端的異動。
+        // loc.eventMatch 只在點開詳情彈窗當下才讀，晚幾百毫秒補上不影響。
+        // loc.note 要先比對、再拿掉【不連結活動】標記（比對靠這個標記判斷手動排除，順序不能反）。
+        const applyEventsData = async () => {
+          const [eventsRaw, eventRows] = await Promise.all([eventsTimestampPromise, eventRowsPromise]);
+          locations.forEach(loc => {
+            loc.eventMatch = matchMachineToEventRow(loc, eventRows);
+            loc.note = stripNoEventLinkTag(loc.note); // 顯示用備註要拿掉手動排除標記本身
+          });
+          if (eventsRaw) setLastUpdated(eventsRaw);
+        };
+        const eventsDataReady = applyEventsData().catch(err => console.error('活動資料比對失敗：', err));
+        // ?id= 單一機台分享連結會立刻開詳情彈窗、標題連結需要比對結果，這個情況要等活動資料；其他情況不等
+        if (!silent && new URLSearchParams(window.location.search).get('id')) await eventsDataReady;
 
         // 偵測分享連結 ?id=xxx（只在真正的初次載入處理一次；靜默背景刷新/下拉刷新不重跑，
         // 不然使用者關掉彈窗後，只要背景刷新一次就又被彈回來）
@@ -283,9 +306,42 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
           // GA: data_refresh_error（背景/下拉刷新失敗，抓 Sheet 掛掉的頻率）
           gtag('event', 'data_refresh_error', { trigger, device: getDeviceType() });
         } else {
-          document.getElementById('grid').innerHTML =
-            '<div class="empty-state">❌ 資料載入失敗<br><small>請確認 Sheet 已設定公開發布</small></div>';
+          showLoadError();
         }
+      }
+    }
+
+    // =============================================
+    // ⏳ 載入失敗狀態（取代 skeleton，附重試按鈕）
+    // 重試時把 HTML 內嵌的 skeleton 還原回去再重新抓一次，快照在 module 載入當下就先存好
+    // （這時 #grid／#locationList 裡還是 app.html 寫的 skeleton，還沒被任何渲染覆蓋）。
+    // =============================================
+    const GRID_SKELETON_HTML = document.getElementById('grid').innerHTML;
+    const LIST_SKELETON_HTML = document.getElementById('locationList').innerHTML;
+
+    function showLoadError() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = `
+        <div class="empty-state load-error">
+          <p>❌ 資料載入失敗</p>
+          <small>請確認網路連線，或稍後再試</small>
+          <button type="button" class="load-retry-btn">重新載入</button>
+        </div>`;
+      grid.querySelector('.load-retry-btn').addEventListener('click', () => {
+        grid.innerHTML = GRID_SKELETON_HTML;
+        const listEl = document.getElementById('locationList');
+        if (listEl && !allLocations.length) {
+          listEl.classList.add('card-grid');
+          listEl.innerHTML = LIST_SKELETON_HTML;
+        }
+        loadFromSheet();
+      });
+
+      // 地圖清單的 skeleton 也要收掉，不然使用者切到地圖會看到永遠在載入的假卡片
+      const listEl = document.getElementById('locationList');
+      if (listEl && listEl.querySelector('.sk-card')) {
+        listEl.classList.remove('card-grid');
+        listEl.innerHTML = '<div class="sidebar-placeholder">資料載入失敗，請回列表頁按「重新載入」</div>';
       }
     }
 

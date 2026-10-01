@@ -412,6 +412,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       if (!list) return;
       if (!sheetLoc) {
         if (!currentMapData.length) {
+          if (list.querySelector('.sk-card')) return; // 資料還沒回來：保留 skeleton，不要先顯示「找不到」
           list.classList.remove('card-grid');
           list.innerHTML = '<div class="sidebar-placeholder">找不到符合的地點 இдஇ</div>';
           return;
@@ -574,6 +575,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       const list = document.getElementById('locationList');
       if (!list) return;
       if (!currentMapData.length) {
+        if (list.querySelector('.sk-card')) return; // 資料還沒回來：保留 skeleton，不要先顯示「找不到」
         list.classList.remove('card-grid');
         list.innerHTML = '<div class="sidebar-placeholder">找不到符合的地點 இдஇ</div>';
         return;

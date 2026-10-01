@@ -1,5 +1,7 @@
 // events-data.js — 活動行事曆共用資料層，被 events.js import
 
+import { fetchSheetCsv } from '../shared/utils.js';
+
 const EVENTS_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=1540199365&single=true&output=csv';
 
 // 分頁欄位順序，見 README.md「活動行事曆分頁」；用欄位順序而非表頭文字對應，避免表頭調整打斷解析
@@ -34,6 +36,8 @@ export const EVENT_CATEGORIES = [
 
 export let allEvents = [];
 export let eventsLoaded = false;
+// 區分「還在載入中」跟「真的載入失敗」：兩者 eventsLoaded 都是 false，UI 要顯示不同的東西（skeleton／錯誤訊息）
+export let eventsLoadFailed = false;
 
 // 跟 main.js 的 parseCSVRow 邏輯完全一樣（處理欄位內含逗號的引號情況），
 // 沒有 export 出來給外部用，這裡本來就是各自獨立的小工具，重複一份比互相 import 私有函式乾淨。
@@ -68,7 +72,10 @@ function parsePeriod(period) {
 export async function loadEvents() {
   if (eventsLoaded) return allEvents;
   try {
-    const res = await fetch(EVENTS_SHEET_CSV_URL, { cache: 'no-store' }); // 同 main.js loadFromSheet()，避免吃到瀏覽器/中間快取的舊版 CSV
+    eventsLoadFailed = false;
+    const res = await fetchSheetCsv('events', EVENTS_SHEET_CSV_URL); // 同 main.js loadFromSheet()，避免吃到瀏覽器/中間快取的舊版 CSV
+    // 非 2xx（Sheet 沒公開發布、暫時掛掉）回來的是 HTML 錯誤頁，不擋掉會被當成「0 筆活動」而不是載入失敗
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const rows = text.split('\n').slice(1).filter((r) => r.trim());
     allEvents = rows.map((row) => {
@@ -105,6 +112,7 @@ export async function loadEvents() {
     eventsLoaded = true;
   } catch (err) {
     console.error('活動資料載入失敗：', err);
+    eventsLoadFailed = true;
     allEvents = [];
   }
   return allEvents;

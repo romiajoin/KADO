@@ -3,6 +3,8 @@
 // 只單純把機台分頁 CSV 轉成陣列；欄位對照沿用 main.js 現有的 cols 索引，改動時兩邊要一起改。
 // 跟 events-data.js 是對稱的兩份資料層，寫法刻意一致。
 
+import { fetchSheetCsv } from '../shared/utils.js';
+
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
 
 // 跟 main.js／events-data.js 的 parseCSVRow 邏輯完全一樣，沒有 export 出來給外部用，
@@ -27,7 +29,7 @@ export let machinesLoaded = false;
 export async function loadMachines() {
   if (machinesLoaded) return allMachines;
   try {
-    const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' }); // 同 main.js loadFromSheet()，避免吃到瀏覽器/中間快取的舊版 CSV
+    const res = await fetchSheetCsv('machines', SHEET_CSV_URL); // 同 main.js loadFromSheet()，避免吃到瀏覽器/中間快取的舊版 CSV
     const text = await res.text();
     const rows = text.trim().split('\n').slice(1);
     allMachines = rows.map((row) => {

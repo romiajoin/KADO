@@ -5,7 +5,7 @@ import { getEndingBadge } from '../../shared/utils.js';
 import { TW_CITY_ORDER } from '../../shared/utils.js';
 import { haversineKm } from '../../shared/utils.js';
 import { driveUrlToImage } from '../../shared/utils.js';
-import { EVENT_CATEGORIES, loadEvents, allEvents } from '../../core/events-data.js';
+import { EVENT_CATEGORIES, loadEvents, allEvents, eventsLoaded, eventsLoadFailed } from '../../core/events-data.js';
 import { loadMachines, allMachines } from '../../core/machines-data.js';
 import { findRelatedMachines, relatedMachineTypesForGroup } from '../../core/event-match.js';
 import { createFilterWidget } from '../../ui/filter-widget.js';
@@ -590,8 +590,18 @@ function collageCardHtml(group) {
     </div>`;
 }
 
-function collageEmptyHtml() {
+// 資料還沒回來時（使用者在載入期間就切換檢視／版型）要顯示 skeleton，不是「找不到」也不是失敗；
+// 快照在 module 載入當下先存好，這時兩個容器裡還是 events-app.html 寫的 skeleton，還沒被任何渲染覆蓋。
+const COLLAGE_SKELETON_HTML = document.getElementById('eventsCollageGrid').innerHTML;
+const LIST_SKELETON_HTML = document.getElementById('eventsCollageList').innerHTML;
 
+function collageEmptyHtml(kind) {
+  // loadEvents() 失敗時只會回傳空陣列（不會 throw），這時顯示「找不到符合篩選條件」會誤導使用者。
+  // eventsLoaded 為 false 有兩種可能：還在載入（顯示 skeleton）／真的失敗（eventsLoadFailed，顯示錯誤＋重試）。
+  if (eventsLoadFailed) {
+    return `<div class="empty-state load-error"><p>❌ 活動資料載入失敗</p><small>請確認網路連線，或稍後再試</small><button type="button" class="load-retry-btn" onclick="location.reload()">重新載入</button></div>`;
+  }
+  if (!eventsLoaded) return kind === 'list' ? LIST_SKELETON_HTML : COLLAGE_SKELETON_HTML;
   return `<div class="empty-state">找不到符合篩選條件的活動 இдஇ</div>`;
 }
 
@@ -615,7 +625,7 @@ function renderCollageGrid(groups) {
   lastCollageGridGroups = groups;
   const grid = document.getElementById('eventsCollageGrid');
   if (!groups.length) {
-    grid.innerHTML = collageEmptyHtml();
+    grid.innerHTML = collageEmptyHtml('grid');
     return;
   }
   const colCount = collageColumnCount();
@@ -718,7 +728,7 @@ function eventListCardHtml(group) {
 
 function renderCollageList(groups) {
   const list = document.getElementById('eventsCollageList');
-  list.innerHTML = groups.length ? groups.map(eventListCardHtml).join('') : collageEmptyHtml();
+  list.innerHTML = groups.length ? groups.map(eventListCardHtml).join('') : collageEmptyHtml('list');
   // 整張卡片都可以點擊展開詳情，不再只限「詳情」按鈕；按鈕本身仍保留（視覺提示 + 冗餘點擊目標），
   // 用 stopPropagation 避免點按鈕時卡片的 click handler 又重複觸發一次同樣的動作。
   list.querySelectorAll('.loc-card-grid').forEach((card) => {

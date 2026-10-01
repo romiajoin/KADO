@@ -3,7 +3,7 @@
 社群共建的台灣 IP 抽卡機 / 快閃活動查詢網站，資料由管理者維護於 Google Sheet，網站自動讀取並顯示。
 
 **🔗 [查看網站](https://kadotw.vercel.app/)**  
-**最後更新：** 2026/09/14（v35，機台/活動分享圖改支援依檢視/入口分開填多張圖、events.html 改名 events-app.html 新增 api/events.js 讓活動搜尋結果分享連結也有預覽圖、總覽拼貼列表版面與月曆 day-events-panel 補上網址同步；v33.4，events.html 初始載入效能修正、活動情報頁支援分享搜尋結果；追加全站手機/桌機切換斷點從 768px 改為 900px、點「作品」標籤快速篩選同作品機台/活動；v34 追加活動支援同一活動填多個作品／IP 聯名（搜尋/篩選/詳情彈窗/卡片皆支援）、活動情報頁新增「今日活動」／「有抽卡 / 相卡機」快速篩選 pill＋月曆渲染效能修正；另追加 View Toggle 圖示 outline/fill 切換擴大套用＋改為內容撐開不再固定寬高、FAB icon 換成月曆圖示並改用漸層背景＋hover 改內容撐開、機台/活動卡片徽章樣式細部調整；拼貼卡片圓角邏輯再修正、月曆上/下月按鈕補上 hover、月份標籤格式改為 yyyy/mm、當日活動卡片 hover 效果補齊、day-events panel 手機版 header 改比照篩選 sheet 樣式、首頁機台列表／活動情報頁拼貼列表卡片改成整張卡片可點擊展開詳情（原本只有「詳情」按鈕可以點）等多項排版細修；相關機台卡片徽章改用圖示樣式＋hover 外框修正、城市頁籤選取字重加粗、修正地址欄位重複顯示縣市的 bug；**再追加**：修正列表 view-btn 一次顯示兩顆 icon 的 bug（漏補 CSS 切換規則）、`.loc-card-grid`／`.loc-card` hover 效果調整為 inset 邊框＋外陰影＋上移動畫、`.filter-panel` 補上 `overflow-x: hidden` 防止橫向捲動、`.collage-list-wrap` 補上 `padding-top` 避免第一排卡片 hover 陰影被裁掉、`.events-bar-title` 字重調整、`.events-multi-pill`／`.events-bar-multi-badge` 補上／統一 `map_pin_heart` icon；**追加**：月曆星期列與日期格之間多餘的 8px 間距修正、活動詳情「相關機台」卡片列左右箭頭按鈕改為毛玻璃圓形樣式＋換用專案既有 chevron icon；**再追加**：修正手機點擊卡片/按鈕時藍色 tap-highlight 閃爍的問題、活動情報頁拼貼列表底部間距獨立調整、窄螢幕 header 標題改成兩行顯示（不再隱藏副標題）；**v35.2**：月曆檢視某週活動較多、展開全部顯示後，週次日期數字列捲動時改為 sticky 固定在頂端；月曆橫幅（events-bar）排序改成「剩餘天數優先」（快結束的活動排最前面，行動導向），同剩餘天數才退回原本開始日/跨天長度排列；全站手機/桌機切換斷點從 900px 改為 991px（含活動情報頁一個獨立的 959px 斷點一併對齊）；排序按鈕改成跟篩選 pill 一致的白底圓角樣式，手機版進一步收成純 icon 按鈕；活動情報頁 header／搜尋列／篩選列的排版結構精簡到跟首頁完全對稱（拿掉兩層多餘的包裝容器）；篩選列底部間距的寫法與數值跟首頁對齊；窄螢幕 header 標題兩行顯示的斷點提前生效；**Icon 系統整理**：修正列表 view-toggle 未啟用 icon、搜尋框清除按鈕 icon 用錯圖示的問題，並把跨檔案重複貼的幾顆 inline SVG（詳情展開、分享、輪播/相關機台/月曆導航方向箭頭）抽成共用常數，FAB icon 也一併校正；**再追加**：訪客計數 banner 改成一開始就保留固定高度（避免人數抓取成功那一刻讓頂部工具列高度跳動），連帶拿掉首頁頂部工具列滑動隱藏機制原本用的 `ResizeObserver`；「最後更新」時間轉換/比較邏輯、抽卡機/相卡機徽章圖示，原本首頁跟活動頁、多個檔案各自複製一份逐字元相同的程式碼，統一搬進共用的 `utils.js`，並補上圖示的 Material Symbols 來源檔名註解；**再追加**：機台首頁列表／events 頁「總覽·拼貼格狀」／「總覽·列表」三處卡片格線 min-width 統一調整為 330px（原本分別是 300px／無設定），「總覽·拼貼格狀」卡片新增 min-width 後，原本 events.js 純靠螢幕寬度分固定斷點（420/720/1100px）決定欄數的邏輯會把卡片擠爆容器造成破版，改成動態量測容器寬度反推欄數；**再追加**：地圖側邊欄／手機 bottom sheet 機台清單改成依寬度自動算欄數（跟上面卡片格線 330px 統一），並修掉一個會連機台詳情內容都被拆成多欄的排版 bug；機台詳情面板的關閉鈕改為捲動時固定在右上角，不再隨內容一起被捲走，外觀比照列表詳情彈窗的關閉鈕；修掉活動情報頁訪客計數 banner 一直不會顯示的 bug（複製貼上時漏改一個 CSS 屬性，導致抓到人數也不會顯示出來）；**再追加**：地圖聚合點清單選中項目標題字重加粗、過長文字截斷顯示省略號；活動詳情彈窗補上跟機台詳情一致的 badge 列上下留白、「+N 個作品」展開鈕補上遺漏的字型設定；月曆橫幅多地點徽章配色從跟著分類變色改成固定白底藍字；活動情報頁「總覽·列表」左右留白跟上方間距改成跟首頁一致的桌機/手機兩組數值、月曆多地點徽章上方間距補上遺漏的固定間距；**再追加**：圖片放大 Lightbox 的核心開關邏輯搬進共用的 `utils.js`（`createLightbox()`），首頁跟活動情報頁各自呼叫、不再各自複製一份幾乎一樣的程式碼；作品標籤點擊篩選、「在 Google Maps 查看」點擊追蹤，改用資料屬性＋事件委派取代 inline onclick／`window` 掛載，順便拿掉原本手動跳脫單引號防止作品名稱弄斷連結的風險；**再追加**：月曆 `.events-day-grid`／`.events-weekday-row` 左右留白依斷點套用 16px／20px、月曆模式捲動時 topbar 改成一律保持可見（不再跟手機版一樣滑動收合）、日期 hover 外匡上邊框被 sticky 日期數字列蓋住的 z-index 問題修正；day-events-panel（點日期展開的當日活動清單）批次調整：斷點從 720/721px 併入全站 991/992px、卡片改沿用 `.loc-card-grid` 視覺語言（已結束灰階＋tag，不顯示詳情按鈕）、排列順序對齊月曆橫幅的剩餘天數排序、標題改置中、從 panel 開活動詳情再關閉後 `.selected` 藍色外匡狀態會正確清除、桌機展開時跟月曆邊緣的 20px 間距對齊修正；**再追加**：日期 hover 外匡上邊框問題二次修正（z-index 不夠，改成在日期格子自己身上補畫三邊）、`.events-bar` 左邊統一 12px 內縮（不再只有第 1 欄的橫幅有效果）、`.day-events-body` 左右 padding 從 12px 調整為 16px、全站關閉鈕圖示統一改用 Material Symbols close icon（原本混雜 unicode ✕ 字元跟另一款 stroke 風格 SVG）；**再追加**：day-events-panel（當日活動 drawer）卡片清單改成依寬度自動算欄數，只套用在 ≤991px 手機 bottom sheet（跟首頁列表／events 總覽列表／地圖側邊欄同一套 330px min-width 邏輯），桌機因為 panel 本身固定 360px 寬沒有實質效果，維持單欄；修正 events 頁「總覽·拼貼格狀」可以左右滑動的 bug（`overflow-y` 有設但 `overflow-x` 沒設時會被瀏覽器隱性當成 `auto`，補上明確的 `overflow-x: hidden`）；見下方說明）
+**最後更新：** 2026/10/01（**v36.1** 載入中改用 skeleton 骨架占位：機台首頁列表、地圖側邊欄／手機 bottom sheet 清單、活動頁（總覽拼貼格狀／列表／月曆）原本的「⏳ 載入中...」文字，改成跟真實卡片結構一致的灰色 shimmer 色塊，標記直接寫在 `app.html`／`events-app.html`，首屏就能看到、不用等 JS；支援 `prefers-reduced-motion`；資料載入失敗時改顯示明確的錯誤訊息＋「重新載入」按鈕（機台頁重試會還原 skeleton 再重抓、活動頁重新整理頁面）；Sheet 回 4xx／5xx 時改視為載入失敗（原本會被當成 0 筆資料）；活動頁區分「還在載入」跟「載入失敗」兩種狀態；**v36** 新增機台狀態一鍵回報：機台詳情彈窗／地圖詳情面板新增「機台還在」／「機台不在了」按鈕，點一下就送出、不用填表單，同一瀏覽器對同一台機台 3 天內限回報一次，多系列聯名機台不顯示；後端新增 Cloudflare Worker `POST /report`，回報次數累加進 KV，並發 Discord embed 通知（標題可點擊直接連回機台頁面，附類型／場地欄位、依狀態變色）；機台資料本身不會自動變動，仍是人工判斷後手動改 Sheet；**v35.3** GA4 埋碼盤點補漏：補上活動頁漏掉的 `report_click`，新增 `cross_page_nav_click`／`event_note_link_click`／`events_filter_result`／`search_no_result`／`events_search_no_result`／`share_result`／`events_share_result`，純補追蹤不影響使用者可見行為；**v35.2** 月曆週次日期數字列捲動時改為 sticky 固定、月曆橫幅排序改成「剩餘天數優先」（行動導向）、全站手機/桌機切換斷點 900px→991px、排序按鈕改為跟篩選 pill 一致的白底圓角樣式（手機版收成純 icon 按鈕）、events-app.html 結構精簡到跟首頁對稱、Icon 系統整理（修正列表 view-toggle 未啟用 icon 與搜尋框清除按鈕圖示錯誤，跨檔案重複 inline SVG 抽成共用常數）；**v35.1** 排序選項調整：拿掉「結束日：遠到近」，新增「開始日：近到遠」；**v35**，機台/活動分享圖改支援依檢視/入口分開填多張圖、events.html 改名 events-app.html 新增 api/events.js 讓活動搜尋結果分享連結也有預覽圖、總覽拼貼列表版面與月曆 day-events-panel 補上網址同步；v33.4，events.html 初始載入效能修正、活動情報頁支援分享搜尋結果；追加全站手機/桌機切換斷點從 768px 改為 900px、點「作品」標籤快速篩選同作品機台/活動；v34 追加活動支援同一活動填多個作品／IP 聯名（搜尋/篩選/詳情彈窗/卡片皆支援）、活動情報頁新增「今日活動」／「有抽卡 / 相卡機」快速篩選 pill＋月曆渲染效能修正；另追加 View Toggle 圖示 outline/fill 切換擴大套用＋改為內容撐開不再固定寬高、FAB icon 換成月曆圖示並改用漸層背景＋hover 改內容撐開、機台/活動卡片徽章樣式細部調整；拼貼卡片圓角邏輯再修正、月曆上/下月按鈕補上 hover、月份標籤格式改為 yyyy/mm、當日活動卡片 hover 效果補齊、day-events panel 手機版 header 改比照篩選 sheet 樣式、首頁機台列表／活動情報頁拼貼列表卡片改成整張卡片可點擊展開詳情（原本只有「詳情」按鈕可以點）等多項排版細修；相關機台卡片徽章改用圖示樣式＋hover 外框修正、城市頁籤選取字重加粗、修正地址欄位重複顯示縣市的 bug；**再追加**：修正列表 view-btn 一次顯示兩顆 icon 的 bug（漏補 CSS 切換規則）、`.loc-card-grid`／`.loc-card` hover 效果調整為 inset 邊框＋外陰影＋上移動畫、`.filter-panel` 補上 `overflow-x: hidden` 防止橫向捲動、`.collage-list-wrap` 補上 `padding-top` 避免第一排卡片 hover 陰影被裁掉、`.events-bar-title` 字重調整、`.events-multi-pill`／`.events-bar-multi-badge` 補上／統一 `map_pin_heart` icon；**追加**：月曆星期列與日期格之間多餘的 8px 間距修正、活動詳情「相關機台」卡片列左右箭頭按鈕改為毛玻璃圓形樣式＋換用專案既有 chevron icon；**再追加**：修正手機點擊卡片/按鈕時藍色 tap-highlight 閃爍的問題、活動情報頁拼貼列表底部間距獨立調整、窄螢幕 header 標題改成兩行顯示（不再隱藏副標題）；**v35.2**：月曆檢視某週活動較多、展開全部顯示後，週次日期數字列捲動時改為 sticky 固定在頂端；月曆橫幅（events-bar）排序改成「剩餘天數優先」（快結束的活動排最前面，行動導向），同剩餘天數才退回原本開始日/跨天長度排列；全站手機/桌機切換斷點從 900px 改為 991px（含活動情報頁一個獨立的 959px 斷點一併對齊）；排序按鈕改成跟篩選 pill 一致的白底圓角樣式，手機版進一步收成純 icon 按鈕；活動情報頁 header／搜尋列／篩選列的排版結構精簡到跟首頁完全對稱（拿掉兩層多餘的包裝容器）；篩選列底部間距的寫法與數值跟首頁對齊；窄螢幕 header 標題兩行顯示的斷點提前生效；**Icon 系統整理**：修正列表 view-toggle 未啟用 icon、搜尋框清除按鈕 icon 用錯圖示的問題，並把跨檔案重複貼的幾顆 inline SVG（詳情展開、分享、輪播/相關機台/月曆導航方向箭頭）抽成共用常數，FAB icon 也一併校正；**再追加**：訪客計數 banner 改成一開始就保留固定高度（避免人數抓取成功那一刻讓頂部工具列高度跳動），連帶拿掉首頁頂部工具列滑動隱藏機制原本用的 `ResizeObserver`；「最後更新」時間轉換/比較邏輯、抽卡機/相卡機徽章圖示，原本首頁跟活動頁、多個檔案各自複製一份逐字元相同的程式碼，統一搬進共用的 `utils.js`，並補上圖示的 Material Symbols 來源檔名註解；**再追加**：機台首頁列表／events 頁「總覽·拼貼格狀」／「總覽·列表」三處卡片格線 min-width 統一調整為 330px（原本分別是 300px／無設定），「總覽·拼貼格狀」卡片新增 min-width 後，原本 events.js 純靠螢幕寬度分固定斷點（420/720/1100px）決定欄數的邏輯會把卡片擠爆容器造成破版，改成動態量測容器寬度反推欄數；**再追加**：地圖側邊欄／手機 bottom sheet 機台清單改成依寬度自動算欄數（跟上面卡片格線 330px 統一），並修掉一個會連機台詳情內容都被拆成多欄的排版 bug；機台詳情面板的關閉鈕改為捲動時固定在右上角，不再隨內容一起被捲走，外觀比照列表詳情彈窗的關閉鈕；修掉活動情報頁訪客計數 banner 一直不會顯示的 bug（複製貼上時漏改一個 CSS 屬性，導致抓到人數也不會顯示出來）；**再追加**：地圖聚合點清單選中項目標題字重加粗、過長文字截斷顯示省略號；活動詳情彈窗補上跟機台詳情一致的 badge 列上下留白、「+N 個作品」展開鈕補上遺漏的字型設定；月曆橫幅多地點徽章配色從跟著分類變色改成固定白底藍字；活動情報頁「總覽·列表」左右留白跟上方間距改成跟首頁一致的桌機/手機兩組數值、月曆多地點徽章上方間距補上遺漏的固定間距；**再追加**：圖片放大 Lightbox 的核心開關邏輯搬進共用的 `utils.js`（`createLightbox()`），首頁跟活動情報頁各自呼叫、不再各自複製一份幾乎一樣的程式碼；作品標籤點擊篩選、「在 Google Maps 查看」點擊追蹤，改用資料屬性＋事件委派取代 inline onclick／`window` 掛載，順便拿掉原本手動跳脫單引號防止作品名稱弄斷連結的風險；**再追加**：月曆 `.events-day-grid`／`.events-weekday-row` 左右留白依斷點套用 16px／20px、月曆模式捲動時 topbar 改成一律保持可見（不再跟手機版一樣滑動收合）、日期 hover 外匡上邊框被 sticky 日期數字列蓋住的 z-index 問題修正；day-events-panel（點日期展開的當日活動清單）批次調整：斷點從 720/721px 併入全站 991/992px、卡片改沿用 `.loc-card-grid` 視覺語言（已結束灰階＋tag，不顯示詳情按鈕）、排列順序對齊月曆橫幅的剩餘天數排序、標題改置中、從 panel 開活動詳情再關閉後 `.selected` 藍色外匡狀態會正確清除、桌機展開時跟月曆邊緣的 20px 間距對齊修正；**再追加**：日期 hover 外匡上邊框問題二次修正（z-index 不夠，改成在日期格子自己身上補畫三邊）、`.events-bar` 左邊統一 12px 內縮（不再只有第 1 欄的橫幅有效果）、`.day-events-body` 左右 padding 從 12px 調整為 16px、全站關閉鈕圖示統一改用 Material Symbols close icon（原本混雜 unicode ✕ 字元跟另一款 stroke 風格 SVG）；**再追加**：day-events-panel（當日活動 drawer）卡片清單改成依寬度自動算欄數，只套用在 ≤991px 手機 bottom sheet（跟首頁列表／events 總覽列表／地圖側邊欄同一套 330px min-width 邏輯），桌機因為 panel 本身固定 360px 寬沒有實質效果，維持單欄；修正 events 頁「總覽·拼貼格狀」可以左右滑動的 bug（`overflow-y` 有設但 `overflow-x` 沒設時會被瀏覽器隱性當成 `auto`，補上明確的 `overflow-x: hidden`）；見下方說明）
 
 ---
 
@@ -17,13 +17,15 @@
 - 🗺️ 互動地圖，顯示全台抽卡機與 IP 快閃活動地點，自訂彩色圖示 + 同地點多機自動聚合
 - 📱 手機版響應式設計（地圖全螢幕 + 底部可拖拉、依內容自動調整高度的詳情面板）；點擊卡片/按鈕不再出現瞬間藍色高亮閃爍；窄螢幕標題改成「KADO！」＋副標題兩行顯示（原本副標題會被隱藏）
 - 🗺️ 一鍵導航至 Google Maps
-- 📅 依期間限定結束日期排序（近到遠／遠到近），或授權定位後依「離我最近／最遠」排序
+- 📅 依期間限定結束日／開始日排序（近到遠），或授權定位後依「離我最近／最遠」排序（v35.1 起拿掉「結束日：遠到近」、新增「開始日：近到遠」）
 - 🔗 分享單一地點連結，社群平台（LINE / Threads / Discord）預覽卡片有專屬標題與縮圖
 - 👣 顯示累計訪客人數
 - 🔄 回到前景自動刷新資料（節流 30 分鐘），列表模式支援下拉手動刷新
 - 🔗 分享單一地點連結，社群平台（LINE / Threads / Discord）預覽卡片有專屬標題與縮圖；地圖模式分享的連結，收到方點開後會直接回到地圖模式並展開該機台詳情；分享圖可依「列表」／「地圖」檢視各自指定不同縮圖（v35 新增）
 - 🔍🔗 搜尋或篩選機台時，網址列會即時同步當下的條件，複製網址列就能分享這個搜尋結果，對方點開會直接看到同樣的結果，不用另外點分享按鈕（v30.8 新增）；手動切換列表／地圖檢視本身也會即時同步網址（v35 新增）
 - 📋 回報表單，讓社群協助新增地點或回報錯誤
+- ✅ 機台狀態一鍵回報（v36 新增）：機台詳情彈窗／地圖詳情面板新增「機台還在」／「機台不在了」按鈕，點一下立即送出、不用填表單（同一瀏覽器對同一台機台 3 天內限回報一次；多系列聯名機台不顯示），回報會累計進後端並發 Discord 通知，方便管理者掌握機台下架狀況
+- ⏳ Skeleton 載入占位（v36.1 新增）：資料還沒回來時，機台列表、地圖側邊清單、活動頁（拼貼格狀／列表／月曆）顯示跟真實卡片結構一致的灰色骨架動畫，取代原本的「載入中」文字；載入失敗時顯示錯誤訊息與「重新載入」按鈕
 - 🗒️ 更新日誌，桌機 header／手機列表模式皆有連結可查看歷次版本更新內容
 - 🗓️ **全新「活動行事曆」頁面**（`events.html`，v32 新增）：整理全台動漫快閃店／聯名展覽／簽名會／CAFÉ 聯名／特典活動等實體活動
   - 月曆檢視（依日期瀏覽，同一天多場活動可展開清單）／總覽檢視（拼貼卡片，格狀或列表排列可切換）雙模式
@@ -54,7 +56,8 @@
 | Serverless Function | `api/share.js`／`api/index.js`（機台分享連結與首頁 OG meta，`api/index.js` v30.7 新增）、`api/event-share.js`／`api/events.js`（活動分享連結與行事曆頁 OG meta，`api/event-share.js` v33.1 新增，`api/events.js` v35 新增，皆 Vercel 免費方案內） |
 | PWA | 已於 v31 移除；`sw.js` 保留自我卸載用途（清乾淨舊安裝使用者的離線快取），詳見 `CLAUDE.md` |
 | 字體 | Chiron GoRound TC（400/500/700）、Space Mono（統計數字）|
-| 訪客計數 | 自架 Cloudflare Worker + KV |
+| 訪客計數 | 自架 Cloudflare Worker + KV（`scripts/worker.js`） |
+| 機台狀態回報通知 | 同一支 Cloudflare Worker 新增 `POST /report`（v36 新增），回報次數累加進 KV、並發 Discord webhook embed 通知 |
 | 數據分析 | Google Analytics 4（GA4） |
 
 **不需要資料庫、不需要 API 金鑰。** 有四支極輕量的 serverless function（`api/share.js`／`api/index.js`／`api/event-share.js`／`api/events.js`）純粹是為了讓機台與活動的分享連結、以及直接分享 `/?id=`／`/events.html?...` 網址時，在 LINE/Threads 等平台都能顯示正確的預覽卡片，不涉及任何使用者資料或資料庫。
@@ -62,35 +65,50 @@
 ### 檔案結構
 
 ```
-app.html             # 首頁進入點（SPA 殼層，刻意不叫 index.html——見下方 rewrite 說明）
-events-app.html      # 活動行事曆頁進入點（v32 新增，獨立頁面，不共用 app.html 的 JS 模組鏈；v35 起改名自 events.html，理由跟 app.html 一樣——見下方 rewrite 說明）
-style.css            # 首頁／行事曆頁共用的全站樣式（header、卡片、彈窗等共用元件）
-events.css           # 活動行事曆頁專屬樣式（月曆格線、拼貼卡片、FAB 等）
+app.html                  # 首頁進入點（SPA 殼層，刻意不叫 index.html——見下方 rewrite 說明）
+events-app.html           # 活動行事曆頁進入點（v32 新增，獨立頁面，不共用 app.html 的 JS 模組鏈；v35 起改名自 events.html，理由跟 app.html 一樣——見下方 rewrite 說明）
+css/
+  style.css               # 首頁／行事曆頁共用的全站樣式（header、卡片、彈窗等共用元件）
+  events.css              # 活動行事曆頁專屬樣式（月曆格線、拼貼卡片、FAB 等）
 js/
-  main.js            # 資料載入／view 切換／篩選＋排序協調／回到前景自動刷新／下拉刷新（v31 起，原本在 pwa.js）
-  map.js             # 地圖／marker／側邊欄／mobile bottom sheet
-  filters.js         # 首頁篩選狀態與資料（渲染/開合邏輯已抽到 filter-widget.js）
-  sort.js            # 首頁排序狀態串接（渲染/開合邏輯已抽到 sort-widget.js）
-  filter-widget.js   # 通用篩選 UI 元件（pill／桌機下拉／手機 bottom sheet），首頁與行事曆頁共用
-  sort-widget.js     # 通用排序 UI 元件（按鈕／dropdown／bottom sheet + 定位權限），首頁與行事曆頁共用
-  grid.js            # 列表卡片渲染 + 排序邏輯
-  scroll.js          # mobile 列表模式：頂部工具列滑動隱藏/顯示（v26 新增）
-  changelog.js       # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
-  utils.js           # 零依賴共用工具：裝置判斷、縣市清單、倒數 badge、圖片網址轉換、距離計算、最後更新時間轉換與比較、抽卡機/相卡機徽章圖示、Lightbox 開關邏輯、全站關閉鈕圖示（首頁與行事曆頁都會用到的邏輯集中在這，v35.2 起也收進了原本 main.js／events-header.js／grid.js／map.js／events.js 各自複製的重複邏輯）
-  visitor.js         # 訪客計數
-  events.js          # 活動行事曆頁面邏輯：月曆／總覽（拼貼格狀・列表）渲染、篩選/排序/搜尋串接、詳情彈窗、分享
-  events-data.js     # 活動資料層：讀取 Google Sheet「活動」分頁 CSV，解析成 events.js 用的資料結構
-  events-header.js   # 行事曆頁專用：只負責抓「最後更新」時間戳並寫進 DOM，不載入 main.js
-  events-scroll.js   # 行事曆頁專用：手機版頂部工具列滑動隱藏/顯示（比照 scroll.js，但要同時盯 3 種子模式的捲動容器）
-api/share.js         # 機台分享連結 OG meta 用的 serverless function
-api/index.js          # 首頁 / 動態 OG meta 用的 serverless function（v30.7 新增，透過 vercel.json rewrite 攔截 /；讀取 app.html 塞入 og 標籤後回傳）
-api/event-share.js    # 活動分享連結 OG meta 用的 serverless function（v33.1 新增；v35 起依分享入口分四種分享圖）
-api/events.js         # events.html 動態 OG meta 用的 serverless function（v35 新增，透過 vercel.json rewrite 攔截 /events.html；讀取 events-app.html 塞入 og 標籤後回傳）
-changelog.json       # 更新日誌內容（v27 新增，跟 manifest.json 同層）
-worker.js            # 訪客計數 Cloudflare Worker 原始碼（v30 新增，獨立部署到 Cloudflare，不隨 Vercel 走）
-wrangler.toml        # 上述 Worker 的部署設定（KV binding、Worker 名稱）
-permanent-id.gs      # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，
-                      # 不在這個 repo 的 push.sh 流程裡，見「分享連結永久ID機制」）
+  core/                   # 資料層／跨頁協調邏輯
+    main.js               # 首頁：資料載入／view 切換／篩選＋排序協調／回到前景自動刷新／下拉刷新
+    events-data.js        # 活動資料層：讀取 Google Sheet「活動」分頁 CSV
+    machines-data.js      # 活動頁專用的機台資料層（只供「相關機台」反查用，v33 新增）
+    event-match.js        # 機台⇄活動自動比對邏輯（v33 新增）
+  pages/
+    machines/             # 首頁專屬（渲染/開合邏輯已抽到 js/ui/ 的共用元件）
+      filters.js          # 首頁篩選狀態與資料串接
+      sort.js              # 首頁排序狀態串接
+      scroll.js            # mobile 列表模式：頂部工具列滑動隱藏/顯示（v26 新增）
+    events/                # 活動行事曆頁專屬
+      events.js            # 月曆／總覽（拼貼格狀・列表）渲染、篩選/排序/搜尋串接、詳情彈窗、分享
+      events-header.js     # 行事曆頁專用：只負責抓「最後更新」時間戳並寫進 DOM，不載入 main.js
+      events-scroll.js     # 行事曆頁專用：手機版頂部工具列滑動隱藏/顯示（比照 scroll.js，但要同時盯 3 種子模式的捲動容器）
+  ui/                      # 首頁／行事曆頁共用的 UI 元件
+    grid.js                # 列表卡片渲染 + 排序邏輯
+    map.js                 # 地圖／marker／側邊欄／mobile bottom sheet
+    filter-widget.js       # 通用篩選 UI 元件（pill／桌機下拉／手機 bottom sheet）
+    sort-widget.js         # 通用排序 UI 元件（按鈕／dropdown／bottom sheet + 定位權限）
+  shared/                  # 零依賴共用工具，兩頁都會用到
+    utils.js               # 裝置判斷、縣市清單、倒數 badge、圖片網址轉換、距離計算、最後更新時間轉換與比較、抽卡機/相卡機徽章圖示、Lightbox 開關邏輯、機台狀態一鍵回報（v36 新增）等
+    changelog.js           # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
+    visitor.js             # 訪客計數
+api/
+  share.js                 # 機台分享連結 OG meta 用的 serverless function
+  index.js                 # 首頁動態 OG meta 用的 serverless function（v30.7 新增，透過 vercel.json rewrite 攔截 /；讀取 app.html 塞入 og 標籤後回傳）
+  event-share.js           # 活動分享連結 OG meta 用的 serverless function（v33.1 新增；v35 起依分享入口分四種分享圖）
+  events.js                # events-app.html 動態 OG meta 用的 serverless function（v35 新增，透過 vercel.json rewrite 攔截 /events.html；讀取 events-app.html 塞入 og 標籤後回傳）
+scripts/
+  worker.js                # 訪客計數 + 機台狀態回報 Cloudflare Worker 原始碼（v30 新增，獨立部署到 Cloudflare，不隨 Vercel 走；v36 新增 POST /report）
+  permanent-id.gs          # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，不在這個 repo 的 push.sh 流程裡，見「分享連結永久ID機制」）
+config/
+  wrangler.toml            # 上述 Worker 的部署設定（KV binding、Worker 名稱、DISCORD_WEBHOOK_URL 密鑰說明）
+  manifest.json            # PWA 已於 v31 移除，這份留著未刪，供之後想重新啟用時參考
+docs/
+  changelog.json           # 更新日誌內容（v27 新增，跟 app.html 同層讀取）
+sw.js                      # 已於 v31 移除 PWA 功能；保留自我卸載用途（清乾淨舊安裝使用者的離線快取）
+vercel.json                # rewrite／header 設定（/ → api/index、/events.html → api/events 等）
 ```
 
 > `filters.js`／`sort.js` 目前是「串接首頁 DOM 用的薄層」，實際的 UI 渲染／開合／量寬／GA 事件都在 `filter-widget.js`／`sort-widget.js` 這兩個通用元件裡，`events.js` 建立自己的另一份實例共用同一套邏輯。細節與抽出來的理由見 `CLAUDE.md`。
@@ -127,7 +145,7 @@ permanent-id.gs      # 分享連結永久ID機制的 Apps Script（v30.4 新增�
 
 ### 活動行事曆分頁（`events-app.html` 用，另一個分頁）
 
-活動行事曆頁讀的是同一份 Google Sheet 裡**另一個分頁**（不是上面機台那張），欄位順序：`id, 類型, 活動標題, 期間限定, 場地, 縣市, 地址, 緯度, 經度, 作品(IP), 圖片, 更多資訊連結, 營業時間`（**v34 新增**：J 欄「作品(IP)」若同一活動有多個 IP 聯名，用頓號「、」分隔，例：`美少女戰士、光之美少女`；網站會拆成陣列供 Modal 顯示、搜尋、篩選使用，見 `js/events-data.js` 的 `characters`）（A～M 共 13 欄；**O 欄「永久ID」v33.2 新增啟用**，比照機台 Q 欄，分享連結真正比對的依據，由 Apps Script（`permanent-id.gs`）自動產生，一旦產生絕對不能手動修改或重複使用，見下方「活動分享連結」；**N 欄「分享圖」v33.1 新增啟用**，社群平台分享預覽用的專屬縮圖，Cloudinary 網址，選填，沒填則分享連結顯示對應情境的預設圖（見下方「活動分享連結」）；**v35 起可用「,」或「、」分四張圖**，依分享按鈕是從總覽拼貼格／總覽列表／月曆／當日活動清單哪裡點開分別對應，沒湊滿四張一律退回預設圖；**P 欄「最後更新時間」v32.1 起啟用**，網站會跟機台分頁 R 欄比較，取較新的一個顯示，寫入方式與 R 欄相同——只有第一列會填）。類型欄（B 欄）的值必須完全對應 `js/events-data.js` 的 `EVENT_CATEGORIES`（目前是 POP-UP／展覽／其他／CAFÉ・餐廳／特典活動），改了其中一邊要兩邊同步改，否則舊資料會退回灰色分類、篩選也篩不出來。同一檔活動在多個縣市開時，每個地點各自填一列，網站會依「標題＋期間」自動合併成同一組顯示。詳細欄位對照與分組機制見 `CLAUDE.md`／`spec.md`。
+活動行事曆頁讀的是同一份 Google Sheet 裡**另一個分頁**（不是上面機台那張），欄位順序：`id, 類型, 活動標題, 期間限定, 場地, 縣市, 地址, 緯度, 經度, 作品(IP), 圖片, 更多資訊連結, 營業時間`（**v34 新增**：J 欄「作品(IP)」若同一活動有多個 IP 聯名，用頓號「、」分隔，例：`美少女戰士、光之美少女`；網站會拆成陣列供 Modal 顯示、搜尋、篩選使用，見 `js/core/events-data.js` 的 `characters`）（A～M 共 13 欄；**O 欄「永久ID」v33.2 新增啟用**，比照機台 Q 欄，分享連結真正比對的依據，由 Apps Script（`permanent-id.gs`）自動產生，一旦產生絕對不能手動修改或重複使用，見下方「活動分享連結」；**N 欄「分享圖」v33.1 新增啟用**，社群平台分享預覽用的專屬縮圖，Cloudinary 網址，選填，沒填則分享連結顯示對應情境的預設圖（見下方「活動分享連結」）；**v35 起可用「,」或「、」分四張圖**，依分享按鈕是從總覽拼貼格／總覽列表／月曆／當日活動清單哪裡點開分別對應，沒湊滿四張一律退回預設圖；**P 欄「最後更新時間」v32.1 起啟用**，網站會跟機台分頁 R 欄比較，取較新的一個顯示，寫入方式與 R 欄相同——只有第一列會填）。類型欄（B 欄）的值必須完全對應 `js/core/events-data.js` 的 `EVENT_CATEGORIES`（目前是 POP-UP／展覽／其他／CAFÉ・餐廳／特典活動），改了其中一邊要兩邊同步改，否則舊資料會退回灰色分類、篩選也篩不出來。同一檔活動在多個縣市開時，每個地點各自填一列，網站會依「標題＋期間」自動合併成同一組顯示。詳細欄位對照與分組機制見 `CLAUDE.md`／`spec.md`。
 
 #### 活動分享連結（`api/event-share.js`，v33.1 新增；v33.2 改用永久ID；v35 依分享入口分四種分享圖）
 

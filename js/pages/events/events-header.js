@@ -4,7 +4,7 @@
 // 也是 import 同一份，不再各自複製一份；這裡仍各自獨立 fetch 兩份 CSV（延續專案既有
 // 「各檔案自帶所需常數」的慣例，理由同上，不 import main.js）。
 
-import { buildLastUpdatedText } from '../../shared/utils.js';
+import { buildLastUpdatedText, fetchSheetCsv } from '../../shared/utils.js';
 
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=0&single=true&output=csv';
 const EVENTS_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgBZrLfJlb-JY9YGm3o9vX5w3jG9hojq5E79tStxW1g89rKpuMnaRi1vA833KmZbilAAv9vrhttqQh/pub?gid=1540199365&single=true&output=csv';
@@ -28,8 +28,8 @@ function parseCSVRow(row) {
     // 活動分頁 fetch 失敗不該讓「最後更新」整個消失，獨立 catch 成 null，
     // 後面比較時當作「沒有活動分頁時間可比」處理，退回只顯示機台分頁那欄。
     const [res, eventsRes] = await Promise.all([
-      fetch(SHEET_CSV_URL, { cache: 'no-store' }),
-      fetch(EVENTS_SHEET_CSV_URL, { cache: 'no-store' }).catch(() => null),
+      fetchSheetCsv('machines', SHEET_CSV_URL),
+      fetchSheetCsv('events', EVENTS_SHEET_CSV_URL).catch(() => null),
     ]);
     const csvText = await res.text();
     const rows = csvText.trim().split('\n');

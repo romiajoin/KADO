@@ -281,3 +281,19 @@ export function submitMachineReport(machineId, machineName, type, source, extra 
     }),
   }).catch(() => {});
 }
+
+// =============================================
+// Google Sheet CSV 抓取（v36.2 新增）
+// 優先走自己網域的 /api/sheet（Vercel CDN 快取，見 api/sheet.js），失敗再退回直連 Google 公開 CSV：
+// 本機 server 沒有 /api、中繼掛掉、回傳的不是 CSV（例如 SPA fallback 的 HTML）都會自動退回，網站不依賴中繼。
+// tab：'machines' | 'events'；googleUrl：該分頁的直連網址（各檔案自己宣告，沿用既有常數）。
+// 回傳 Response，呼叫端照舊用 .ok／.text()。
+// =============================================
+export async function fetchSheetCsv(tab, googleUrl) {
+  try {
+    const res = await fetch(`/api/sheet?tab=${encodeURIComponent(tab)}`, { cache: 'no-store' });
+    const type = res.headers.get('content-type') || '';
+    if (res.ok && type.includes('text/csv')) return res;
+  } catch (_) { /* 退回直連 */ }
+  return fetch(googleUrl, { cache: 'no-store' });
+}
