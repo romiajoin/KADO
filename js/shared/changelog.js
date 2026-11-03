@@ -75,6 +75,11 @@ document.getElementById('changelogLinkMobile').addEventListener('click', (e) => 
   e.preventDefault();
   openChangelog('header_mobile_list');
 });
+// GA: about_link_click（關於區塊的回報表單／Email／Threads 連結；連結本身是原生 <a>，這裡只送事件不攔截）
+document.getElementById('changelogOverlay').addEventListener('click', (e) => {
+  const link = e.target.closest('[data-about-link]');
+  if (link) gtag('event', 'about_link_click', { type: link.dataset.aboutLink, device: getDeviceType() });
+});
 document.getElementById('changelogClose').addEventListener('click', () => closeChangelog());
 
 // 掛到 window：changelog-overlay 的 onclick="closeChangelog(event)" 是寫死在 index.html 裡的 inline attribute

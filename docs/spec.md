@@ -2,7 +2,7 @@
 
 **網站網址：** https://kadotw.vercel.app/  
 **GitHub Repo：** https://github.com/romiajoin/taiwan-gacha-map  
-**最後更新：** 2026/10/01（**v36.1** 載入中改用 skeleton 骨架占位：機台首頁列表、地圖側邊欄／手機 bottom sheet 清單、活動頁（總覽拼貼格狀／列表／月曆）原本的「⏳ 載入中...」文字，改成跟真實卡片結構一致的灰色 shimmer 色塊，標記直接寫在 `app.html`／`events-app.html`，首屏就能看到、不用等 JS；支援 `prefers-reduced-motion`；資料載入失敗時改顯示明確的錯誤訊息＋「重新載入」按鈕（機台頁重試會還原 skeleton 再重抓、活動頁重新整理頁面）；Sheet 回 4xx／5xx 時改視為載入失敗（原本會被當成 0 筆資料）；活動頁區分「還在載入」跟「載入失敗」兩種狀態；v36 機台狀態一鍵回報：機台詳情彈窗／地圖詳情面板新增「機台還在」／「機台不在了」按鈕，點擊即送出、不用填表單，同一瀏覽器對同一台機台 3 天內只能回報一次；系列欄位填了 2 個以上系列（多系列聯名）的機台不顯示；回報後的確認文字固定附上回報表單連結；後端新增 Cloudflare Worker `POST /report`，回報次數累加進 KV 並發 Discord 通知，機台資料本身不會自動變動，仍由人工判斷後手動改 Sheet；**再追加**：Discord 通知改用 embed 格式，標題可點擊直接連到機台永久連結（`permId`），並補上「類型」／「場地」欄位、依狀態變色（不在了紅／還在綠）；v35.3 GA4 埋碼盤點：補上活動頁漏掉的 `report_click`、新增 `cross_page_nav_click`／`event_note_link_click`／`events_filter_result`／`search_no_result`／`events_search_no_result`／`share_result`／`events_share_result`，`sort_change`／`geo_permission_result` 補上 `gaPrefix` 讓活動頁改名為 `events_sort_change`／`events_sort_geo_permission_result`，純補追蹤不影響任何使用者可見行為；v35.2 月曆週次日期數字列捲動時改為 sticky 固定、月曆橫幅排序改成「剩餘天數優先」（行動導向）、全站手機/桌機切換斷點 900px→991px、排序按鈕改為跟篩選 pill 一致的白底圓角樣式（手機版收成純 icon 按鈕）、events.html header／搜尋列／篩選列結構精簡到跟首頁完全對稱（拿掉 `.events-topbar-controls`／`.quick-filter-group` 兩層多餘 wrapper，篩選列間距統一改用 padding-bottom）；Icon 系統整理：修正列表 view-toggle 未啟用 icon 與搜尋框清除按鈕圖示錯誤、FAB icon 校正，並把跨檔案重複的詳情展開／分享／方向箭頭 inline SVG 抽成 `utils.js` 共用常數；v35 事件/搜尋結果分享預覽圖全面補強：機台 P 欄／活動 N 欄改支援依檢視/入口分開填多張分享圖、events.html 改名 events-app.html 新增 api/events.js 讓活動搜尋結果分享連結終於有預覽圖、總覽拼貼列表版面與月曆 day-events-panel 也補上網址同步與分享；v33.4；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對、v33.1 活動詳情作品欄位＋分享動態 OG 圖、v33.2 活動分享連結永久ID／全站篩選「IP」更名「作品」／桌機地圖模式恢復顯示 FAB、v33.3 相關機台卡片列左右箭頭、v33.4 events.html 初始載入效能修正＋活動搜尋結果分享連結已上線；v33.4 追加全站手機/桌機切換斷點 768px→900px、點「作品」標籤快速篩選同作品機台/活動；v34 活動新增支援多個作品／IP 聯名顯示與搜尋篩選、新增「今日活動」／「有抽卡 / 相卡機」快速篩選 pill、月曆渲染效能修正、拼貼卡片圓角邏輯再修正、月曆導航按鈕補上 hover、月份標籤改 yyyy/mm、day-events panel 手機版 header 比照篩選 sheet、首頁機台列表／活動拼貼列表卡片整張可點擊展開詳情等多項視覺細修；再追加修正手機點擊藍色 tap-highlight 閃爍、拼貼列表 `.events-filter-row` 底部間距獨立化、窄螢幕 logo 改兩行顯示；**再追加**：訪客計數 banner 改成一開始就用 `visibility:hidden` 保留固定高度（避免人數抓取成功那一刻讓頂部工具列高度跳動），連帶拿掉首頁頂部工具列滑動隱藏機制原本用的 `ResizeObserver`；「最後更新」時間轉換/比較邏輯、抽卡機/相卡機徽章圖示，原本首頁跟活動頁多個檔案各自複製一份逐字元相同的程式碼，統一搬進共用的 `utils.js`，並補上圖示的 Material Symbols 來源檔名註解；**再追加**：機台首頁列表／events 頁「總覽·拼貼格狀」／「總覽·列表」三處卡片格線 min-width 統一調整為 330px，「總覽·拼貼格狀」欄數邏輯改為動態量測容器寬度反推，取代原本固定斷點；地圖側邊欄／手機 bottom sheet 機台清單改成依寬度自動算欄數（跟卡片格線 330px 統一），並修掉會連機台詳情內容都被拆成多欄的排版 bug；機台詳情面板的關閉鈕改為 sticky 固定不隨內容捲動，外觀比照 grid modal 關閉鈕；修掉活動情報頁訪客計數 banner 一直不會顯示的 bug；**再追加**：圖片放大 Lightbox 核心開關邏輯搬進共用的 `utils.js`（`createLightbox()`），首頁與活動情報頁各自呼叫、不再各自複製一份重複邏輯；作品標籤點擊篩選（`filterByCharacter`）／Google Maps 點擊追蹤（`trackGmapsClick`）改用資料屬性＋事件委派取代 inline onclick／`window` 掛載，一併排除原本手動跳脫單引號才能防止作品名稱弄斷連結的風險；**再追加**：月曆 `.events-day-grid`／`.events-weekday-row` 左右留白依斷點套用 16px／20px、月曆模式捲動時 topbar 改成一律保持可見（不再跟手機版一樣滑動收合）、日期 hover 外匡上邊框被 sticky 日期數字列蓋住的 z-index 問題修正；day-events-panel（點日期展開的當日活動清單）批次調整：斷點從 720/721px 併入全站 991/992px、卡片改沿用 `.loc-card-grid` 視覺語言（已結束灰階＋tag，不顯示詳情按鈕）、排列順序對齊月曆橫幅的剩餘天數排序、標題改置中、從 panel 開活動詳情再關閉後 `.selected` 藍色外匡狀態會正確清除、桌機展開時跟月曆邊緣的 20px 間距對齊修正；**再追加**：日期 hover 外匡上邊框問題二次修正（z-index 不夠，改成在日期格子自己身上補畫三邊）、`.events-bar` 左邊統一 12px 內縮（不再只有第 1 欄的橫幅有效果）、`.day-events-body` 左右 padding 從 12px 調整為 16px、全站關閉鈕圖示統一改用 Material Symbols close icon（原本混雜 unicode ✕ 字元跟另一款 stroke 風格 SVG）；**再追加**：day-events-panel 卡片清單改成依寬度自動算欄數，只套用在 ≤991px（跟首頁／events 總覽列表／地圖側邊欄同一套 330px min-width 邏輯，桌機因 panel 固定 360px 寬沒有實質效果維持單欄）；**再追加**：修正 events 頁「總覽·拼貼格狀」可以左右滑動的 bug（`.events-collage-grid` 只設 `overflow-y` 沒設 `overflow-x` 時會被瀏覽器隱性當成 `auto`，補上明確的 `overflow-x: hidden`）)
+**最後更新：** 2026/11/03（**v37** 品牌 logo 全面換新：header 改用單一 SVG（藍色地圖 pin＋memoji 探出圈外＋KADO 字標），桌機 44px／手機 36px 高，標題 `<h1>` 改為視覺隱藏（保留給螢幕閱讀器與搜尋引擎）；favicon、`apple-touch-icon`、PWA 圖示（192／512／maskable）同步換成黃底＋pin 的新圖（檔名不變）；「更新日誌」連結改名「關於 KADO」，彈窗上方新增網站簡介與聯絡方式（Email／Threads，新增 GA4 事件 `about_link_click`），下方才是更新日誌；首頁列表與活動頁新增「回到頂端」浮動按鈕（`js/shared/back-to-top.js`，新增 GA4 事件 `back_to_top_click`）；活動頁多地點活動在同一縣市有 2 個以上場地時，標籤改用場地名（如「信義店」「台北店」）取代重複的縣市；**v36.1** 載入中改用 skeleton 骨架占位：機台首頁列表、地圖側邊欄／手機 bottom sheet 清單、活動頁（總覽拼貼格狀／列表／月曆）原本的「⏳ 載入中...」文字，改成跟真實卡片結構一致的灰色 shimmer 色塊，標記直接寫在 `app.html`／`events-app.html`，首屏就能看到、不用等 JS；支援 `prefers-reduced-motion`；資料載入失敗時改顯示明確的錯誤訊息＋「重新載入」按鈕（機台頁重試會還原 skeleton 再重抓、活動頁重新整理頁面）；Sheet 回 4xx／5xx 時改視為載入失敗（原本會被當成 0 筆資料）；活動頁區分「還在載入」跟「載入失敗」兩種狀態；同版追加載入加速：新增 `api/sheet.js` Google Sheet CSV 快取中繼（Vercel CDN `s-maxage=30, stale-while-revalidate=300`，只開放機台／活動兩個分頁），前端改由 `fetchSheetCsv()` 優先走 `/api/sheet`、失敗或回傳非 CSV 時自動退回直連 Google；機台頁列表改為只等機台 CSV 就先渲染，活動請求跟機台請求並行發出、在背景補上機台↔活動比對與「最後更新」時間（`?id=` 分享連結仍等活動資料）；v36 機台狀態一鍵回報：機台詳情彈窗／地圖詳情面板新增「機台還在」／「機台不在了」按鈕，點擊即送出、不用填表單，同一瀏覽器對同一台機台 3 天內只能回報一次；系列欄位填了 2 個以上系列（多系列聯名）的機台不顯示；回報後的確認文字固定附上回報表單連結；後端新增 Cloudflare Worker `POST /report`，回報次數累加進 KV 並發 Discord 通知，機台資料本身不會自動變動，仍由人工判斷後手動改 Sheet；**再追加**：Discord 通知改用 embed 格式，標題可點擊直接連到機台永久連結（`permId`），並補上「類型」／「場地」欄位、依狀態變色（不在了紅／還在綠）；v35.3 GA4 埋碼盤點：補上活動頁漏掉的 `report_click`、新增 `cross_page_nav_click`／`event_note_link_click`／`events_filter_result`／`search_no_result`／`events_search_no_result`／`share_result`／`events_share_result`，`sort_change`／`geo_permission_result` 補上 `gaPrefix` 讓活動頁改名為 `events_sort_change`／`events_sort_geo_permission_result`，純補追蹤不影響任何使用者可見行為；v35.2 月曆週次日期數字列捲動時改為 sticky 固定、月曆橫幅排序改成「剩餘天數優先」（行動導向）、全站手機/桌機切換斷點 900px→991px、排序按鈕改為跟篩選 pill 一致的白底圓角樣式（手機版收成純 icon 按鈕）、events.html header／搜尋列／篩選列結構精簡到跟首頁完全對稱（拿掉 `.events-topbar-controls`／`.quick-filter-group` 兩層多餘 wrapper，篩選列間距統一改用 padding-bottom）；Icon 系統整理：修正列表 view-toggle 未啟用 icon 與搜尋框清除按鈕圖示錯誤、FAB icon 校正，並把跨檔案重複的詳情展開／分享／方向箭頭 inline SVG 抽成 `utils.js` 共用常數；v35 事件/搜尋結果分享預覽圖全面補強：機台 P 欄／活動 N 欄改支援依檢視/入口分開填多張分享圖、events.html 改名 events-app.html 新增 api/events.js 讓活動搜尋結果分享連結終於有預覽圖、總覽拼貼列表版面與月曆 day-events-panel 也補上網址同步與分享；v33.4；v32/v32.1 活動行事曆頁、v33 機台⇄活動自動比對、v33.1 活動詳情作品欄位＋分享動態 OG 圖、v33.2 活動分享連結永久ID／全站篩選「IP」更名「作品」／桌機地圖模式恢復顯示 FAB、v33.3 相關機台卡片列左右箭頭、v33.4 events.html 初始載入效能修正＋活動搜尋結果分享連結已上線；v33.4 追加全站手機/桌機切換斷點 768px→900px、點「作品」標籤快速篩選同作品機台/活動；v34 活動新增支援多個作品／IP 聯名顯示與搜尋篩選、新增「今日活動」／「有抽卡 / 相卡機」快速篩選 pill、月曆渲染效能修正、拼貼卡片圓角邏輯再修正、月曆導航按鈕補上 hover、月份標籤改 yyyy/mm、day-events panel 手機版 header 比照篩選 sheet、首頁機台列表／活動拼貼列表卡片整張可點擊展開詳情等多項視覺細修；再追加修正手機點擊藍色 tap-highlight 閃爍、拼貼列表 `.events-filter-row` 底部間距獨立化、窄螢幕 logo 改兩行顯示；**再追加**：訪客計數 banner 改成一開始就用 `visibility:hidden` 保留固定高度（避免人數抓取成功那一刻讓頂部工具列高度跳動），連帶拿掉首頁頂部工具列滑動隱藏機制原本用的 `ResizeObserver`；「最後更新」時間轉換/比較邏輯、抽卡機/相卡機徽章圖示，原本首頁跟活動頁多個檔案各自複製一份逐字元相同的程式碼，統一搬進共用的 `utils.js`，並補上圖示的 Material Symbols 來源檔名註解；**再追加**：機台首頁列表／events 頁「總覽·拼貼格狀」／「總覽·列表」三處卡片格線 min-width 統一調整為 330px，「總覽·拼貼格狀」欄數邏輯改為動態量測容器寬度反推，取代原本固定斷點；地圖側邊欄／手機 bottom sheet 機台清單改成依寬度自動算欄數（跟卡片格線 330px 統一），並修掉會連機台詳情內容都被拆成多欄的排版 bug；機台詳情面板的關閉鈕改為 sticky 固定不隨內容捲動，外觀比照 grid modal 關閉鈕；修掉活動情報頁訪客計數 banner 一直不會顯示的 bug；**再追加**：圖片放大 Lightbox 核心開關邏輯搬進共用的 `utils.js`（`createLightbox()`），首頁與活動情報頁各自呼叫、不再各自複製一份重複邏輯；作品標籤點擊篩選（`filterByCharacter`）／Google Maps 點擊追蹤（`trackGmapsClick`）改用資料屬性＋事件委派取代 inline onclick／`window` 掛載，一併排除原本手動跳脫單引號才能防止作品名稱弄斷連結的風險；**再追加**：月曆 `.events-day-grid`／`.events-weekday-row` 左右留白依斷點套用 16px／20px、月曆模式捲動時 topbar 改成一律保持可見（不再跟手機版一樣滑動收合）、日期 hover 外匡上邊框被 sticky 日期數字列蓋住的 z-index 問題修正；day-events-panel（點日期展開的當日活動清單）批次調整：斷點從 720/721px 併入全站 991/992px、卡片改沿用 `.loc-card-grid` 視覺語言（已結束灰階＋tag，不顯示詳情按鈕）、排列順序對齊月曆橫幅的剩餘天數排序、標題改置中、從 panel 開活動詳情再關閉後 `.selected` 藍色外匡狀態會正確清除、桌機展開時跟月曆邊緣的 20px 間距對齊修正；**再追加**：日期 hover 外匡上邊框問題二次修正（z-index 不夠，改成在日期格子自己身上補畫三邊）、`.events-bar` 左邊統一 12px 內縮（不再只有第 1 欄的橫幅有效果）、`.day-events-body` 左右 padding 從 12px 調整為 16px、全站關閉鈕圖示統一改用 Material Symbols close icon（原本混雜 unicode ✕ 字元跟另一款 stroke 風格 SVG）；**再追加**：day-events-panel 卡片清單改成依寬度自動算欄數，只套用在 ≤991px（跟首頁／events 總覽列表／地圖側邊欄同一套 330px min-width 邏輯，桌機因 panel 固定 360px 寬沒有實質效果維持單欄）；**再追加**：修正 events 頁「總覽·拼貼格狀」可以左右滑動的 bug（`.events-collage-grid` 只設 `overflow-y` 沒設 `overflow-x` 時會被瀏覽器隱性當成 `auto`，補上明確的 `overflow-x: hidden`）)
 
 ---
 
@@ -18,7 +18,7 @@
 |------|------|
 | 前端 | 純 HTML / CSS / JavaScript（ES Modules，檔案結構見 README.md） |
 | 地圖套件 | Leaflet.js 1.9.4（OpenStreetMap 底圖，免費） |
-| 資料來源 | Google Sheet（發布為公開 CSV） |
+| 資料來源 | Google Sheet（發布為公開 CSV）；v36.1 起前端優先經 `api/sheet.js` 快取中繼取得，失敗退回直連 |
 | 圖片託管 | Cloudinary |
 | 網站託管 | Vercel（免費） |
 | PWA | 已於 v31 移除；`sw.js` 保留自我卸載用途，見下方「PWA / 加到主畫面」 |
@@ -95,14 +95,15 @@
 - v35.2 修正：`app.html` 本來就是 inline `visibility:hidden`；`events-app.html` 複製貼上時留成 `display:none`，導致一個實際的顯示 bug——`js/visitor.js` 抓到人數後只會切 `visibility`、從不動 `display`，`events-app.html` 的行內 `display:none` 蓋過 class 的 `display:flex` 且不受 `visibility` 影響，這顆 banner 在活動頁其實永遠顯示不出來。修法是兩邊統一改成 `visibility:hidden`，一開始就保留固定高度佔位（只是視覺上先隱形），抓到人數後才切回 `visibility:visible`；同時也修掉了先前「banner 非同步出現時讓頂部工具列高度跳動」的問題，連帶讓頂部工具列滑動隱藏機制不再需要 `ResizeObserver` 持續監看高度變化（改成只在初始化跟 resize 斷點切換時重算），詳見 `CLAUDE.md`
 
 ### Header
-- 右側由左至右：最後更新時間 ｜ 回報表單 ｜ 更新日誌 　[列表][地圖]（v27 新增「更新日誌」連結）
+- 右側由左至右：最後更新時間 ｜ 回報表單 ｜ 關於 KADO 　[列表][地圖]（v27 新增「更新日誌」連結，v37 起連結文字改為「關於 KADO」，樣式與行為不變）
 - 回報表單：灰色文字（`--fill-gray`），hover 變藍，`target="_blank"` 開新分頁
-- 更新日誌：灰色文字（`--fill-gray`），hover 變藍（v27 新增，樣式與回報表單一致）
+- 關於 KADO：灰色文字（`--fill-gray`），hover 變藍（v27 新增，v37 起連結文字由「更新日誌」改為「關於 KADO」，樣式與回報表單一致）
 - View Toggle：991px 以下隱藏文字標籤，只顯示 icon；padding 調整為 `8px 10px`（v33.4 前為 768px，v35.2 起共用斷點再從 900px 改為 991px）
-- 手機版列表模式：header 右側只留 icon toggle，「回報表單／更新日誌」連結改放在列表上方同一排 meta 資訊裡（跟最後更新時間同一行）
+- 手機版列表模式：header 右側只留 icon toggle，「回報表單／關於 KADO」連結改放在列表上方同一排 meta 資訊裡（跟最後更新時間同一行）
 - **View Toggle 尺寸／icon（v34 重做）**：`.view-toggle`／`.view-btn` 改成不設固定寬高，改由 padding 撐開內容（外框 `padding: 4px`，按鈕 `padding: 8px 12px`），並加上 `white-space: nowrap` 避免中文標籤在窄寬度下被拆成上下兩行；列表 icon（`#btnGrid`）比照地圖 icon（`#btnMap`）做法，補上 outline／fill 兩顆 SVG 依 active 狀態切換（`.grid-icon-outline`/`.grid-icon-fill`），fill 版用 Material Symbols `grid_view` FILL1。`events.html` 的 view toggle 共用同一份 `style.css`，樣式與尺寸自動同步；月曆 icon（`data-view="calendar"`）也比照補上 outline/fill 兩顆 SVG（`calendar_today` FILL1），總覽 icon 尺寸統一調整為 20px
 - **⚠️ v34 追加：`#btnGrid` 曾經一次顯示兩顆 icon 的 bug**：上一條補上 `.grid-icon-outline`/`.grid-icon-fill` 時，只複製了地圖 icon 的 SVG 標記，漏了對應的三條 CSS 切換規則（`.grid-icon-fill { display: none; }`／`.view-btn.active .grid-icon-outline { display: none; }`／`.view-btn.active .grid-icon-fill { display: block; }`），導致列表按鈕的 outline/fill 兩顆 icon 不論啟用狀態都一直同時疊著顯示；補上對應規則後修復
-- **窄螢幕 logo 改兩行顯示（v34 追加，v35.2 提前生效斷點）**：v34 原本斷點是 `<450px`（原本是 `<412px`）時，標題原本用 `.logo h1 span { display: none; }` 把副標題「抽卡機在哪」整個隱藏、只留「KADO！」；改成 `.logo h1` 設 `flex-direction: column` 直排兩行顯示，「KADO！」與副標題字級統一為 16px（不做主副標題字級差異）。**v35.2 起**這個欄狀排列提前到跟全站手機/桌機斷點統一的 `<991px` 就生效（不用再等到 450px 這麼窄），原本 450px 專屬的獨立區塊已刪除（涵蓋範圍已被 991px 完全包含）
+- **Header logo（v37 重做）**：`<img class="logo-icon" src="images/logo.svg" width="216" height="64" alt="">`，單一 SVG（viewBox 216×64：藍色地圖 pin、探出圈外的 memoji、右側 KADO 字標，閃電切進 K），**不再含「抽卡機在哪」字樣**。CSS 只設高度、寬度 `auto` 依 216:64 比例算：≥992px 高 44px（約 148.5px 寬）、≤991px 高 36px（約 121.5px 寬）（`.logo-icon` 在 `css/style.css` 一般規則與 `@media (max-width: 991px)` 區塊各一條）。`<h1>KADO！抽卡機在哪</h1>` 保留但加 `.visually-hidden`（clip 隱藏、不用 `display:none`，螢幕閱讀器與搜尋引擎仍讀得到），所以 logo 圖的 `alt` 設為空字串避免重複朗讀；`events-app.html` 的 `.events-logo-link`（`aria-label="回到 KADO 首頁"`）結構相同。內嵌 memoji 點陣圖從 400×360 縮到 240×216 並量化成 256 色（`logo.svg` 約 178KB → 22KB，3x 螢幕下肉眼無差別）。
+- **窄螢幕 logo 改兩行顯示（v34 追加，v35.2 提前生效斷點；v37 起已不適用——logo 改為單一 SVG 圖，`.logo h1` 的字體樣式與 991px 以下的直排規則都已刪除，見上一條）**：v34 原本斷點是 `<450px`（原本是 `<412px`）時，標題原本用 `.logo h1 span { display: none; }` 把副標題「抽卡機在哪」整個隱藏、只留「KADO！」；改成 `.logo h1` 設 `flex-direction: column` 直排兩行顯示，「KADO！」與副標題字級統一為 16px（不做主副標題字級差異）。**v35.2 起**這個欄狀排列提前到跟全站手機/桌機斷點統一的 `<991px` 就生效（不用再等到 450px 這麼窄），原本 450px 專屬的獨立區塊已刪除（涵蓋範圍已被 991px 完全包含）
 
 ### 列表 view-btn icon bug 與其他細部樣式調整（v34 追加）
 - **`.loc-card-grid`／`.loc-card` hover 效果，經過幾輪調整才定案**：起點是 `border-color: var(--fill-blue); transform: translateY(-2px); box-shadow: 0 8px 24px var(--fill-blue-16);`；第一輪改成 inset 邊框（`box-shadow: inset 0 0 0 2px var(--fill-blue)`，拿掉外陰影與 `transform`）；第二輪補回外陰影（`0px 8px 24px rgba(0, 102, 255, 0.16)`）；第三輪（最終定案）補回 `transform: translateY(-2px)` 上移動畫、inset 邊框從 2px 改細成 1px。最終樣式：`box-shadow: inset 0 0 0 1px var(--fill-blue), 0 8px 24px rgba(0, 102, 255, 0.16); transform: translateY(-2px);`；`.loc-card:hover`（地圖模式側邊欄／mobile bottom sheet 地點清單卡片）同步套用
@@ -123,6 +124,24 @@
 - **z-index**：2300，蓋過篩選/排序 sheet（2200/2201）（v31 起 A2HS banner 已移除，不再是這個排序考量的一部分）
 - **快取策略**：`changelog.json` 走 network-first（跟 Google Sheet 資料一樣），不落入殼層 cache-first 規則，確保只更新內容不動殼層檔案時，已安裝 PWA 的使用者也能看到新條目
 - GA4 事件：`changelog_open`／`changelog_close`，詳見下方事件表
+
+### 關於 KADO 區塊（v37 新增）
+- **改名**：header／手機列表 meta 的連結文字、彈窗標題 `.changelog-title` 由「更新日誌」改為「關於 KADO」；`#changelogLinkDesktop`／`#changelogLinkMobile`／`#changelogOverlay` 的 id 與 `changelog_open`／`changelog_close` 事件都沒改。
+- **彈窗結構**：`.changelog-body` 改成三段——`.about-section`（灰底 `--fill-gray-8`、圓角 12px，`.about-intro` 網站簡介＋`.about-desc` 聯絡方式）→ `.changelog-section-title`「更新日誌」（上方有分隔線）→ `#changelogBody`。**`id="changelogBody"` 從外層 `.changelog-body` 移到內層的 div**，`changelog.js` 仍往 `#changelogBody` 渲染，載入中的「⏳」文字也在裡面。
+- **聯絡連結**：Email（`mailto:`）、Threads @kadonogill，用 `data-about-link="email|threads"` 標記。`changelog.js` 在 `#changelogOverlay` 上用事件委派（`e.target.closest('[data-about-link]')`）送 GA4 `about_link_click`，連結是原生 `<a>`，只送事件、不攔截點擊。兩頁介紹句相同，聯絡句措辭不同（`app.html`：「歡迎發信至…或也可透過…聯繫我」；`events-app.html`：「歡迎聯繫…或也可在…找到我」）。
+- `docs/changelog.json` 的內容與格式沒變；v36／v36.1／v37 都還沒補條目（最後一筆是 v35.1），`changelog.js` 開頭註解要求每次上版補一筆。
+
+### 回到頂端按鈕（v37 新增，`js/shared/back-to-top.js`）
+- 兩頁各自在 `</body>` 前用 `<script type="module" src="js/shared/back-to-top.js">` 載入，只 import `utils.js` 的 `getDeviceType`。
+- **不能用 `window.scrollY`**：首頁列表與活動頁的捲動都發生在內層容器。`TARGET_SELECTORS = ['#gridView', '#eventsDayGrid', '#eventsCollageGrid', '#eventsCollageListWrap', '.events-page-body']`；`scrolledTargets()` 取「目前看得到（`offsetParent !== null`）且 `scrollTop > 400`」的容器，任何一個符合就顯示按鈕。`scroll` 事件不冒泡，所以在 `document` 上用 capture 一次接住、只處理 targets 內的容器。
+- **地圖模式（`body.map-view`）一律隱藏**。切換檢視時容器的 `hidden`／`class`／`style` 與 body 的 class 會變，用 `MutationObserver` 加 `resize` 重新判斷。
+- **點擊**：對所有「目前符合條件」的容器 `scrollTo({ top: 0 })`；`prefers-reduced-motion: reduce` 時 `behavior: 'auto'`，否則 `smooth`；送 GA4 `back_to_top_click`。
+- **樣式 `.back-to-top`**：`position: fixed; left: 50%; bottom: 24px`（置中，離右下角 FAB 夠遠、不易誤觸），高 44px 圓形（`min-width: 44px`）、白底、`z-index: 900`（低於 modal／filter sheet 的 2200 以上）；`.show` 時淡入。`(hover: hover) and (min-width: 992px)` 下 hover 會展開成「箭頭＋回到頂部」（`.back-to-top-label` 的 `max-width` 0 → 96px），觸控裝置維持純圓形。
+
+### Favicon／App 圖示（v37 換新）
+- `images/favicon.svg`：64×64 viewBox，圓角矩形（rx 14）黃色漸層（`#FFE9A3` → `#FFCF48`）底、中央放 pin；pin 底下的地面陰影已拿掉（縮小後會變成髒點）。
+- `icons/apple-touch-icon.png`（180，滿版方形，iOS 自行裁角）、`icons/icon-192.png`／`icon-512.png`（`purpose: any`，圓角方形）、`icons/icon-maskable-512.png`（滿版，pin 高度約 54% 畫布、放在安全區內）。**檔名都沒變**，`config/manifest.json` 與 `<link rel="icon">` 不用改。
+- 瀏覽器會快取舊 favicon，上線後看到舊圖時強制重新整理。
 
 ### GA4 自訂事件追蹤
 | 事件名稱 | 觸發時機 | 參數 |
@@ -161,6 +180,8 @@
 | `geo_permission_result` | 距離排序觸發定位請求後取得結果（v22）；活動頁改名為 `events_sort_geo_permission_result` | `geo_result`, `device` |
 | `changelog_open`（v27） | 打開更新日誌 modal/sheet | `source`（header_desktop/header_mobile_list）, `device` |
 | `changelog_close`（v27） | 關閉更新日誌 modal/sheet | `method`（x_button/backdrop_click）, `device` |
+| `about_link_click`（v37） | 關於 KADO 區塊裡的聯絡連結被點擊（原生 `<a>`，只送事件不攔截；首頁與活動頁共用同一事件名） | `type`（email/threads）, `device` |
+| `back_to_top_click`（v37） | 點「回到頂端」浮動按鈕（首頁與活動頁共用同一事件名） | `device` |
 | `sort_panel_open`（v30.3） | 打開排序 dropdown（桌機）或 bottom sheet（手機） | `device` |
 | `sort_panel_close`（v30.3） | 使用者主動關閉排序面板/sheet（選了排序選項導致的自動收合不算，見 `CLAUDE.md`） | `method`（toggle_button/outside_click/switch_panel/x_button/backdrop_click）, `device` |
 | `search_clear`（v30.3） | 點擊搜尋框的清除（X）按鈕 | `source`（desktop_toolbar/mobile_toolbar）, `device` |
@@ -317,6 +338,12 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 - **非 2xx 視為失敗**：機台 `loadFromSheet()`、活動 `loadEvents()` 都加了 `response.ok` 檢查；原本 Sheet 沒公開發布或暫時掛掉時回的 HTML 錯誤頁會被當成「0 筆資料」。
 - **活動頁「載入中」vs「載入失敗」**：`events-data.js` 新增 `eventsLoadFailed`（只在 `loadEvents()` 丟出例外時為 true）；`eventsLoaded` 為 false 但沒失敗＝還在載入，`collageEmptyHtml(kind)` 回傳 skeleton 快照，不是「找不到符合篩選條件的活動」也不是錯誤訊息。
 
+### 資料載入加速（v36.1 追加）
+- **動機**：實測直連 Google Sheet 公開 CSV 回應時間從 0.3 秒到 8 秒以上都有（含一次 307 轉址），初次載入快慢完全取決於 Google 當下狀況。
+- **`api/sheet.js` 快取中繼**：`/api/sheet?tab=machines|events`（白名單分頁，其他值回 400），伺服器端抓 Google Sheet CSV 後回傳，`Cache-Control: s-maxage=30, stale-while-revalidate=300`——30 秒內直接吃 Vercel CDN 快取；過期後 5 分鐘內先回舊的、背景更新。資料從 Sheet 修改到網站顯示最多晚約 30 秒～5 分鐘。抓取失敗回 502 且 `no-store`，不快取失敗結果。
+- **`fetchSheetCsv(tab, googleUrl)`（`js/shared/utils.js`）**：先打 `/api/sheet`，`res.ok` 且 `content-type` 含 `text/csv` 才採用，否則（失敗、本機 server 沒有 `/api`、回傳 SPA fallback 的 HTML）退回直連 Google（原本的 `cache: 'no-store'` 行為）；中繼掛掉不影響網站。`main.js`／`events-data.js`／`machines-data.js`／`events-header.js` 都改用它。
+- **機台頁渲染順序**：`loadFromSheet()` 把活動分頁的兩個請求（「最後更新」時間戳、`loadEvents()` 完整活動資料）跟機台請求同時發出，但列表只等機台 CSV 就 `renderGrid()`。活動資料回來後才補上 `loc.eventMatch`（詳情彈窗標題連結點擊當下才讀）、拿掉備註的【不連結活動】標記（要先比對再拿掉）、活動分頁較新時換掉「最後更新」文字（先顯示機台分頁自己的時間）。`?id=` 單一機台分享連結會立刻開詳情彈窗，這個情況仍等活動資料載完。
+
 ### 地點數量顯示
 - Toolbar：`74 個地點`（數字青色 `#00c2a8`，20px bold；「個地點」文字同為 20px regular）
 - 地圖手機版列表區右側
@@ -352,6 +379,8 @@ cluster popup（同座標多機清單）另外有一層：先顯示「這裡有 
 
 ### 分組：同一檔活動在多地點
 資料表仍是「一列＝一個地點」；畫面渲染前用「標題＋期間」把同一檔活動的多個地點合併成一組（group），月曆橫幅／當日活動清單／拼貼卡片／詳情 Modal 都吃 group，不逐列各自畫。分組 key 用 `groupKeyMap`（`g0`、`g1`...）在第一次用到時從**未經篩選**的 `allEvents` 算一次，避免篩選切換時同一組的 key 對不起來，也避免標題含逗號等字元打斷 `data-group-key` 屬性值。這是務實做法，不用改 Google Sheet 結構；如果之後真的出現「兩檔不同活動剛好同標題同期間」的巧合，建議加一欄專用的「活動群組ID」取代字串比對。同一組裡多個地點的 `start`／`end` 理論上應該一致，但合併時仍取涵蓋範圍最大的一份，防呆表單裡地點日期填得不完全一樣的情況。
+
+- **同縣市多場地時，標籤改用場地名（v37 新增）**：多地點活動的地點標籤原本一律用縣市（`city`），同一檔活動在同一縣市有 2 個以上場地時（例如 animate 信義店＋台北店都在台北）會變成兩個重複的「台北」。`locationLabels(group)`（`events.js`）改成：某縣市在這個 group 出現 ≥2 次、且該列有場地欄（E 欄）時，改用場地名當標籤，並把同縣市場地開頭共同的詞去掉、只留差異（「animate 台北店」「animate 信義店」→「台北店」「信義店」，至少保留最後一個詞）；場地欄空白就退回縣市，不會出現空標籤。`uniqueLocationLabels(group)` 負責去重，並回傳分隔符號：全是縣市用「・」，只要有任何標籤是場地名就用「、」。套用位置：拼貼卡片 `collageCardHtml()` 的地點文字、`locCardTopHtml()` 的 city tag、詳情 Modal 的城市頁籤 `cityTabsHtml()`；詳情頁的「場地：」欄仍顯示完整 E 欄，不縮寫。
 
 ### 機台⇄活動自動比對（v33，`js/event-match.js`）
 不新增 Google Sheet 欄位——靠機台分頁「店名＋期間限定」跟活動分頁「活動標題＋期間限定」兩組既有欄位字串比對。比對邏輯是 `app.html`（`main.js`／`map.js`）跟 `events.html`（`events.js`）共用的獨立檔案 `js/event-match.js`，兩邊頁面各自 `import`，不是各自複製一份——這條規則屬於「單一事實來源」很重要的類型，機台端判斷「這台有沒有活動」、活動端判斷「這個地點有哪些機台」如果各自維護一份、其中一邊改了規則忘記同步，會出現「機台說有活動、活動卻找不到這台機台」的矛盾且不容易發現。

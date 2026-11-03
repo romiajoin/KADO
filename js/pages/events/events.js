@@ -107,6 +107,40 @@ function groupKey(ev) {
   return ensureGroupKeyMap().get(`${ev.title}\u0000${ev.period}`);
 }
 
+// 多地點活動的「地點標籤」：預設用縣市；同一個縣市有 2 個以上地點時（例如 animate 信義店＋台北店
+// 都在台北），縣市分不出來是哪一間，那幾筆改用場地欄（E 欄，如「信義店」「台北店」）顯示。
+// 場地欄是空的就退回縣市，避免出現空白標籤。回傳跟 group.locations 一一對應的陣列。
+function locationLabels(group) {
+  const cityCount = new Map();
+  group.locations.forEach((l) => { if (l.city) cityCount.set(l.city, (cityCount.get(l.city) || 0) + 1); });
+  // 同縣市的場地如果開頭有一樣的詞（例如「animate 台北店」「animate 信義店」的 animate），
+  // 標籤去掉共同開頭只留差異（台北店、信義店）；至少保留最後一個詞，詳情頁的「場地：」仍用完整 E 欄。
+  const stripFor = new Map();
+  cityCount.forEach((n, city) => {
+    if (n < 2) return;
+    const tokens = group.locations.filter((l) => l.city === city && l.venue).map((l) => l.venue.trim().split(/\s+/));
+    if (tokens.length < 2) return;
+    const minLen = Math.min(...tokens.map((t) => t.length));
+    let k = 0;
+    while (k < minLen - 1 && tokens.every((t) => t[k] === tokens[0][k])) k++;
+    stripFor.set(city, k);
+  });
+  return group.locations.map((l) => {
+    if (l.city && cityCount.get(l.city) > 1 && l.venue) {
+      return l.venue.trim().split(/\s+/).slice(stripFor.get(l.city) || 0).join(' ');
+    }
+    return l.city || l.venue || '';
+  });
+}
+
+// 卡片／標籤用：去重後的標籤清單，以及要不要有改用場地的情況（用來決定分隔符號：縣市用「・」，場地用「、」）
+function uniqueLocationLabels(group) {
+  const labels = [...new Set(locationLabels(group).filter(Boolean))];
+  const cities = new Set(group.locations.map((l) => l.city).filter(Boolean));
+  const usedVenue = labels.some((t) => !cities.has(t));
+  return { labels, sep: usedVenue ? '、' : '・' };
+}
+
 function buildGroups(events) {
   const map = new Map();
   events.forEach((ev) => {
@@ -564,8 +598,9 @@ function collageCardHtml(group) {
   const badge = ended ? '' : getEndingBadge(group.period);
   const color = EVENT_CATEGORIES.find((c) => c.label === group.category)?.color || 'var(--fill-gray)';
   const multi = group.locations.length > 1;
+  const uniq = uniqueLocationLabels(group);
   const venueLabel = multi
-    ? [...new Set(group.locations.map((l) => l.city).filter(Boolean))].join('・')
+    ? uniq.labels.join(uniq.sep)
     : `${group.locations[0].city || ''} ${group.locations[0].venue || ''}`;
   const thumbUrl = eventThumbUrl(group);
   const media = thumbUrl
@@ -682,7 +717,7 @@ function locCardTopHtml(group, { ended, badge }) {
   const primary = group.locations[0];
 
   const cityTags = multi
-    ? [...new Set(group.locations.map((l) => l.city).filter(Boolean))]
+    ? uniqueLocationLabels(group).labels
     : [primary.city].filter(Boolean);
   // 只顯示 1 個代表作品，其餘數量以「+N」合併顯示在同一個 pill 裡（而不是另外開一個 pill／
   // 文字），例如「美少女戰士 +4」，見 characterTagsForCard() 決定顯示哪個當代表
@@ -1043,9 +1078,10 @@ function eventDetailNoteRow(ev) {
 }
 
 function cityTabsHtml(group, activeIndex = 0) {
+  const labels = locationLabels(group);
   return `<div class="events-city-tabs" role="tablist" aria-label="活動地點">`
     + group.locations.map((loc, i) => `<button type="button" class="events-city-tab${i === activeIndex ? ' active' : ''}" `
-      + `role="tab" aria-selected="${i === activeIndex}" data-loc-index="${i}"> ${loc.city || loc.venue || `地點 ${i + 1}`}</button>`).join('')
+      + `role="tab" aria-selected="${i === activeIndex}" data-loc-index="${i}"> ${labels[i] || `地點 ${i + 1}`}</button>`).join('')
     + `</div>`;
 }
 

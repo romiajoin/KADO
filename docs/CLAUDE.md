@@ -4,6 +4,20 @@
 
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
+**v37（2026/11/03）：新 logo／「關於 KADO」／回到頂端按鈕／同縣市活動標籤**：一個 commit 做了四件事。logo 與圖示由 Gill 設計、Claude 負責處理成各裝置可用的尺寸並寫進專案；其餘三項（關於 KADO、回到頂端、同縣市標籤）依 commit 的程式碼與註解整理成文件，撰寫文件時沒有另外重跑驗證。
+- **新 logo**：流程是 Claude 先提供幾個方向（膠囊 pin、「抽」字徽章、小黃鳥、純字標），Gill 最後自己改好 SVG 交回來（藍色地圖 pin＋探出圈外的 memoji＋KADO 字標，閃電切進 K）。動到 `images/logo.svg`、`images/favicon.svg`、`icons/` 四個 PNG、`app.html`、`events-app.html`、`css/style.css`。
+  - **header 只用同一張橫式 SVG**，靠 CSS 高度縮放（≥992px 高 44px、≤991px 高 36px，寬度 `auto`，viewBox 216×64；Gill 第二版把 KADO 字距拉開，畫布由 210 變 216，pin 與 memoji 沒變，`logo.svg` 仍約 22KB）。991px 以下 header 右邊只剩 view-toggle，實測 360／320 寬都放得下（320 寬時 logo 與 toggle 之間還有約 24px）。**需要另外做版本的只有圖示類**：橫式 logo 縮到 16–180px 時 KADO 會糊，所以 favicon／App icon 另外用只有 pin 的版本。
+  - **尺寸是調了幾輪才定**：64px（太大）→ 48／40 → 44／33 → 最後 **44／36**。手機版最初是照原本桌機 64px 對手機 48px 的 3:4 比例算出 33px，Gill 覺得偏小改 36px。header 高度是 JS 動態量的（`--top-bar-height`，`scroll.js`／`events-scroll.js`），改 logo 高度不會破壞版面偏移。
+  - **「抽卡機在哪」字樣從 logo 圖拿掉了**，所以 `<h1>` 保留但加 `.visually-hidden`（SEO／螢幕閱讀器仍讀得到），logo `<img>` 設 `alt=""` 避免重複朗讀；`<title>`、OG meta 都沒動。`.logo h1` 的字體樣式與 991px 以下的直排規則已刪除（下方 v35.2、v34 章節寫的「窄螢幕 logo 兩行」皆已不適用）。
+  - **SVG 瘦身**：Gill 交回的檔案內嵌 400×360 的 memoji PNG（整檔約 178KB）；縮到 240×216＋量化 256 色，並同步改 `<pattern>` 裡的 `scale()`（`1/240`、`1/216`），整檔約 22KB。favicon 內嵌的圖再縮到 120×108，整檔約 8KB。
+  - **圖示**：favicon／App icon 用黃色漸層底＋pin（沿用舊 favicon 的黃色），拿掉 pin 底下的地面陰影；maskable 版 pin 高度約 54% 畫布。檔名都沒變，`config/manifest.json` 不用動。
+  - **⚠️ c2pa 內容憑證**：用 Claude 的檔案工具把 SVG／PNG 寫進專案時，檔案會被自動嵌入 `c2pa` metadata（SVG 多一段 `<metadata>`＋`xmlns:c2pa`、PNG 多一個 `caBX` chunk，`logo.svg` 多約 7.7KB）。Gill 決定不要，已手動清掉，並用 `cmp` 比對確認圖像內容與原始產出逐位元相同。**之後若再用 Claude 寫入這些檔案，要再清一次**（SVG 刪掉 `<metadata>…</metadata>` 與 `xmlns:c2pa`；PNG 刪掉 `caBX` chunk）。
+  - **驗證**：用 Playwright 載入 `app.html`／`events-app.html`，量 `.logo-icon` 與 header 的實際尺寸（1280／992／991／360／320 寬），確認沒有橫向溢出、斷點切換正常；外部資源（Google Fonts、Sheet）被攔截，所以只驗了 header。**沒檢查 `og.png`、`map-og.png` 等分享圖**——如果上面有舊 logo，需要另外重做。
+- **「更新日誌」改名「關於 KADO」**：兩頁的連結文字與彈窗標題改名（id 與 `changelog_open`／`changelog_close` 沒動）；`.changelog-body` 結構改成「`.about-section` 網站簡介＋聯絡方式 → `.changelog-section-title` → `#changelogBody`」，**`id="changelogBody"` 從外層移到內層 div**，`changelog.js` 仍往它渲染。聯絡連結（Email／Threads）用 `data-about-link` 標記，`changelog.js` 在 `#changelogOverlay` 上用事件委派送 GA4 `about_link_click`（不攔截點擊）。兩頁聯絡句措辭不同，改文案時兩個檔案都要改。
+- **回到頂端按鈕（`js/shared/back-to-top.js`，兩頁各自 `<script type="module">` 載入）**：首頁列表與活動頁的捲動都在內層容器，不能用 `window.scrollY`，所以對 `#gridView`／`#eventsDayGrid`／`#eventsCollageGrid`／`#eventsCollageListWrap`／`.events-page-body` 中「目前看得到且 `scrollTop > 400`」的容器判斷；`scroll` 事件不冒泡，用 `document` 上的 capture 監聽；地圖模式（`body.map-view`）隱藏；用 `MutationObserver`＋`resize` 在切換檢視時重新判斷。點擊把符合條件的容器全部捲回頂端（`prefers-reduced-motion` 時不用 smooth），送 `back_to_top_click`。按鈕固定在畫面底部置中（離右下角 FAB 遠、不易誤觸），`z-index: 900`，桌機 hover 時展開成「箭頭＋回到頂部」。
+- **活動頁同縣市多場地標籤**：`events.js` 新增 `locationLabels(group)`／`uniqueLocationLabels(group)`。多地點活動標籤原本一律用縣市，同縣市有 2 個以上場地（例如 animate 信義店＋台北店）會出現重複的「台北」；改成這些列用場地欄（E 欄）當標籤，並去掉同縣市場地開頭共同的詞（「animate 台北店」「animate 信義店」→「台北店」「信義店」，至少保留最後一個詞）；場地欄空白就退回縣市。分隔符號：全是縣市用「・」，有任何標籤是場地名用「、」。套用在 `collageCardHtml()`、`locCardTopHtml()`、`cityTabsHtml()`；詳情頁「場地：」仍顯示完整 E 欄。
+- **刻意沒做／待辦**：`docs/changelog.json` 還沒補 v36／v36.1／v37 的條目（最後一筆是 v35.1；`changelog.js` 開頭註解要求每次上版補一筆）；`og.png` 等分享圖是否還有舊 logo 沒檢查；新 logo 是否要做成社群分享預覽圖也還沒處理。
+
 **Skeleton 載入占位（v36.1）**：把機台頁／活動頁原本「⏳ 載入中...」文字改成跟真實卡片結構一致的 skeleton。動到 `app.html`、`events-app.html`、`css/style.css`（`.sk`／`.sk-card`／`.sk-sr`／`.load-error`／`.load-retry-btn` 等共用樣式）、`css/events.css`（`.sk-collage`／`.sk-week` 等活動頁專用）、`js/core/main.js`、`js/ui/map.js`、`js/pages/events/events.js`、`js/core/events-data.js`。
 - **為什麼 skeleton 寫在 HTML 裡、不是 JS 產生**：`main.js`／`grid.js` 是 ES module，會等 HTML 解析完才執行，JS 產生的 skeleton 至少慢一拍；寫在 HTML 首次繪製就看得到。同時 `#grid` 原本就有一行寫死的載入中文字、`renderGrid()` 一開始就 `innerHTML = ''` 整個清掉，直接換成 skeleton 不用加任何顯示／隱藏狀態。代價是 skeleton 標記跟真實卡片結構要各維護一份——所以卡片骨架沿用 `.loc-card-grid`／`.card-top`／`.card-actions`／`.loc-card` 這些真實 class，只另外定義色塊尺寸，卡片改版時要順便檢查。`sw.js` 已是自我卸載版本、沒有註冊任何 service worker，改 HTML 不用處理快取版本號。
 - **拿掉 `loadFromSheet()` 的 JS 覆寫**：原本非靜默（初次載入）時會把 `#grid` 再塞一次「⏳ 載入資料中...」，JS 一跑 HTML 內嵌的 skeleton 就被蓋掉，所以那行拿掉。「載入失敗後按重試」要還原 skeleton 時，用 module 載入當下先存好的快照（`GRID_SKELETON_HTML`／`LIST_SKELETON_HTML`，這時 `#grid`／`#locationList` 還是 HTML 寫的 skeleton），不另外在 JS 重複一份標記；活動頁同理（`COLLAGE_SKELETON_HTML`／`LIST_SKELETON_HTML`，`events.js`）。
@@ -13,6 +27,14 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 - **活動頁 skeleton 細節**：(1) 拼貼格狀欄數在 JS 量測後才知道，skeleton 用 CSS grid 近似——`repeat(auto-fill, minmax(max(330px, 25%), 1fr))`，25% 保證最多 4 欄，跟 `collageColumnCount()` 的上限一致，換成真資料時欄數可能差一欄，不影響功能。(2) 月曆 skeleton 放在 `#eventsDayGrid`（預設 `hidden`），平常載入看不到，只有網址帶 `?view=calendar` 或使用者在資料回來前就切到月曆才會出現；它在月曆第一次渲染前會一直留在 DOM，所以測試「`.sk` 是否清乾淨」時要排除這個隱藏容器。(3) 月曆橫幅色塊（`.sk-bar`）要用不透明底色，半透明會透出 `.events-weeks` 畫的直向格線。(4) `events-app.html` 底部 inline script 依網址 `?view=calendar`／`?layout=list` 先切換 skeleton 容器的 `hidden`，避免分享連結先閃預設拼貼格 skeleton。
 - **驗證方式**：內建瀏覽器打不開本機檔案／localhost，所以把專案複製到雲端環境，用 Playwright 加上攔截 Google Sheet 請求的模擬 CSV 資料（可切換 hold／slow／ok／fail）截圖驗證：載入中、載入完成、失敗＋重試、資料回來前切換 view、`prefers-reduced-motion` 動畫停止。雲端環境載不到 Leaflet，所以真實地圖／標記沒測，只確認清單 skeleton 的顯示與替換邏輯。
 - **刻意沒做**：地圖本身（Leaflet 自己會載圖磚）不做 skeleton；活動頁失敗後的重試用 `location.reload()`、沒有像機台頁一樣還原 skeleton 再重抓（`initEventsPage()` 是一整段 IIFE，要重跑得大改）；更新日誌彈窗的「載入中」文字沒動；`machines-data.js`（活動頁「相關機台」用）的 fetch 沒加 `response.ok` 檢查。
+
+**載入加速（v36.1 追加）**：Gill 看完 skeleton 後覺得載入還是有點久，用 Network 面板量出機台 CSV（`gid=0`）一次 307 轉址就花 7.88 秒（重新整理後只剩 274 ms，是 Google 回應時間的偶發起伏，但整體載入仍要 4～5 秒）。動到 `api/sheet.js`（新增）、`js/shared/utils.js`、`js/core/main.js`、`js/core/events-data.js`、`js/core/machines-data.js`、`js/pages/events/events-header.js`。
+- **原本的推論錯了一半**：一開始以為瓶頸是 `loadFromSheet()` 內「機台＋活動時間戳 → 再 `loadEvents()` 重抓一次活動」的兩輪序列請求，實測重複抓的那次活動 CSV 只花 264 ms，省下的有限；真正的大頭是 Google 公開 CSV 本身的回應時間，前端怎麼排請求都救不了，所以才加 CDN 快取中繼。
+- **`api/sheet.js`**：`/api/sheet?tab=machines|events`，白名單 `TAB_GIDS`（不接受任意網址，避免變成開放式 proxy；gid 跟前端 `SHEET_CSV_URL`／`EVENTS_SHEET_CSV_URL` 各自獨立宣告，改分頁要兩邊同步）。回應 `Cache-Control: s-maxage=30, stale-while-revalidate=300`；失敗回 502＋`no-store`（失敗結果不能被快取，不然一次失敗卡 30 秒）。**取捨**：資料從 Sheet 修改到網站顯示最多晚約 30 秒～5 分鐘；之前加 `cache: 'no-store'` 是為了擋瀏覽器端快取的舊 CSV（排序看起來不對的問題），這次的快取在 Vercel 端、瀏覽器仍每次向 Vercel 確認，兩者不衝突。延遲嫌久就調小 `s-maxage`／`stale-while-revalidate`。
+- **`fetchSheetCsv()` 的 fallback 條件**：`res.ok` 且 `content-type` 含 `text/csv` 才採用中繼，其他一律退回直連 Google。要檢查 content-type 是因為本機 server（`python -m http.server` 等）對不存在的 `/api/sheet` 可能回 404 或 SPA fallback 的 200 HTML，只看 `res.ok` 會誤判成功。這讓本機開發、中繼掛掉、Vercel 冷啟動失敗都不會影響網站。`api/share.js` 等其他 serverless function 是伺服器端自己抓 Google，沒有改。
+- **`loadFromSheet()` 渲染順序重排**：活動分頁的兩個請求（時間戳 `eventsTimestampPromise`、完整活動資料 `eventRowsPromise`）跟機台請求同時發出，列表只等機台 CSV 就 `renderGrid()`；活動資料回來後在 `applyEventsData()` 補上 `loc.eventMatch`、拿掉【不連結活動】標記、活動較新時換掉「最後更新」文字（先用機台自己的時間顯示，所以 `setLastUpdated()` 會被呼叫兩次）。**順序不能反**：`matchMachineToEventRow()` 要靠 `loc.note` 裡的標記判斷手動排除，必須先比對再 `stripNoEventLinkTag()`。`loc.eventMatch` 只在點開詳情彈窗當下才讀，晚幾百毫秒補上不影響。**例外**：網址帶 `?id=` 的單一機台分享連結會在載入後立刻開彈窗，標題連結需要比對結果，所以這個情況（且非靜默刷新）會 `await eventsDataReady`，行為跟以前一樣。
+- **驗證**：同樣用 Playwright＋模擬資料——中繼正常（請求只打 `/api/sheet`）、中繼 404（退回直連 Google）、活動回應延遲 3～4 秒（卡片仍在 0.3 秒內出現，「最後更新」先顯示機台時間、活動資料到了才換）、詳情彈窗標題連結在活動資料到達後存在、`?id=` 分享連結等活動資料才開彈窗。**真實的 Vercel 快取行為沒辦法在雲端環境測**，部署後要在 Network 面板看 `/api/sheet` 第二次載入的時間（預期幾十毫秒）。
+- **刻意沒做**：瀏覽器端存上次資料、下次先畫舊的再背景更新（stale-while-revalidate 的客戶端版本，回訪使用者更快，但新資料回來時畫面會重排一次，跟之前「排序看起來不對」的問題有取捨）；活動頁（`events.js`）的載入順序沒動；`api/share.js` 等伺服器端函式沒改走中繼。
 
 **機台狀態一鍵回報（「機台還在／不在了」，v36，前端／Worker 皆已 commit／部署上線）**：痛點是「使用者發現機台不在了但懶得填回報表單」，做成 grid modal／地圖詳情面板（桌機側邊欄／mobile bottom sheet）共用的兩顆小按鈕，點下去立刻送出、不用填任何欄位。動到 `js/shared/utils.js`（新增 `machineReportButtonsHtml()`／`submitMachineReport()`／`getMachineReportState()`／`machineReportedText()` 等）、`js/core/main.js`（grid modal 插入按鈕、既有 document click 委派監聽器新增 `[data-machine-report]` 分支）、`js/ui/map.js`（地圖詳情面板插入按鈕，只有非 compact 版本才有，跟其他 `.popup-actions` 內容一致）、`css/style.css`（`.popup-report-group`／`.popup-report-btn`／`.popup-report-done`）、`scripts/worker.js`（跟現有 visitor-counter 共用同一支 worker，新增 `POST /report`，KV key 前綴 `report:`，成功後打 Discord webhook 通知）、`config/wrangler.toml`（補上 `DISCORD_WEBHOOK_URL` 這個密鑰要用 `wrangler secret put` 設定的說明，沒有把值寫進檔案）。
 - **按鈕比照「作品標籤點擊」既有慣例，用 `data-*` + 事件委派**，不是 inline onclick + window 掛載，理由跟 `filterByCharacter`／`trackGmapsClick` 那次一樣：機台名稱可能含特殊字元，字串拼接的 inline onclick 有拼斷風險，見上方「作品標籤點擊快速篩選」章節。
@@ -185,7 +207,8 @@ js/
   sort-widget.js      # 通用排序元件核心（按鈕／dropdown／bottom sheet／定位權限／GA），首頁 sort.js 與 events.js 各自建立實例共用（v?? 抽出）
   grid.js             # 列表卡片渲染 + 排序邏輯（sortLocations；getEndDate/getEndingBadge/driveUrlToImage/haversineKm 已搬到 utils.js）
   scroll.js           # #topBar（header/toolbar/filter-bar/訪客 banner）mobile 列表模式滑動隱藏/顯示（v26 新增）
-  changelog.js        # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增）
+  changelog.js        # 更新日誌讀取／渲染／modal-sheet 開關（v27 新增；v37 起彈窗上方多了「關於」區塊，並送 `about_link_click`）
+  back-to-top.js      # 「回到頂端」浮動按鈕，首頁列表＋活動頁共用（v37 新增，見最上方 v37）
   utils.js            # 零依賴共用工具：isStandaloneMode／getDeviceType／TW_CITY_ORDER／getEndDate／getEndingBadge／driveUrlToImage／haversineKm（後四項 v32 從 grid.js／main.js／filters.js 搬來，理由是 events.js 也要用，見「活動行事曆頁」章節）
   visitor.js          # 訪客計數（零依賴）
   events.js           # 活動行事曆頁邏輯：月曆／總覽（拼貼格狀・列表）渲染、篩選/排序/搜尋串接、詳情 Modal、分享（v32 新增）
@@ -193,6 +216,7 @@ js/
   events-header.js    # 行事曆頁專用：抓「最後更新」時間戳寫進 DOM，不 import main.js（v32 新增；v32.1 起同時比較機台/活動兩分頁時間戳，見「最後更新元素」）
   events-scroll.js    # 行事曆頁專用：手機版 #eventsTopBar 滑動隱藏，同時盯 3 種子模式的捲動容器（v32 新增）
 api/share.js          # 不受影響,原本就是獨立檔案
+api/sheet.js          # Google Sheet 公開 CSV 快取中繼（v36.1 追加，見最上方「載入加速」；前端 fetchSheetCsv() 優先打這支，失敗退回直連）
 api/event-share.js    # 活動分享連結 OG meta（v33.1 新增，仿 api/share.js，見「分享（shareEvent()）」章節）
 changelog.json        # 更新日誌內容（v27 新增，跟 manifest.json 同層）：date/version/text 三欄，text 可為字串或陣列（同天多筆）
 permanent-id.gs       # 分享連結永久ID機制的 Apps Script（v30.4 新增，貼到 Google Sheet 端手動設定，

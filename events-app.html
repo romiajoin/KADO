@@ -33,8 +33,8 @@
   </div>
   <header>
     <a class="logo events-logo-link" href="/" aria-label="回到 KADO 首頁">
-      <img class="logo-icon" src="images/logo.svg" alt="logo" />
-      <h1>KADO！<span>抽卡機在哪</span></h1>
+      <img class="logo-icon" src="images/logo.svg" width="216" height="64" alt="" />
+      <h1 class="visually-hidden">KADO！<span>抽卡機在哪</span></h1>
     </a>
     <div class="header-right">
       <div class="header-info" id="lastUpdated"></div>
@@ -42,7 +42,7 @@
       <!-- 回到抽卡機地圖的 FAB markup 實際位置在 #eventsTopBar 外面，見下方 -->
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSefuFSIqJ3qbJ245-snAD5MR6xHYHhkzzGGtpNXBvUVyZoZWQ/viewform?usp=dialog" class="report-link" target="_blank" rel="noopener">回報表單</a>
       <div class="header-divider"></div>
-      <a href="#" class="changelog-link" id="changelogLinkDesktop">更新日誌</a>
+      <a href="#" class="changelog-link" id="changelogLinkDesktop">關於 KADO</a>
       <!-- 月曆／總覽切換，「總覽」命名理由見 spec.md「月曆檢視 / 總覽（拼貼）檢視」 -->
       <div class="view-toggle" id="eventsViewTabs" role="tablist" aria-label="瀏覽方式">
         <button type="button" class="view-btn active" data-view="collage" role="tab" aria-selected="true" aria-label="切換到總覽檢視">
@@ -147,7 +147,7 @@
             <div class="header-divider"></div>
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSefuFSIqJ3qbJ245-snAD5MR6xHYHhkzzGGtpNXBvUVyZoZWQ/viewform?usp=dialog" class="report-link" target="_blank" rel="noopener">回報表單</a>
             <div class="header-divider"></div>
-            <a href="#" class="changelog-link" id="changelogLinkMobile">更新日誌</a>
+            <a href="#" class="changelog-link" id="changelogLinkMobile">關於 KADO</a>
           </div>
           <div class="collage-list-grid" id="eventsCollageList"><span class="sk-sr" role="status">載入中…</span><div class="loc-card-grid sk-card" aria-hidden="true"><div class="card-top"><div class="card-badge-row"><span class="sk sk-badge"></span></div><span class="sk sk-title"></span><span class="sk sk-sub"></span><div class="card-tags"><span class="sk sk-tag" style="width:72px"></span><span class="sk sk-tag" style="width:56px"></span><span class="sk sk-tag" style="width:96px"></span></div></div><div class="card-actions"><span class="sk sk-link"></span><span class="sk sk-btn"></span></div></div><div class="loc-card-grid sk-card" aria-hidden="true"><div class="card-top"><div class="card-badge-row"><span class="sk sk-badge"></span></div><span class="sk sk-title"></span><span class="sk sk-sub"></span><div class="card-tags"><span class="sk sk-tag" style="width:72px"></span><span class="sk sk-tag" style="width:56px"></span><span class="sk sk-tag" style="width:96px"></span></div></div><div class="card-actions"><span class="sk sk-link"></span><span class="sk sk-btn"></span></div></div><div class="loc-card-grid sk-card" aria-hidden="true"><div class="card-top"><div class="card-badge-row"><span class="sk sk-badge"></span></div><span class="sk sk-title"></span><span class="sk sk-sub"></span><div class="card-tags"><span class="sk sk-tag" style="width:72px"></span><span class="sk sk-tag" style="width:56px"></span><span class="sk sk-tag" style="width:96px"></span></div></div><div class="card-actions"><span class="sk sk-link"></span><span class="sk sk-btn"></span></div></div><div class="loc-card-grid sk-card" aria-hidden="true"><div class="card-top"><div class="card-badge-row"><span class="sk sk-badge"></span></div><span class="sk sk-title"></span><span class="sk sk-sub"></span><div class="card-tags"><span class="sk sk-tag" style="width:72px"></span><span class="sk sk-tag" style="width:56px"></span><span class="sk sk-tag" style="width:96px"></span></div></div><div class="card-actions"><span class="sk sk-link"></span><span class="sk sk-btn"></span></div></div><div class="loc-card-grid sk-card" aria-hidden="true"><div class="card-top"><div class="card-badge-row"><span class="sk sk-badge"></span></div><span class="sk sk-title"></span><span class="sk sk-sub"></span><div class="card-tags"><span class="sk sk-tag" style="width:72px"></span><span class="sk sk-tag" style="width:56px"></span><span class="sk sk-tag" style="width:96px"></span></div></div><div class="card-actions"><span class="sk sk-link"></span><span class="sk sk-btn"></span></div></div><div class="loc-card-grid sk-card" aria-hidden="true"><div class="card-top"><div class="card-badge-row"><span class="sk sk-badge"></span></div><span class="sk sk-title"></span><span class="sk sk-sub"></span><div class="card-tags"><span class="sk sk-tag" style="width:72px"></span><span class="sk sk-tag" style="width:56px"></span><span class="sk sk-tag" style="width:96px"></span></div></div><div class="card-actions"><span class="sk sk-link"></span><span class="sk sk-btn"></span></div></div></div>
         </div>
@@ -217,13 +217,20 @@
     <div class="changelog-panel" onclick="event.stopPropagation()">
       <div class="changelog-header">
         <div class="changelog-header-text">
-          <span class="changelog-title">更新日誌</span>
+          <span class="changelog-title">關於 KADO</span>
           <span class="changelog-author">made with ♥ by @kadonogill</span>
         </div>
         <button class="changelog-close" id="changelogClose" aria-label="關閉"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480-429 316-265q-11 11-25 10.5T266-266q-11-11-11-25.5t11-25.5l163-163-164-164q-11-11-10.5-25.5T266-695q11-11 25.5-11t25.5 11l163 164 164-164q11-11 25.5-11t25.5 11q11 11 11 25.5T695-644L531-480l164 164q11 11 11 25t-11 25q-11 11-25.5 11T644-266L480-429Z"/></svg></button>
       </div>
-      <div class="changelog-body" id="changelogBody">
-        <div class="empty-state">⏳ 載入中...</div>
+      <div class="changelog-body">
+        <div class="about-section">
+          <p class="about-intro">台灣各地的抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動ヽ(=^･ω･^=)丿持續更新中！</p>
+          <p class="about-desc">若有機台、活動需要更新或上架宣傳，歡迎聯繫 <a href="mailto:gillsponge@gmail.com" data-about-link="email">gillsponge@gmail.com</a> 或也可在 <a href="https://www.threads.com/@kadonogill" target="_blank" rel="noopener" data-about-link="threads">Threads @kadonogill</a> 找到我</p>
+        </div>
+        <div class="changelog-section-title">更新日誌</div>
+        <div id="changelogBody">
+          <div class="empty-state">⏳ 載入中...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -244,6 +251,7 @@
   </script>
   <script type="module" src="js/pages/events/events-header.js"></script>
   <script type="module" src="js/shared/changelog.js"></script>
+  <script type="module" src="js/shared/back-to-top.js"></script>
   <script type="module" src="js/shared/visitor.js"></script>
   <script type="module" src="js/pages/events/events.js"></script>
 </body>
