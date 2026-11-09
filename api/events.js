@@ -131,7 +131,7 @@ function buildOgTags(ogImageUrl) {
   <meta property="og:image" content="${ogImageUrl}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:url" content="${SITE_URL}/events.html">
+  <meta property="og:url" content="${SITE_URL}/events">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="KADO！抽卡機在哪">
   <meta name="twitter:card" content="summary_large_image">

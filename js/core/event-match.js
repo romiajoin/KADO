@@ -113,7 +113,7 @@ export function relatedMachineTypesForGroup(group, machines) {
 // 這條連結雖然不是「分享」這個主動動作產生的，但一樣是可能被使用者收藏／之後重新點擊的
 // 跨頁連結，一樣要避免 A 欄被管理者重新編號後連到別的活動。
 export function eventUrl(eventRow) {
-  return `events.html?event=${encodeURIComponent(eventRow.permId)}`;
+  return `/events?event=${encodeURIComponent(eventRow.permId)}`;
 }
 
 export function machineTitleHtml(loc, { className = 'popup-title', source = '' } = {}) {

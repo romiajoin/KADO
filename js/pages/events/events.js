@@ -1351,7 +1351,7 @@ function shareEvent(group, source) {
   const primary = group.locations[0];
   // 分享出去的連結走 /api/event-share?id=xxx，讓 LINE/Threads 等平台的爬蟲能讀到
   // 這個活動對應的 og:image（指定分享圖，沒填則用活動預設圖，見 api/event-share.js）；
-  // 真人點進來後，那支 function 會立刻導回這裡（/events.html?event=xxx），使用體驗不變。
+  // 真人點進來後，那支 function 會立刻導回這裡（/events?event=xxx），使用體驗不變。
   // 網址帶永久ID（O欄，見「分享連結永久ID機制（活動版）」），不是 A 欄流水號——
   // 跟機台 shareLocation() 同一個理由，A 欄被管理者重新編號後舊連結不該連到別的活動。
   // GA 的 event_id 維持用 A 欄 id（join 多地點），跟 events_detail_open 等其他事件的

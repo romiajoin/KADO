@@ -130,8 +130,8 @@ module.exports = async function handler(req, res) {
   // （fetch-error 保守處理成可能有效，讓前端重新抓資料自己判斷，避免把暫時性
   // 網路問題誤判成連結失效）；確定找不到（not-found）或根本沒帶 id，導回行事曆首頁。
   const targetUrl = (info.status === 'matched' || info.status === 'fetch-error')
-    ? `${SITE_URL}/events.html?event=${encodeURIComponent(id)}${backgroundParamsFor(from)}`
-    : `${SITE_URL}/events.html`;
+    ? `${SITE_URL}/events?event=${encodeURIComponent(id)}${backgroundParamsFor(from)}`
+    : `${SITE_URL}/events`;
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');

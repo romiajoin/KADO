@@ -289,6 +289,27 @@ body.events-standalone {
   );
 }
 
+/* 底部的 24px 留白改成「捲到底才看得到」，不再是一開始就固定出現的灰條（PC／手機共用）。
+ * - .events-page-body 不再留固定的 padding-bottom（拼貼格狀／拼貼列表本來就各自
+ *   在 .events-collage-grid／.collage-list-grid 內有 24px，捲到底才會出現）。
+ * - 月曆：白底＋圓角卡片改由 .events-weeks 負責，.events-day-grid 變透明的捲動
+ *   容器並自帶 padding-bottom:24px，這 24px 才會是「捲到底」的頁面底色留白，
+ *   而不是白色卡片的延伸。手機版 .events-day-grid 的 padding-top（補 top bar 高度）
+ *   也因此變透明，但 #eventsTopBar 自己有不透明底色蓋住，視覺上沒差。
+ *   注意 .events-weeks 不能設 overflow:hidden，會讓內部 sticky 日期列失效。 */
+.events-page-body {
+  padding-bottom: 0;
+}
+.events-day-grid {
+  background: transparent;
+  border-radius: 0;
+  padding-bottom: 24px;
+}
+.events-weeks {
+  background-color: var(--fill-white);
+  border-radius: 0 0 8px 8px;
+}
+
 .events-week-row {
   display: flex;
   flex-direction: column;

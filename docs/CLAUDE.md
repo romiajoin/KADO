@@ -4,6 +4,14 @@
 
 KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點查詢網站。前端為純 HTML / CSS / JavaScript，2026/07 起從單一 `index.html` 拆分為 ES Modules（見下方「檔案結構」；純架構重構，不算功能版本迭代，未使用 vXX 編號），無資料庫、無 API 金鑰；v20 起新增一支 `api/share.js` Vercel Serverless Function（純粹是分享連結的 OG meta 用，不涉及資料庫或使用者資料）。
 
+**v37.1（2026/11/09）：活動頁網址去掉 `.html`**：對外網址從 `/events.html` 改成 `/events`，首頁本來就是 `/`，不用動。
+- **`vercel.json`**：rewrite 來源由 `/events.html` 改成 `/events`（仍指向 `/api/events`）；新增 redirect `/events.html → /events`（`permanent: true`，跟既有的 `/index.html → /` 同一種寫法）。Vercel 的 redirect 會保留 query string，所以舊的 `/events.html?event=…`、`?q=…` 分享連結仍可用。redirect 先於 rewrite 處理，不會互相打架。
+- **內部連結一併改成 `/events`**：`app.html` 的 FAB（`#eventsLink`）、`js/core/event-match.js` 的 `eventUrl()`（機台詳情標題連去活動，原本是相對路徑 `events.html?event=…`，改成 root-absolute `/events?event=…`）、`api/event-share.js` 導回的 `targetUrl`（兩處）、`api/events.js` 的 `og:url`。`events.js` 只改了一行註解。
+- **殼層檔案本身也不再對外**：`/app.html` 與 `/events-app.html` 原本是靜態檔案，直接輸入網址就打得開（沒有動態 OG 標籤）；新增 redirect `/app.html → /`、`/events-app.html → /events`（301）。`api/index.js`／`api/events.js` 是用 `fs` 讀這兩個檔，不走 HTTP，所以不受 redirect 影響。
+- **沒動的**：實體檔案 `events-app.html` 與 `api/events.js` 檔名不變（見 v35：SPA 殼層不能叫 `events.html`，否則靜態檔會搶在 rewrite 之前）；`sitemap.xml` 只有首頁，沒有要改的。
+- **驗證**：只做了 `vercel.json` JSON 格式與兩支 API 的 `node --check`，還沒部署實測。上線後要看 `/events` 能開、`/events.html?q=xxx` 會轉到 `/events?q=xxx`、分享預覽（OG）正常。
+- **文件**：本檔與 `README.md`／`spec.md` 內文裡其他地方提到的「`events.html`」（v32～v35 的歷史描述、章節標題）刻意保留原樣，當作該版本當時的名稱；現行對外網址以本條為準。使用者看得到的更新日誌（`docs/changelog.json`）這次沒補，因為對使用者沒有可見變化。
+
 **v37（2026/11/03）：新 logo／「關於 KADO」／回到頂端按鈕／同縣市活動標籤**：一個 commit 做了四件事。logo 與圖示由 Gill 設計、Claude 負責處理成各裝置可用的尺寸並寫進專案；其餘三項（關於 KADO、回到頂端、同縣市標籤）依 commit 的程式碼與註解整理成文件，撰寫文件時沒有另外重跑驗證。
 - **新 logo**：流程是 Claude 先提供幾個方向（膠囊 pin、「抽」字徽章、小黃鳥、純字標），Gill 最後自己改好 SVG 交回來（藍色地圖 pin＋探出圈外的 memoji＋KADO 字標，閃電切進 K）。動到 `images/logo.svg`、`images/favicon.svg`、`icons/` 四個 PNG、`app.html`、`events-app.html`、`css/style.css`。
   - **header 只用同一張橫式 SVG**，靠 CSS 高度縮放（≥992px 高 44px、≤991px 高 36px，寬度 `auto`，viewBox 216×64；Gill 第二版把 KADO 字距拉開，畫布由 210 變 216，pin 與 memoji 沒變，`logo.svg` 仍約 22KB）。991px 以下 header 右邊只剩 view-toggle，實測 360／320 寬都放得下（320 寬時 logo 與 toggle 之間還有約 24px）。**需要另外做版本的只有圖示類**：橫式 logo 縮到 16–180px 時 KADO 會糊，所以 favicon／App icon 另外用只有 pin 的版本。
@@ -963,6 +971,7 @@ const SHEET_CONFIGS = [
 **修法完全比照機台 `app.html`／`api/index.js` 那一套**：
 - SPA 殼層檔案改名成 `events-app.html`（原本的 `events.html` 刪掉，內容原封不動搬過去），讓 `/events.html` 不再對應任何實體檔案
 - `vercel.json` 新增一條 rewrite：`{ "source": "/events.html", "destination": "/api/events" }`
+  - **v37.1 更新**：對外網址去掉 `.html`——rewrite 來源改成 `/events`，另加 redirect `/events.html → /events`（301、保留 query）；站內連結與 `api/event-share.js`／`api/events.js` 的網址都改成 `/events`。詳見上方 v37.1 條目。
 - 新增 `api/events.js`：跟 `api/index.js` 是同一套做法的活動版對照組——不是導轉頁，回傳的就是真正的 `events-app.html` 內容本身，只是動態把 `og:title`/`og:image` 等標籤塞進 `<head>`，真人訪客看到的頁面內容跟 `js/events.js` 讀取 URL 參數的邏輯完全不受影響
 - **沒有 `?event=`（一般訪客／搜尋結果／純切換版面）時，依目前是哪一種「純預設狀態」決定要用哪張預設圖**（`pickPageDefaultImage(query)`），優先權：`day`（day-events-panel）> `view=calendar`（月曆）> `layout=list`（總覽·列表）> 其餘情況（總覽·拼貼格，也是完全沒帶參數時的最終 fallback）。四張預設圖：總覽·拼貼格用既有的 `event-og.png`，另外新增 `events-list-og.png`（總覽·列表）／`events-calendar-og.png`（月曆）／`events-day-og.png`（day-events-panel），上線時三張暫時先放跟 `event-og.png` 相同的暫用檔案，之後有正式設計圖時直接覆蓋對應檔名即可，不用再動程式
 
