@@ -24,7 +24,7 @@ const SITE_URL = 'https://kadotw.vercel.app';
 const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/og.png`; // a：grid 檢視（含搜尋結果）預設圖
 const MAP_DEFAULT_OG_IMAGE_URL = `${SITE_URL}/images/map-og.png`; // b：map 檢視（含搜尋結果）預設圖
 const TITLE = 'KADO！抽卡機在哪';
-const DESCRIPTION = '抽卡機、相卡機、快閃店、展覽、聯名餐廳 / CAFÉ 、特典活動，持續更新中！';
+const DESCRIPTION = '動漫抽卡機、相卡機機台，持續更新中！';
 
 // 跟 js/main.js / api/share.js 的 SHEET_CSV_URL 是同一份，三邊各自獨立宣告
 // （CommonJS serverless function 跟前端 ES Module 沒辦法互相 import）
@@ -88,6 +88,7 @@ async function getShareImageUrl(id, isMapView) {
 
 function buildOgTags(ogImageUrl) {
   return `
+  <link rel="canonical" href="${SITE_URL}/">
   <meta property="og:title" content="${TITLE}">
   <meta property="og:description" content="${DESCRIPTION}">
   <meta property="og:image" content="${ogImageUrl}">

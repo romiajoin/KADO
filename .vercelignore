@@ -2,3 +2,12 @@ CLAUDE.md
 spec.md
 push.sh
 README.md
+docs/*.md
+scripts/
+config/
+Claude outputs/
+*.bak
+*.restore
+.env*
+.wrangler
+.DS_Store

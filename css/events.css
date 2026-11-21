@@ -305,6 +305,12 @@ body.events-standalone {
   border-radius: 0;
   padding-bottom: 24px;
 }
+/* 月曆捲動容器的捲軸直接隱藏：經典（非 overlay）捲軸會佔掉版面寬度，讓下方白色
+ * 卡片比上方不會捲動的 .events-weekday-row 窄一截（右邊多出一條灰色欄），兩者對不齊。
+ * 隱藏後仍可用滾輪／觸控板／觸控捲動。標準屬性跟 ::-webkit-scrollbar 都要寫
+ * （Chrome 121+ 有標準屬性時會忽略 ::-webkit-scrollbar，全域規則也會設標準屬性）。 */
+.events-day-grid { scrollbar-width: none; }
+.events-day-grid::-webkit-scrollbar { display: none; }
 .events-weeks {
   background-color: var(--fill-white);
   border-radius: 0 0 8px 8px;
@@ -715,7 +721,18 @@ body.events-standalone {
   align-items: stretch; /* related-machine-item 高度以最高的 item 為主 */
   gap: 12px;
   overflow-x: auto;
+  padding-bottom: 2px; /* 讓捲軸跟卡片之間留點空隙 */
+  /* 捲軸：細、圓角、透明軌道，跟卡片的圓角風格一致 */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
 }
+.related-machines-list::-webkit-scrollbar { height: 2px; }
+.related-machines-list::-webkit-scrollbar-track { background: transparent; }
+.related-machines-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 999px;
+}
+.related-machines-list::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
 /* 左右箭頭：只給滑鼠使用者看（trackpad／觸控本來就能滑動，箭頭是多餘的）；
    同時只在卡片列真的超出可視寬度時才顯示（JS 判斷 scrollWidth，見 js/events.js
    initRelatedMachinesScroll()），機台數量少、不會溢出就不需要按鈕佔位。
@@ -838,7 +855,10 @@ body.events-standalone {
   margin: 0 -20px;
   padding-top: 8px;
 
-  padding-bottom: 24px;
+  /* 底部 24px 不放在這個 flex 捲動容器自己身上（部分手機瀏覽器對 flex 容器的
+     end padding 不一定算進可捲動範圍，捲到底卡片會貼底被遮），改放在每個
+     .collage-grid-col 內，保證捲到底一定有 24px */
+  padding-bottom: 0;
   width: calc(100% + 40px);
   flex: 1;
   min-height: 0;
@@ -854,6 +874,7 @@ body.events-standalone {
 .collage-grid-col {
   display: flex;
   flex-direction: column;
+  padding-bottom: 24px;
   flex: 1 1 0;
   min-width: 0;
 }
@@ -988,6 +1009,16 @@ body.events-standalone {
   }
 }
 
+/* 捲到底的 24px 留白：用捲動容器最後一個區塊元素撐出，不依賴子元素 padding-bottom
+   是否被算進可捲動範圍（手機瀏覽器上卡片會貼底被遮），隱藏時（[hidden]）整個容器
+   display:none，不受影響 */
+.collage-list-wrap::after {
+  content: "";
+  display: block;
+  height: 24px;
+  flex-shrink: 0;
+}
+
 .collage-list-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
@@ -995,7 +1026,8 @@ body.events-standalone {
 
   grid-auto-rows: min-content;
 
-  padding-bottom: 24px;
+  /* 底部 24px 改由 .collage-list-wrap::after 負責（見上方），不放在 grid 自己身上 */
+  padding-bottom: 0;
 
   /* 上方視覺間距只交給這裡控制（.collage-list-wrap 不再重複疊加 8px）：
      桌機 8px，手機 0px；跟 fixed top bar 高度相關的補償是另一件事，

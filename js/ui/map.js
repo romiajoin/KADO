@@ -16,6 +16,7 @@ import { getEndingBadge } from './grid.js';
 import { driveUrlToImage } from '../shared/utils.js';
 import { allLocations, currentFiltered } from '../core/main.js';
 import { machineTitleHtml } from '../core/event-match.js';
+import { addBasemap } from './basemap.js';
 
 window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態產生的 onclick="closeDetailPanel(...)" 用
 
@@ -56,9 +57,7 @@ window.closeDetailPanel = closeDetailPanel; // 給 buildDetailContentHtml 動態
       if (map) return;
       map = L.map('map').setView([23.6, 121.0], 8);
       window.map = map; // 給 innerHTML 動態產生的 onclick="map.closePopup()" 用，模組作用域下 map 不會自動變成全域
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors', maxZoom: 19
-      }).addTo(map);
+      addBasemap(map); // 底圖：預設 CARTO Positron；加 ?basemap=osm|voyager|ofm 可切換（見 basemap.js）
       delete L.Icon.Default.prototype._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',

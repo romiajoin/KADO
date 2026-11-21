@@ -17,6 +17,16 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+    /* 全站捲軸：無軌道底色、無邊框，只留半透明圓角滑塊。
+       注意：Chrome 121+ 只要設了標準的 scrollbar-width / scrollbar-color，就會忽略
+       ::-webkit-scrollbar，所以下面要隱藏或改色的捲軸，必須也用標準屬性覆寫。 */
+    * { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.22) transparent; }
+    *::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+    *::-webkit-scrollbar-track { background: transparent; border: 0; box-shadow: none; }
+    *::-webkit-scrollbar-corner { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.22); border: 0; border-radius: 999px; }
+    *::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
+
     body {
       font-family: 'Noto Sans TC', sans-serif;
       background: var(--fill-gray6);
@@ -224,7 +234,16 @@
       overflow-y: auto;
       overflow-x: hidden;
       z-index: 1200;
+      /* 捲軸改細（6px）並從右 padding 扣掉同樣寬度（20→14），
+         有捲軸時內容可用寬度跟沒捲軸時一樣，選項排列（例如縣市三欄）不會被擠掉一欄 */
+      padding-right: 14px;
+      scrollbar-width: thin; /* Firefox */
+      scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
     }
+    .filter-panel::-webkit-scrollbar { width: 6px; }
+    .filter-panel::-webkit-scrollbar-track { background: transparent; }
+    .filter-panel::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.22); border-radius: 999px; }
+    .filter-panel::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
     .filter-panel.open { display: block; }
     .filter-panel-options { display: flex; flex-wrap: wrap; gap: 12px; }
     .filter-panel-hint {
@@ -397,6 +416,7 @@
       overscroll-behavior-y: contain; /* 避免跟手機瀏覽器原生下拉手勢打架 */
     }
     #gridView.active { display: block; }
+    #gridView { scrollbar-width: thin; scrollbar-color: var(--blue) transparent; }
     #gridView::-webkit-scrollbar { width: 4px; }
     #gridView::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
 
@@ -526,6 +546,7 @@
       grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
       gap: 20px;
     }
+    .map-scroll-wrapper { scrollbar-width: none; }
     .map-scroll-wrapper::-webkit-scrollbar { width: 0px; }
     .map-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
     .map-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
@@ -736,6 +757,12 @@
     }
     .grid-modal-close:hover { color: var(--fill-blue); }
     .grid-modal-content { padding: 0 16px 16px; overflow-y: auto; flex: 1; }
+    /* 捲軸軌道透明（原本系統預設軌道是白色，在灰底彈窗右側會露出一條白帶），滑塊改細 */
+    .grid-modal-content { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.22) transparent; }
+    .grid-modal-content::-webkit-scrollbar { width: 6px; }
+    .grid-modal-content::-webkit-scrollbar-track { background: transparent; }
+    .grid-modal-content::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.22); border-radius: 999px; }
+    .grid-modal-content::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.4); }
     .modal-header { display: flex; align-items: center; padding-right: 4px; margin-bottom: 12px; }
     .modal-info-section { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
     .modal-type-badge { margin: 16px 0 12px; }
@@ -843,7 +870,7 @@
       .header-right .header-divider { display: none; }
       .logo { flex: 1; min-width: 0; }
       .logo-icon { height: 36px; }
-      #gridView { padding: 0px 12px 20px 16px; }
+      #gridView { padding: 0px 12px calc(24px + env(safe-area-inset-bottom, 0px)) 16px; }
       .toolbar { padding: 12px 16px 16px 16px; }
       .search-box { width: 100%; flex-shrink: 1; }
       .search-box-desktop { display: none; }
@@ -851,6 +878,7 @@
       .search-box-mobile input { font-size: 16px; }
       .filter-bar { padding: 0px 16px 16px 16px; gap: 0; }
       .filter-scroll { overflow-x: auto; gap: 12px; flex: 1; min-width: 0; }
+      .filter-scroll { scrollbar-width: none; }
       .filter-scroll::-webkit-scrollbar { display: none; }
       .sort-group { flex-shrink: 0; margin-left: 16px; margin-right: 0px; }
       /* 手機版排序鈕：文字隱藏，只留 icon，變成跟其他 icon 按鈕一致的 44x36 白底圓角按鈕 */
