@@ -151,7 +151,10 @@ module.exports = async function handler(req, res) {
   const finalHtml = html.replace('</head>', buildOgTags(ogImageUrl));
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  // 跟 api/index.js 對 "/" 的規則一致：頁面殼層永遠不快取，避免瀏覽器快取到舊版本。
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  // 跟 api/index.js 對 "/" 的規則一致：瀏覽器端每次都向 CDN 重新驗證（max-age=0），
+  // 但 Vercel CDN 可快取 60 秒並在背景更新（stale-while-revalidate），省下每次回源的
+  // function 冷啟動與（帶 ?event= 時）抓 Google Sheet 的時間。CDN 快取鍵包含完整網址
+  // （含 query string），所以各個 ?event=／?q=／?view= 的 OG 標籤不會互相污染。
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=600');
   res.status(200).send(finalHtml);
 };
