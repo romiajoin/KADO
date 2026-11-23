@@ -592,7 +592,7 @@ function isGroupEnded(group) {
   return group.end < today;
 }
 
-function collageCardHtml(group) {
+function collageCardHtml(group, priority = false) {
 
   const ended = isGroupEnded(group);
   const badge = ended ? '' : getEndingBadge(group.period);
@@ -604,7 +604,7 @@ function collageCardHtml(group) {
     : `${group.locations[0].city || ''} ${group.locations[0].venue || ''}`;
   const thumbUrl = eventThumbUrl(group);
   const media = thumbUrl
-    ? `<div class="collage-card-media"><img src="${thumbUrl}" alt="${group.title}" loading="lazy"></div>`
+    ? `<div class="collage-card-media"><img src="${thumbUrl}" alt="${group.title}" ${priority ? 'loading="eager" fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'}></div>`
     : `<div class="collage-card-media no-image"></div>`;
   return `
     <div class="collage-card${ended ? ' is-ended' : ''}" data-group-key="${group.key}">
@@ -656,9 +656,30 @@ function collageColumnCount() {
 
 let lastCollageGridGroups = null;
 
+// 總覽格狀版型要畫幾百張卡片，一次 innerHTML 全塞會卡住主執行緒（Script Evaluation／Style & Layout
+// 是 PageSpeed「主執行緒工作」的大宗）。改成：每欄先畫前 COLLAGE_FIRST_PER_COL 張（首屏夠用），
+// 剩下的每欄分批（COLLAGE_CHUNK_PER_COL 張）在閒置時間補上；重新渲染時用 token 取消舊的批次。
+// 卡片點擊改用事件委派（只在容器上掛一次），不再每次渲染替幾百張卡片各掛一個 listener。
+const COLLAGE_FIRST_PER_COL = 4;
+const COLLAGE_CHUNK_PER_COL = 6;
+let collageRenderToken = 0;
+
+function scheduleIdle(fn) {
+  if ('requestIdleCallback' in window) requestIdleCallback(fn, { timeout: 300 });
+  else setTimeout(fn, 16);
+}
+
 function renderCollageGrid(groups) {
   lastCollageGridGroups = groups;
+  const token = ++collageRenderToken;
   const grid = document.getElementById('eventsCollageGrid');
+  if (!grid.dataset.clickBound) {
+    grid.dataset.clickBound = '1';
+    grid.addEventListener('click', (e) => {
+      const card = e.target.closest('.collage-card');
+      if (card && grid.contains(card)) openGroupFromKey(card.dataset.groupKey, 'events_collage_grid');
+    });
+  }
   if (!groups.length) {
     grid.innerHTML = collageEmptyHtml('grid');
     return;
@@ -667,11 +688,23 @@ function renderCollageGrid(groups) {
   const cols = Array.from({ length: colCount }, () => []);
   groups.forEach((group, i) => cols[i % colCount].push(group));
   grid.innerHTML = cols
-    .map((colGroups) => `<div class="collage-grid-col">${colGroups.map(collageCardHtml).join('')}</div>`)
+    .map((colGroups) => `<div class="collage-grid-col">${colGroups.slice(0, COLLAGE_FIRST_PER_COL).map((g, i) => collageCardHtml(g, i === 0)).join('')}</div>`)
     .join('');
-  grid.querySelectorAll('.collage-card').forEach((card) => {
-    card.addEventListener('click', () => openGroupFromKey(card.dataset.groupKey, 'events_collage_grid'));
-  });
+
+  let offset = COLLAGE_FIRST_PER_COL;
+  const appendChunk = () => {
+    if (token !== collageRenderToken) return; // 期間又重新渲染了，放棄這一輪
+    const colEls = grid.querySelectorAll('.collage-grid-col');
+    let more = false;
+    cols.forEach((colGroups, c) => {
+      const slice = colGroups.slice(offset, offset + COLLAGE_CHUNK_PER_COL);
+      if (slice.length && colEls[c]) colEls[c].insertAdjacentHTML('beforeend', slice.map((g) => collageCardHtml(g)).join(''));
+      if (colGroups.length > offset + COLLAGE_CHUNK_PER_COL) more = true;
+    });
+    offset += COLLAGE_CHUNK_PER_COL;
+    if (more) scheduleIdle(appendChunk);
+  };
+  if (cols.some((c) => c.length > COLLAGE_FIRST_PER_COL)) scheduleIdle(appendChunk);
 }
 
 let collageResizeColCount = null;

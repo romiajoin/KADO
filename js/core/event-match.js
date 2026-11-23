@@ -30,9 +30,18 @@ export function stripNoEventLinkTag(note) {
 // ---- 寬鬆比對用的正規化：全半形空白、括號、標點都忽略，NFKC 順便把全形英數轉半形 ----
 const PUNCT_RE = /[\s（）()【】\[\]「」『』《》〈〉,，.。!！?？;；:：、~～\-—－·‧'"“”‘’]/g;
 
+// 結果快取：同一批標題／期間字串會被反覆正規化（每張卡片 × 每台機台），NFKC＋正則在手機上很吃 CPU，
+// 字串種類有限（幾百到幾千種），用 Map 記下來等於把重複運算降到每種字串只算一次。
+const normalizeCache = new Map();
 export function normalizeForMatch(str) {
   if (!str) return '';
-  return String(str).normalize('NFKC').replace(PUNCT_RE, '').toLowerCase();
+  const raw = String(str);
+  let out = normalizeCache.get(raw);
+  if (out === undefined) {
+    out = raw.normalize('NFKC').replace(PUNCT_RE, '').toLowerCase();
+    normalizeCache.set(raw, out);
+  }
+  return out;
 }
 
 // ---- 核心比對：給一台機台＋一組候選的活動地點列（未分組的原始列都可以），
@@ -84,10 +93,31 @@ export function matchMachineToEventRow(machine, eventRows) {
 // groupLocations 要傳「同一檔活動的完整地點清單」（events.js 的 group.locations），
 // 不能只傳 eventRow 自己一筆——不然多地點時，同標題同期間的機台會被每個地點都判定成相關，
 // 一定要讓 matchMachineToEventRow 用完整候選集合跑一次消歧，再比對結果是不是這一筆。
+// 機台必須「標題＋期間」正規化後都等於活動的才可能比對成功（見 matchMachineToEventRow），
+// 所以先把機台依這組 key 建索引（每個 machines 陣列只建一次），查詢時只需要掃同 key 的那幾台，
+// 不用對每張卡片都掃過全部機台。machines 陣列被重新指派（loadMachines 完成）時會自動重建。
+const machineIndexCache = new WeakMap();
+function machineIndexFor(machines) {
+  let idx = machineIndexCache.get(machines);
+  if (!idx) {
+    idx = new Map();
+    machines.forEach((m) => {
+      const key = `${normalizeForMatch(m.name)}\u0000${normalizeForMatch(m.limited)}`;
+      const list = idx.get(key);
+      if (list) list.push(m); else idx.set(key, [m]);
+    });
+    machineIndexCache.set(machines, idx);
+  }
+  return idx;
+}
+
 export function findRelatedMachines(eventRow, machines, groupLocations) {
   if (!eventRow || !machines || !machines.length) return [];
   const candidates = (groupLocations && groupLocations.length) ? groupLocations : [eventRow];
-  return machines.filter((m) => {
+  const key = `${normalizeForMatch(eventRow.title)}\u0000${normalizeForMatch(eventRow.period)}`;
+  const pool = machineIndexFor(machines).get(key);
+  if (!pool) return [];
+  return pool.filter((m) => {
     const match = matchMachineToEventRow(m, candidates);
     return !!match && match.id === eventRow.id;
   });

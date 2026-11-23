@@ -8,8 +8,11 @@ let topBar = null;
 let scrollTargets = [];
 const trackers = new Map(); // el -> { lastScrollTop, downAccum }
 
+// 用 matchMedia 判斷而不是讀 window.innerWidth：樣式失效後讀 innerWidth 會強制同步排版
+// （Lighthouse 手機版「強制自動重排」在 isMobile() 這行就吃掉 500 多毫秒）。
+const mobileMql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
 function isMobile() {
-  return window.innerWidth <= MOBILE_BREAKPOINT;
+  return mobileMql.matches;
 }
 
 function showBar() {
@@ -92,10 +95,11 @@ export function initEventsTopBarScroll() {
     .filter(Boolean);
   if (!topBar || !scrollTargets.length) return;
 
-  updateTopBarHeight();
-
+  // 這裡刻意不讀任何版面屬性（scrollTop／getBoundingClientRect）：init 跑在 renderAll() 剛寫完
+  // 整批卡片 DOM 之後，這時讀取會強制同步重排（Lighthouse「強制自動重排」約 294 ms）。
+  // tracker 留到第一次 scroll 事件才建立（handleScroll 已有這個後備邏輯，起點就是當下的 scrollTop）；
+  // 頂欄高度交給下面 ResizeObserver 的初始回呼（瀏覽器排版完才觸發，不會強制重排）。
   scrollTargets.forEach((el) => {
-    trackers.set(el, { lastScrollTop: el.scrollTop, downAccum: 0 });
     el.addEventListener('scroll', handleScroll, { passive: true });
   });
 
@@ -106,6 +110,7 @@ export function initEventsTopBarScroll() {
     const ro = new ResizeObserver(() => updateTopBarHeight());
     ro.observe(topBar);
   } else {
+    updateTopBarHeight();
     window.addEventListener('resize', updateTopBarHeight);
   }
 

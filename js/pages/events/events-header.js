@@ -23,7 +23,9 @@ function parseCSVRow(row) {
   return result;
 }
 
-(async function loadLastUpdated() {
+// 「最後更新」不是首屏內容，而且會多抓一份機台分頁（22 KiB）；延到 load 之後的閒置時間再跑，
+// 不跟活動資料、模組搶頻寬，也不再出現在關鍵請求鏈裡。
+async function loadLastUpdated() {
   try {
     // 活動分頁 fetch 失敗不該讓「最後更新」整個消失，獨立 catch 成 null，
     // 後面比較時當作「沒有活動分頁時間可比」處理，退回只顯示機台分頁那欄。
@@ -53,4 +55,10 @@ function parseCSVRow(row) {
   } catch (err) {
     console.error('最後更新時間載入失敗：', err);
   }
+}
+
+(function scheduleLastUpdated() {
+  const run = () => ('requestIdleCallback' in window ? requestIdleCallback(loadLastUpdated, { timeout: 3000 }) : setTimeout(loadLastUpdated, 1));
+  if (document.readyState === 'complete') run();
+  else window.addEventListener('load', run, { once: true });
 })();

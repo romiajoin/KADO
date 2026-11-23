@@ -849,6 +849,8 @@ body.events-standalone {
   display: block;
   width: 100%;
   height: auto;
+  /* 圖片載入前先用 4:3 佔位，載入後自動改用圖片原始比例（auto 4/3），減少卡片高度突然變動造成的版面位移 */
+  aspect-ratio: auto 4 / 3;
   transition: transform 0.25s ease;
 }
 

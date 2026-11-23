@@ -37,9 +37,23 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
 
+  <!-- 提早開始抓活動資料（不用等 module 下載完），fetchSheetCsv() 會接手這份 promise；失敗會自動退回原流程 -->
+  <script>
+    window.__sheetPrefetch = { events: fetch('/api/sheet?tab=events', { cache: 'no-store' }) };
+    window.__sheetPrefetch.events.catch(function () {});
+  </script>
+  <link rel="modulepreload" href="js/pages/events/events.js" />
+  <link rel="modulepreload" href="js/shared/utils.js" />
+  <link rel="modulepreload" href="js/core/events-data.js" />
+  <link rel="modulepreload" href="js/core/machines-data.js" />
+  <link rel="modulepreload" href="js/core/event-match.js" />
+  <link rel="modulepreload" href="js/ui/filter-widget.js" />
+  <link rel="modulepreload" href="js/ui/sort-widget.js" />
+  <link rel="modulepreload" href="js/pages/events/events-scroll.js" />
+  <link rel="preconnect" href="https://res.cloudinary.com" />
   <link rel="preconnect" href="https://wsrv.nl" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/events.css" />
@@ -122,11 +136,11 @@
           <div class="events-toolbar" id="eventsToolbar" hidden>
             <div class="events-nav-group">
               <button id="eventsPrevMonth" aria-label="上個月">
-                <svg class="carousel-chevron" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="2-px" fill="currentColor"><path d="m438-480 164 164q11 11 11 25.5T602-265q-11 11-25.5 11T551-265L361-455q-5-5-7.5-11.5T351-480q0-7 2.5-13.5T361-505l190-190q11-11 25.5-11t25.5 11q11 11 11 25.5T602-644L438-480Z"/></svg>
+                <svg class="carousel-chevron" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m438-480 164 164q11 11 11 25.5T602-265q-11 11-25.5 11T551-265L361-455q-5-5-7.5-11.5T351-480q0-7 2.5-13.5T361-505l190-190q11-11 25.5-11t25.5 11q11 11 11 25.5T602-644L438-480Z"/></svg>
               </button>
               <div class="events-month-label" id="eventsMonthLabel"></div>
               <button id="eventsNextMonth" class="events-nav-next" aria-label="下個月">
-                <svg class="carousel-chevron" xmlns="http://www.w3.org/2000/svg" height="20spx" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m438-480 164 164q11 11 11 25.5T602-265q-11 11-25.5 11T551-265L361-455q-5-5-7.5-11.5T351-480q0-7 2.5-13.5T361-505l190-190q11-11 25.5-11t25.5 11q11 11 11 25.5T602-644L438-480Z"/></svg>
+                <svg class="carousel-chevron" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="m438-480 164 164q11 11 11 25.5T602-265q-11 11-25.5 11T551-265L361-455q-5-5-7.5-11.5T351-480q0-7 2.5-13.5T361-505l190-190q11-11 25.5-11t25.5 11q11 11 11 25.5T602-644L438-480Z"/></svg>
               </button>
             </div>
           </div>
@@ -152,6 +166,17 @@
     <span class="events-label">抽卡 / 相卡機台</span>
   </a>
 
+  <script>
+    // 手機版 #eventsTopBar 是固定定位，內容要靠 --events-top-bar-height 補 padding-top。原本這個值要等活動資料
+    // 回來、initEventsTopBarScroll() 才寫入，之前內容一直貼在頂欄底下，寫入瞬間整頁下移（CLS 大宗）。
+    // 在 <main> 前先量一次寫進去；後續尺寸變化仍由 events-scroll.js 的 ResizeObserver 接手。
+    (function () {
+      var b = document.getElementById('eventsTopBar');
+      if (b && window.innerWidth <= 991) {
+        document.documentElement.style.setProperty('--events-top-bar-height', b.getBoundingClientRect().height + 'px');
+      }
+    })();
+  </script>
   <main class="events-page-body">
     <!-- 從這裡開始是三種子模式各自的捲動內容，跟 #eventsTopBar 分離 -->
     <div class="events-layout">

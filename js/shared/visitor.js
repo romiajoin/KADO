@@ -18,4 +18,11 @@ async function loadVisitorCount() {
     document.getElementById('visitorBanner').style.display = 'none';
   }
 }
-loadVisitorCount();
+// 訪客人數不影響首屏：等頁面 load 完、主執行緒閒下來再抓，避免這條請求（含 Worker 冷啟動）
+// 被 Lighthouse 算進關鍵請求鏈。banner 本來就用 visibility:hidden 保留版面，延後不會造成位移。
+function whenIdle(fn) {
+  const run = () => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1));
+  if (document.readyState === 'complete') run();
+  else window.addEventListener('load', run, { once: true });
+}
+whenIdle(loadVisitorCount);

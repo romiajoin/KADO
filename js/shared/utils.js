@@ -350,6 +350,17 @@ export function submitMachineReport(machineId, machineName, type, source, extra 
 const inflightSheetFetches = new Map();
 
 async function fetchSheetCsvOnce(tab, googleUrl) {
+  // events-app.html 的 <head> 會在模組載入前就先送出 /api/sheet 請求（window.__sheetPrefetch），
+  // 這裡優先吃那一份，省掉「等模組下載完才開始抓資料」的瀑布；用過就清掉，重試時會走正常流程。
+  const early = window.__sheetPrefetch && window.__sheetPrefetch[tab];
+  if (early) {
+    delete window.__sheetPrefetch[tab];
+    try {
+      const res = await early;
+      const type = res.headers.get('content-type') || '';
+      if (res.ok && type.includes('text/csv')) return res;
+    } catch (_) { /* 退回一般流程 */ }
+  }
   try {
     const res = await fetch(`/api/sheet?tab=${encodeURIComponent(tab)}`, { cache: 'no-store' });
     const type = res.headers.get('content-type') || '';
