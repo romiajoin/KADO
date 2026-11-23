@@ -20,7 +20,23 @@ export { getEndingBadge };
     // =============================================
     // 🃏 渲染格狀列表
     // =============================================
+    // 列表有幾百張卡片（實測約 475 張），一次全部建出來會讓手機上的 Style & Layout 吃掉 1 秒以上（TBT／LCP）。
+    // 比照活動頁 renderCollageList()：先畫前 GRID_FIRST 張（首屏夠用），剩下的捲動接近底部時再分批補上；
+    // 重新渲染（搜尋／篩選／排序／背景刷新）時用 token 取消舊的批次。
+    // 篩選計數（countBadge）、排序與地圖同步都是吃資料陣列，不吃 DOM，所以不受分批影響。
+    const GRID_FIRST = 16;
+    const GRID_CHUNK = 40;
+    let gridRenderToken = 0;
+    let gridObserver = null;
+
+    function scheduleIdle(fn) {
+      if ('requestIdleCallback' in window) requestIdleCallback(fn, { timeout: 500 });
+      else setTimeout(fn, 50);
+    }
+
     export function renderGrid(data) {
+      const token = ++gridRenderToken;
+      if (gridObserver) { gridObserver.disconnect(); gridObserver = null; }
       const grid = document.getElementById('grid');
       grid.innerHTML = '';
       document.getElementById('countBadge').textContent = data.length;
@@ -30,7 +46,42 @@ export { getEndingBadge };
         return;
       }
 
-      data.forEach((loc, i) => {
+      const appendRange = (from, to) => {
+        const frag = document.createDocumentFragment();
+        for (let i = from; i < to && i < data.length; i++) frag.appendChild(buildGridCard(data[i], i));
+        grid.appendChild(frag);
+      };
+
+      appendRange(0, GRID_FIRST);
+      let offset = GRID_FIRST;
+      if (offset >= data.length) return;
+
+      const appendChunk = () => {
+        if (token !== gridRenderToken) return; // 期間又重新渲染了，放棄這一輪
+        appendRange(offset, offset + GRID_CHUNK);
+        offset += GRID_CHUNK;
+        if (gridObserver) {
+          gridObserver.disconnect();
+          if (offset < data.length && grid.lastElementChild) gridObserver.observe(grid.lastElementChild);
+        } else if (offset < data.length) {
+          scheduleIdle(appendChunk);
+        }
+      };
+
+      if ('IntersectionObserver' in window) {
+        // 最後一張卡片進入「捲動容器底部往下 1200px」的範圍就補下一批
+        gridObserver = new IntersectionObserver((entries) => {
+          if (token !== gridRenderToken) return;
+          if (entries.some((e) => e.isIntersecting)) appendChunk();
+        }, { root: document.getElementById('gridView'), rootMargin: '0px 0px 1200px 0px' });
+        gridObserver.observe(grid.lastElementChild);
+      } else {
+        scheduleIdle(appendChunk);
+      }
+    }
+
+    function buildGridCard(loc, i) {
+      {
         const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.city + loc.addr)}`;
         const imgs = loc.image
           ? loc.image.split(',').map(s => driveUrlToImage(s.trim())).filter(Boolean)
@@ -115,8 +166,8 @@ export { getEndingBadge };
           });
         }
 
-        grid.appendChild(card);
-      });
+        return card;
+      }
     }
 
     // =============================================

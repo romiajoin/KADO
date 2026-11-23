@@ -114,8 +114,11 @@ module.exports = async function handler(req, res) {
   const finalHtml = html.replace('</head>', buildOgTags(ogImageUrl));
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  // 跟原本 vercel.json 對 "/" 的規則一致：首頁殼層永遠不快取，避免 PWA/瀏覽器
-  // 快取到舊版本（詳見 docs/spec.md 的 Service Worker 快取版本管理）。
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  // 瀏覽器端維持「每次都向伺服器確認」（max-age=0, must-revalidate），避免 PWA/瀏覽器快取到舊版本
+  // （詳見 docs/spec.md 的 Service Worker 快取版本管理）；只讓 Vercel CDN 短暫快取這份 HTML：
+  // 原本 no-store 會讓每次造訪都重新執行這支 function（冷啟動＋讀檔），TTFB 約 300～600ms，整條請求鏈都從它開始。
+  // s-maxage=60：60 秒內直接吃 CDN；stale-while-revalidate=600：過期後先回舊的、背景更新。
+  // 部署新版時 Vercel 會自動讓 CDN 快取失效，不會卡在舊殼層；CDN 以完整網址（含 ?id=／?q=）為單位快取。
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=600');
   res.status(200).send(finalHtml);
 };

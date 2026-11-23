@@ -129,14 +129,8 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
         // 但都不擋住列表渲染——列表卡片只需要機台資料，這兩份只影響「最後更新」文字跟詳情彈窗裡的活動連結。
         // 原本是「機台＋活動時間戳」都回來、再等 loadEvents() 重抓一次活動，才第一次渲染列表。
         // 活動請求失敗不該讓機台清單載入失敗，各自獨立 catch（時間戳→空字串，比對資料→空陣列）。
-        const eventsTimestampPromise = fetchSheetCsv('events', EVENTS_SHEET_CSV_URL)
-          .then(async (res) => {
-            if (!res || !res.ok) return '';
-            const eventsRows = (await res.text()).trim().split('\n');
-            return parseCSVRow(eventsRows[1] || '')[15] || ''; // 活動分頁 P 欄
-          })
-          .catch(() => '');
-        const eventRowsPromise = loadEvents().catch(() => []);
+        // 這兩個活動請求（約 69 KiB 的 CSV）改成列表渲染完之後才發出（見下方 renderGrid 之後那段）：
+        // 首屏只需要機台資料，活動資料一起搶頻寬、又要在主執行緒解析，會拖慢 LCP／TBT。
 
         const response = await fetchSheetCsv('machines', SHEET_CSV_URL);
         // Sheet 沒有公開發布或暫時掛掉時會回 4xx／5xx 的 HTML 頁面，不擋掉的話會被當成「0 筆資料」，
@@ -201,6 +195,17 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
         // 這裡補量一次，避免 mobile 列表模式下 #gridView 的 padding-top 沒跟上，
         // 讓 fixed 定位的 #topBar 蓋住列表最上面那排「最後更新」資訊。
         updateTopBarHeightExternal();
+
+        // 首屏（機台列表）已經畫好，這時才開始抓活動分頁：「最後更新」時間戳＋機台↔活動比對用的完整活動資料。
+        // 活動請求失敗不該讓機台清單載入失敗，各自獨立 catch（時間戳→空字串，比對資料→空陣列）。
+        const eventsTimestampPromise = fetchSheetCsv('events', EVENTS_SHEET_CSV_URL)
+          .then(async (res) => {
+            if (!res || !res.ok) return '';
+            const eventsRows = (await res.text()).trim().split('\n');
+            return parseCSVRow(eventsRows[1] || '')[15] || ''; // 活動分頁 P 欄
+          })
+          .catch(() => '');
+        const eventRowsPromise = loadEvents().catch(() => []);
 
         // 機台↔活動自動比對（見 js/event-match.js）：活動資料回來後才補上，不擋列表渲染。
         // loadEvents() 內部只抓一次、之後重複呼叫吃快取，代表活動資料在這個分頁存活期間不會再更新，
