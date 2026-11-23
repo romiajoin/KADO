@@ -256,19 +256,19 @@ export function machineReportButtonsHtml(loc, source) {
   if (existing) {
     return `<div class="popup-report-group popup-report-done">${machineReportedText(existing.type)}</div>`;
   }
-  // permId／venue／type 一起帶在按鈕的 data-* 上，回報時原封不動送給 Worker，讓 Discord 通知能
+  // permId／venue／type／作品／系列 一起帶在按鈕的 data-* 上，回報時原封不動送給 Worker，讓 Discord 通知能
   // 附上機台類型、場地、還有指回這台機台的永久連結（見 submitMachineReport() 註解）。
   return `
     <div class="popup-report-group" data-report-group>
-      <button type="button" class="popup-report-btn popup-report-btn-still" data-machine-report data-report-type="still" data-machine-id="${loc.id}" data-machine-name="${loc.name}" data-source="${source}" data-perm-id="${loc.permId || ''}" data-venue="${loc.venue || ''}" data-machine-type="${loc.type || ''}">✓ 機台還在</button>
-      <button type="button" class="popup-report-btn popup-report-btn-gone" data-machine-report data-report-type="gone" data-machine-id="${loc.id}" data-machine-name="${loc.name}" data-source="${source}" data-perm-id="${loc.permId || ''}" data-venue="${loc.venue || ''}" data-machine-type="${loc.type || ''}">✕ 機台不在了</button>
+      <button type="button" class="popup-report-btn popup-report-btn-still" data-machine-report data-report-type="still" data-machine-id="${loc.id}" data-machine-name="${loc.name}" data-source="${source}" data-perm-id="${loc.permId || ''}" data-venue="${loc.venue || ''}" data-machine-type="${loc.type || ''}" data-machine-character="${loc.character || ''}" data-machine-edition="${loc.edition || ''}">✓ 機台還在</button>
+      <button type="button" class="popup-report-btn popup-report-btn-gone" data-machine-report data-report-type="gone" data-machine-id="${loc.id}" data-machine-name="${loc.name}" data-source="${source}" data-perm-id="${loc.permId || ''}" data-venue="${loc.venue || ''}" data-machine-type="${loc.type || ''}" data-machine-character="${loc.character || ''}" data-machine-edition="${loc.edition || ''}">✕ 機台不在了</button>
     </div>`;
 }
 
 // 實際送出：本機立刻標記已回報（樂觀更新，呼叫端不等這支 promise 就能馬上換按鈕文字），
 // 背景打 Worker、失敗也不用管使用者——這本來就是「順手回報」的低風險小功能，
 // 不值得為了失敗重試/告知使用者增加複雜度，Worker 那邊沒收到，之後使用者路過還會再報一次。
-// extra（permId／venue／machineType）是選填的補充資訊，讓 Worker 發的 Discord 通知可以更詳細
+// extra（permId／venue／machineType／character／edition）是選填的補充資訊，讓 Worker 發的 Discord 通知可以更詳細
 // （附機台類型、場地、指回這台機台的永久連結），缺其中任何一項也不影響回報本身送出。
 export function submitMachineReport(machineId, machineName, type, source, extra = {}) {
   setMachineReportState(machineId, type);
@@ -278,6 +278,7 @@ export function submitMachineReport(machineId, machineName, type, source, extra 
     body: JSON.stringify({
       machineId, machineName, type, source,
       permId: extra.permId || '', venue: extra.venue || '', machineType: extra.machineType || '',
+      character: extra.character || '', edition: extra.edition || '',
     }),
   }).catch(() => {});
 }

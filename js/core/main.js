@@ -561,8 +561,8 @@ import { initTopBarScroll, resetTopBarScrollState, updateTopBarHeightExternal } 
       // submitMachineReport() 註解，這本來就是低風險小功能，失敗了使用者路過還會再報一次）。
       const reportBtn = e.target.closest('[data-machine-report]');
       if (reportBtn) {
-        const { machineId, machineName, reportType, source: reportSource, permId, venue, machineType } = reportBtn.dataset;
-        submitMachineReport(machineId, machineName, reportType, reportSource, { permId, venue, machineType });
+        const { machineId, machineName, reportType, source: reportSource, permId, venue, machineType, machineCharacter, machineEdition } = reportBtn.dataset;
+        submitMachineReport(machineId, machineName, reportType, reportSource, { permId, venue, machineType, character: machineCharacter, edition: machineEdition });
         gtag('event', 'machine_report', { machine_id: machineId, report_type: reportType, source: reportSource, device: getDeviceType() });
         const group = reportBtn.closest('[data-report-group]');
         if (group) group.outerHTML = `<div class="popup-report-group popup-report-done">${machineReportedText(reportType)}</div>`;

@@ -26,6 +26,8 @@ async function notifyDiscord(env, payload) {
     { name: '來源', value: payload.source || '未知', inline: true },
     { name: '累計', value: `還在 ${payload.still}／不在 ${payload.gone}`, inline: true },
   ];
+  if (payload.character) fields.push({ name: '作品', value: payload.character, inline: true });
+  if (payload.edition) fields.push({ name: '系列', value: payload.edition, inline: true });
   if (payload.venue) fields.push({ name: '場地', value: payload.venue, inline: true });
   const embed = {
     title,
@@ -66,6 +68,8 @@ async function handleReport(request, env, corsHeaders) {
   const permId = (body.permId || '').toString().trim();
   const venue = (body.venue || '').toString().slice(0, 200);
   const machineType = (body.machineType || '').toString().slice(0, 50);
+  const character = (body.character || '').toString().slice(0, 200);
+  const edition = (body.edition || '').toString().slice(0, 200);
 
   const key = `report:${machineId}`;
   const existing = JSON.parse((await env.VISITOR_KV.get(key)) || '{}');
@@ -79,7 +83,7 @@ async function handleReport(request, env, corsHeaders) {
   };
   await env.VISITOR_KV.put(key, JSON.stringify(record));
 
-  await notifyDiscord(env, { machineId, machineName: record.name, type, source, still: record.still, gone: record.gone, permId, venue, machineType });
+  await notifyDiscord(env, { machineId, machineName: record.name, type, source, still: record.still, gone: record.gone, permId, venue, machineType, character, edition });
 
   return new Response(JSON.stringify({ ok: true }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
