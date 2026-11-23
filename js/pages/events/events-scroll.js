@@ -32,6 +32,17 @@ function updateTopBarHeight() {
   document.documentElement.style.setProperty('--events-top-bar-height', h + 'px');
 }
 
+// reset 時不要同步量測：init／切換子模式剛寫完 DOM，樣式還是失效的，這時讀 getBoundingClientRect 會強制重排
+// （Lighthouse 手機版約 400 ms）。改成 unobserve → observe 讓 ResizeObserver 再觸發一次初始回呼，
+// 回呼在瀏覽器排版完成後才跑，讀尺寸不會強制重排。不支援 ResizeObserver 的舊瀏覽器退回直接量測。
+let topBarRO = null;
+function requestTopBarMeasure() {
+  if (!topBar) return;
+  if (!topBarRO) { updateTopBarHeight(); return; }
+  topBarRO.unobserve(topBar);
+  topBarRO.observe(topBar);
+}
+
 // 月曆模式（#eventsDayGrid）刻意排除在 hide-on-scroll 之外：週幾標題列／每週
 // 日期數字列都要在捲動時保持可見（跟月曆內部的 sticky 日期列搭配），所以
 // 月曆捲動時 topbar 永遠顯示，不走下面的隱藏判斷；拼貼格狀／拼貼列表兩種
@@ -45,6 +56,9 @@ function handleScroll(e) {
     tracker = { lastScrollTop: el.scrollTop, downAccum: 0 };
     trackers.set(el, tracker);
   }
+
+  // reset 後 lastScrollTop 先設成 -1（不在 reset 當下讀 scrollTop，避免強制重排），第一次 scroll 時再補讀
+  if (tracker.lastScrollTop < 0) { tracker.lastScrollTop = el.scrollTop; return; }
 
   if (!isMobile() || el.id === ALWAYS_VISIBLE_TARGET_ID) {
     showBar();
@@ -82,10 +96,10 @@ function handleScroll(e) {
 export function resetEventsTopBarScrollState() {
   trackers.forEach((tracker, el) => {
     tracker.downAccum = 0;
-    tracker.lastScrollTop = el.scrollTop;
+    tracker.lastScrollTop = -1;
   });
   showBar();
-  updateTopBarHeight();
+  requestTopBarMeasure();
 }
 
 export function initEventsTopBarScroll() {
@@ -107,8 +121,8 @@ export function initEventsTopBarScroll() {
   // 訪客 banner 非同步出現、螢幕旋轉、filter pill 選取後高度變化都會自動觸發
   // 重新量測，不用為每個成因各自補監聽。
   if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(() => updateTopBarHeight());
-    ro.observe(topBar);
+    topBarRO = new ResizeObserver(() => updateTopBarHeight());
+    topBarRO.observe(topBar);
   } else {
     updateTopBarHeight();
     window.addEventListener('resize', updateTopBarHeight);

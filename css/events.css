@@ -1158,7 +1158,9 @@ body.events-standalone {
 
 @media (max-width: 991px) {
   .events-day-grid {
-    padding-top: var(--events-top-bar-height, 8px);
+    /* fallback 用手機版實測高度（≈211px）：變數由 ResizeObserver 回呼延後寫入，首次繪製時還沒值，
+       fallback 太小會讓內容先貼在頂端、量完才整頁下移（CLS） */
+    padding-top: var(--events-top-bar-height, 211px);
 
     /* .events-day-grid 本身是有背景色/圓角的白底卡片，不是單純的捲動容器
        （不像 .collage-list-wrap 那種「負 margin 抵銷外層 padding、再用
@@ -1170,10 +1172,10 @@ body.events-standalone {
     margin-right: -4px;
   }
   .events-collage-grid {
-    padding-top: calc(8px + var(--events-top-bar-height, 0px));
+    padding-top: calc(8px + var(--events-top-bar-height, 211px));
   }
   .collage-list-wrap {
-    padding-top: calc(8px + var(--events-top-bar-height, 0px));
+    padding-top: calc(8px + var(--events-top-bar-height, 211px));
   }
 }
 

@@ -24,14 +24,20 @@ if (targets.length) {
   // 容器被 hidden／display:none（切換檢視模式）時 offsetParent 為 null，視為不在畫面上
   const scrolledTargets = () => targets.filter((el) => el.offsetParent !== null && el.scrollTop > SHOW_AFTER_PX);
 
+  // 還沒有任何捲動發生前，所有容器的 scrollTop 都是 0，按鈕一定是隱藏的，不必讀 offsetParent／scrollTop。
+  // 初始化期間 class／hidden／style 一直在變，MutationObserver 每次都呼叫 update() 會強制同步重排
+  // （Lighthouse 手機版約 300 ms），所以第一次捲動之前直接略過。
+  let hasScrolled = false;
+
   function update() {
+    if (!hasScrolled) return;
     const show = !document.body.classList.contains('map-view') && scrolledTargets().length > 0;
     btn.classList.toggle('show', show);
   }
 
   // scroll 事件不會冒泡，用 capture 在 document 一次接住所有內層容器的捲動
   document.addEventListener('scroll', (e) => {
-    if (targets.includes(e.target)) update();
+    if (targets.includes(e.target)) { hasScrolled = true; update(); }
   }, { capture: true, passive: true });
 
   // 切換檢視（列表／地圖／月曆／拼貼）時，容器的 hidden／class 會變，重新判斷一次

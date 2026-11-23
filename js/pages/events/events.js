@@ -817,25 +817,60 @@ function eventListCardHtml(group) {
     </div>`;
 }
 
+// 列表版型同樣有幾百張卡片（實測約 500 張、8,800 個節點），一次塞進去會讓手機上 Style & Layout 吃掉近 2 秒。
+// 比照 renderCollageGrid()：先畫前 LIST_FIRST 張（首屏夠用），剩下的捲動接近底部時再分批補上；
+// 重新渲染（搜尋／篩選／排序）時用 token 取消舊的批次。點擊改用事件委派，只在容器上掛一次。
+const LIST_FIRST = 16;
+const LIST_CHUNK = 40;
+let listRenderToken = 0;
+let listObserver = null;
+
 function renderCollageList(groups) {
+  const token = ++listRenderToken;
+  if (listObserver) { listObserver.disconnect(); listObserver = null; }
   const list = document.getElementById('eventsCollageList');
-  list.innerHTML = groups.length ? groups.map(eventListCardHtml).join('') : collageEmptyHtml('list');
-  // 整張卡片都可以點擊展開詳情，不再只限「詳情」按鈕；按鈕本身仍保留（視覺提示 + 冗餘點擊目標），
-  // 用 stopPropagation 避免點按鈕時卡片的 click handler 又重複觸發一次同樣的動作。
-  list.querySelectorAll('.loc-card-grid').forEach((card) => {
-    card.classList.add('is-clickable');
-    const key = card.dataset.groupKey;
-    card.addEventListener('click', () => {
-      openGroupFromKey(key, 'events_collage_list');
+  if (!list.dataset.clickBound) {
+    list.dataset.clickBound = '1';
+    // 整張卡片都可以點擊展開詳情，不再只限「詳情」按鈕；按鈕本身仍保留（視覺提示 + 冗餘點擊目標），
+    // 按鈕的 click 會冒泡到卡片，委派在卡片層級統一處理，只會觸發一次。
+    list.addEventListener('click', (e) => {
+      const card = e.target.closest('.loc-card-grid');
+      if (card && list.contains(card)) openGroupFromKey(card.dataset.groupKey, 'events_collage_list');
     });
-    const btn = card.querySelector('.btn-expand');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openGroupFromKey(key, 'events_collage_list');
-      });
+  }
+  if (!groups.length) {
+    list.innerHTML = collageEmptyHtml('list');
+    return;
+  }
+  list.innerHTML = groups.slice(0, LIST_FIRST).map(eventListCardHtml).join('');
+  list.querySelectorAll('.loc-card-grid').forEach((card) => card.classList.add('is-clickable'));
+
+  let offset = LIST_FIRST;
+  if (offset >= groups.length) return;
+
+  const appendChunk = () => {
+    if (token !== listRenderToken) return; // 期間又重新渲染了，放棄這一輪
+    list.insertAdjacentHTML('beforeend', groups.slice(offset, offset + LIST_CHUNK).map(eventListCardHtml).join(''));
+    list.querySelectorAll('.loc-card-grid:not(.is-clickable)').forEach((card) => card.classList.add('is-clickable'));
+    offset += LIST_CHUNK;
+    if (listObserver) {
+      listObserver.disconnect();
+      if (offset < groups.length && list.lastElementChild) listObserver.observe(list.lastElementChild);
+    } else if (offset < groups.length) {
+      scheduleIdle(appendChunk);
     }
-  });
+  };
+
+  if ('IntersectionObserver' in window) {
+    // 最後一張卡片進入「捲動容器底部往下 1200px」的範圍就補下一批
+    listObserver = new IntersectionObserver((entries) => {
+      if (token !== listRenderToken) return;
+      if (entries.some((e) => e.isIntersecting)) appendChunk();
+    }, { root: document.getElementById('eventsCollageListWrap'), rootMargin: '0px 0px 1200px 0px' });
+    listObserver.observe(list.lastElementChild);
+  } else {
+    scheduleIdle(appendChunk);
+  }
 }
 
 function renderEventsCollage() {
