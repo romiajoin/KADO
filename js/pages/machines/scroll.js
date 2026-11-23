@@ -16,8 +16,11 @@ let gridView = null;
 let lastScrollTop = 0;
 let downAccum = 0;
 
+// 用 matchMedia 判斷而不是讀 window.innerWidth：樣式失效後讀 innerWidth 會強制同步排版
+// （Lighthouse 手機版「強制自動重排」在這一行吃掉約 250 ms）。
+const mobileMql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
 function isMobile() {
-  return window.innerWidth <= MOBILE_BREAKPOINT;
+  return mobileMql.matches;
 }
 
 function isListMode() {
@@ -39,10 +42,22 @@ function hideBar() {
 // KADO 不需要處理裝置旋轉這種情境，這裡的 window resize 監聽單純是為了手機/桌機
 // 斷點切換時重算（例如開發時縮放瀏覽器視窗跨過 991px）。如果之後又出現會動態
 // 改變 #topBar 高度的內容，再視情況加回 ResizeObserver。
-function updateTopBarHeight() {
+//
+// 量測本身放進 ResizeObserver 回呼：回呼在瀏覽器排版完成後、繪製前才觸發，讀取尺寸不會強制同步重排。
+// 每次要重新量測就 unobserve → observe，讓它再觸發一次初始回呼（量測時才判斷手機／列表模式，
+// 所以切換 view 或跨斷點後呼叫也會拿到最新狀態）。不支援 ResizeObserver 的舊瀏覽器退回直接量測。
+let topBarRO = null;
+function measureTopBarHeight() {
   if (!topBar) return;
   const h = (isMobile() && isListMode()) ? topBar.getBoundingClientRect().height : 0;
   document.documentElement.style.setProperty('--top-bar-height', h + 'px');
+}
+function updateTopBarHeight() {
+  if (!topBar) return;
+  if (typeof ResizeObserver === 'undefined') { measureTopBarHeight(); return; }
+  if (!topBarRO) topBarRO = new ResizeObserver(measureTopBarHeight);
+  topBarRO.unobserve(topBar);
+  topBarRO.observe(topBar);
 }
 
 function handleScroll() {
@@ -99,7 +114,7 @@ export function initTopBarScroll() {
   if (!topBar || !gridView) return;
 
   updateTopBarHeight();
-  lastScrollTop = gridView.scrollTop;
+  lastScrollTop = 0; // 不在初始化時讀 scrollTop（會強制重排）；頁面剛載入一定在頂端
 
   gridView.addEventListener('scroll', handleScroll, { passive: true });
 

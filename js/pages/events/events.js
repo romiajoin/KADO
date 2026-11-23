@@ -658,9 +658,12 @@ let lastCollageGridGroups = null;
 
 // 總覽格狀版型要畫幾百張卡片，一次 innerHTML 全塞會卡住主執行緒（Script Evaluation／Style & Layout
 // 是 PageSpeed「主執行緒工作」的大宗）。改成：每欄先畫前 COLLAGE_FIRST_PER_COL 張（首屏夠用），
-// 剩下的每欄分批（COLLAGE_CHUNK_PER_COL 張）在閒置時間補上；重新渲染時用 token 取消舊的批次。
+// 剩下的每欄分批（COLLAGE_CHUNK_PER_COL 張），使用者捲動接近底部時才補上；重新渲染時用 token 取消舊的批次。
 // 卡片點擊改用事件委派（只在容器上掛一次），不再每次渲染替幾百張卡片各掛一個 listener。
 const COLLAGE_FIRST_PER_COL = 4;
+// 每欄前幾張圖片要 eager＋fetchpriority=high：桌機首屏每欄約 2 張，LCP 元素不一定是第一張
+// （PageSpeed 實測 LCP 落在第二列卡片，仍被標成 lazy），所以不能只處理每欄第一張。
+const COLLAGE_EAGER_PER_COL = 2;
 const COLLAGE_CHUNK_PER_COL = 6;
 let collageRenderToken = 0;
 
@@ -671,7 +674,7 @@ function scheduleIdle(fn) {
 
 function renderCollageGrid(groups) {
   lastCollageGridGroups = groups;
-  const token = ++collageRenderToken;
+  const token = ++collageRenderToken; // 舊的 IntersectionObserver 會因 token 不符而自動失效
   const grid = document.getElementById('eventsCollageGrid');
   if (!grid.dataset.clickBound) {
     grid.dataset.clickBound = '1';
@@ -688,23 +691,43 @@ function renderCollageGrid(groups) {
   const cols = Array.from({ length: colCount }, () => []);
   groups.forEach((group, i) => cols[i % colCount].push(group));
   grid.innerHTML = cols
-    .map((colGroups) => `<div class="collage-grid-col">${colGroups.slice(0, COLLAGE_FIRST_PER_COL).map((g, i) => collageCardHtml(g, i === 0)).join('')}</div>`)
+    .map((colGroups) => `<div class="collage-grid-col">${colGroups.slice(0, COLLAGE_FIRST_PER_COL).map((g, i) => collageCardHtml(g, i < COLLAGE_EAGER_PER_COL)).join('')}</div>`)
     .join('');
 
   let offset = COLLAGE_FIRST_PER_COL;
+  const hasMore = () => cols.some((c) => c.length > offset);
+  let observer = null;
+  const observeColumnEnds = () => {
+    if (!observer) return;
+    observer.disconnect();
+    if (!hasMore()) return;
+    grid.querySelectorAll('.collage-grid-col').forEach((col) => {
+      if (col.lastElementChild) observer.observe(col.lastElementChild);
+    });
+  };
   const appendChunk = () => {
     if (token !== collageRenderToken) return; // 期間又重新渲染了，放棄這一輪
     const colEls = grid.querySelectorAll('.collage-grid-col');
-    let more = false;
     cols.forEach((colGroups, c) => {
       const slice = colGroups.slice(offset, offset + COLLAGE_CHUNK_PER_COL);
       if (slice.length && colEls[c]) colEls[c].insertAdjacentHTML('beforeend', slice.map((g) => collageCardHtml(g)).join(''));
-      if (colGroups.length > offset + COLLAGE_CHUNK_PER_COL) more = true;
     });
     offset += COLLAGE_CHUNK_PER_COL;
-    if (more) scheduleIdle(appendChunk);
+    if (observer) observeColumnEnds();
+    else if (hasMore()) scheduleIdle(appendChunk);
   };
-  if (cols.some((c) => c.length > COLLAGE_FIRST_PER_COL)) scheduleIdle(appendChunk);
+  if (!hasMore()) return;
+  if ('IntersectionObserver' in window) {
+    // 剩下的卡片「捲到快到底才補」：每欄最後一張卡片進入（容器底部往下 1200px 內）就再補一批。
+    // 全部一次補完會讓手機上 Style & Layout 吃掉近 2 秒，而使用者通常只會看前幾十張。
+    observer = new IntersectionObserver((entries) => {
+      if (token !== collageRenderToken) return;
+      if (entries.some((e) => e.isIntersecting)) appendChunk();
+    }, { root: grid, rootMargin: '0px 0px 1200px 0px' });
+    observeColumnEnds();
+  } else {
+    scheduleIdle(appendChunk);
+  }
 }
 
 let collageResizeColCount = null;
@@ -1029,12 +1052,14 @@ if (window.ResizeObserver) {
 }
 syncEventsPanelOffset();
 
-function eventImages(ev) {
-  return ev.image ? ev.image.split(',').map((s) => driveUrlToImage(s.trim())).filter(Boolean) : [];
+function eventImages(ev, width) {
+  return ev.image ? ev.image.split(',').map((s) => driveUrlToImage(s.trim(), width)).filter(Boolean) : [];
 }
 
+// 卡片縮圖：卡片最寬約 335～450px，480 夠用（含一般螢幕），詳情 Modal／燈箱仍用預設 800。
+const CARD_THUMB_WIDTH = 480;
 function eventThumbUrl(ev) {
-  return eventImages(ev)[0] || '';
+  return eventImages(ev, CARD_THUMB_WIDTH)[0] || '';
 }
 
 function eventDetailImageHtml(group) {

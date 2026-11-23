@@ -127,14 +127,14 @@ function unwrapImageProxyUrl(url) {
   return url;
 }
 
-function proxyImageUrl(url) {
+function proxyImageUrl(url, width = 800) {
   if (!IMAGE_PROXY || !/^https?:\/\//i.test(url)) return url;
   if (/\.gif(\?|#|$)/i.test(url)) return url; // 代理預設只輸出第一格，會讓動圖變靜態
   try {
     const host = new URL(url).hostname;
     if (IMAGE_PROXY_SKIP_HOSTS.includes(host) || IMAGE_PROXY_HOSTS.includes(host)) return url;
   } catch (_) { return url; }
-  return `${IMAGE_PROXY}?url=${encodeURIComponent(url)}&w=800&we&output=webp&q=75`;
+  return `${IMAGE_PROXY}?url=${encodeURIComponent(url)}&w=${width}&we&output=webp&q=75`;
 }
 
 // 代理圖載入失敗就退回原圖（只退一次）。error 事件不會冒泡，所以用 capture 階段掛在 document 上，
@@ -152,15 +152,18 @@ if (typeof document !== 'undefined' && IMAGE_PROXY) {
   }, true);
 }
 
-export function driveUrlToImage(url) {
+// width：輸出圖寬（px）。預設 800 給詳情 Modal／燈箱用；列表卡片縮圖請傳較小的值（例如 480），
+// 卡片實際只顯示約 335px 寬，一律抓 800 會多下載好幾 MB（Lighthouse「提升圖片傳送效能」）。
+// Cloudinary 加 c_limit：只縮小、不放大，原圖比 width 小時維持原尺寸。
+export function driveUrlToImage(url, width = 800) {
   if (!url) return '';
   url = unwrapImageProxyUrl(url);
   const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+  if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w${width}`;
   if (url.includes('res.cloudinary.com')) {
-    return url.replace('/upload/', '/upload/w_800,q_auto,f_auto/');
+    return url.replace('/upload/', `/upload/c_limit,w_${width},q_auto,f_auto/`);
   }
-  return proxyImageUrl(url);
+  return proxyImageUrl(url, width);
 }
 
 // 「最後更新」時間戳處理：main.js（機台頁）／events-header.js（活動頁）都要拿機台分頁 R 欄
@@ -351,10 +354,12 @@ const inflightSheetFetches = new Map();
 
 async function fetchSheetCsvOnce(tab, googleUrl) {
   // events-app.html 的 <head> 會在模組載入前就先送出 /api/sheet 請求（window.__sheetPrefetch），
-  // 這裡優先吃那一份，省掉「等模組下載完才開始抓資料」的瀑布；用過就清掉，重試時會走正常流程。
+  // 這裡優先吃那一份，省掉「等模組下載完才開始抓資料」的瀑布。
+  // 頁面載入後 10 秒內，所有呼叫者（活動資料、最後更新時間…）共用這一份回應（每個呼叫者拿到的是 clone，
+  // 原始 Response 的 body 沒被讀過），不會同一頁把 68 KiB 的活動 CSV 下載好幾次；超過 10 秒才會重新抓，
+  // 所以之後重新整理資料仍然會打到網路。
   const early = window.__sheetPrefetch && window.__sheetPrefetch[tab];
-  if (early) {
-    delete window.__sheetPrefetch[tab];
+  if (early && Date.now() - (window.__sheetPrefetchAt || 0) < 10000) {
     try {
       const res = await early;
       const type = res.headers.get('content-type') || '';

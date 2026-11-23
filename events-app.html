@@ -37,11 +37,12 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
 
   <!-- 提早開始抓活動資料（不用等 module 下載完），fetchSheetCsv() 會接手這份 promise；失敗會自動退回原流程 -->
   <script>
+    window.__sheetPrefetchAt = Date.now();
     window.__sheetPrefetch = { events: fetch('/api/sheet?tab=events', { cache: 'no-store' }) };
     window.__sheetPrefetch.events.catch(function () {});
   </script>
@@ -169,12 +170,15 @@
   <script>
     // 手機版 #eventsTopBar 是固定定位，內容要靠 --events-top-bar-height 補 padding-top。原本這個值要等活動資料
     // 回來、initEventsTopBarScroll() 才寫入，之前內容一直貼在頂欄底下，寫入瞬間整頁下移（CLS 大宗）。
-    // 在 <main> 前先量一次寫進去；後續尺寸變化仍由 events-scroll.js 的 ResizeObserver 接手。
+    // 這裡用 ResizeObserver 提早量：回呼在瀏覽器排版完成後、第一次繪製前觸發，所以首次繪製就已經有正確的
+    // padding，而且不必像直接呼叫 getBoundingClientRect() 那樣在解析 HTML 途中強制同步排版（手機上約 300 ms）。
+    // 後續尺寸變化／切換桌機版，仍由 events-scroll.js 的 ResizeObserver 接手。
     (function () {
       var b = document.getElementById('eventsTopBar');
-      if (b && window.innerWidth <= 991) {
+      if (!b || !window.ResizeObserver || !window.matchMedia('(max-width: 991px)').matches) return;
+      new ResizeObserver(function () {
         document.documentElement.style.setProperty('--events-top-bar-height', b.getBoundingClientRect().height + 'px');
-      }
+      }).observe(b);
     })();
   </script>
   <main class="events-page-body">

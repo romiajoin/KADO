@@ -1109,6 +1109,10 @@ body.events-standalone {
     max-width: 100%;
     height: auto;
     max-height: 85vh;
+    /* iOS Safari：85vh 是「工具列收起時」的大視窗高度，比實際可見範圍高，面板頂端（標題列與關閉鈕）
+       會被推到狀態列底下看不到。改成「不超過容器（可見視窗）高度扣掉 72px」，標題列永遠留在狀態列下方；
+       不支援 min()/百分比的舊瀏覽器會退回上一行的 85vh */
+    max-height: min(85vh, calc(100% - 72px));
     border-radius: 16px 16px 0 0;
 
     background: var(--fill-gray6);
