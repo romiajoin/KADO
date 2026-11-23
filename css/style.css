@@ -53,7 +53,7 @@
     }
     .logo { display: flex; align-items: center; gap: 8px; }
     /* logo 圖（pin＋KADO）為單一 SVG，高度決定大小，寬度依 210:64 比例自動縮放 */
-    .logo-icon { height: 44px; width: auto; flex-shrink: 0; display: block; }
+    .logo-icon { height: 44px; width: 148.5px; flex-shrink: 0; display: block; }
     /* logo 圖已含 KADO 字樣；h1 保留給螢幕閱讀器與搜尋引擎，視覺上隱藏 */
     .visually-hidden {
       position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
@@ -869,7 +869,7 @@
       .header-right .changelog-link,
       .header-right .header-divider { display: none; }
       .logo { flex: 1; min-width: 0; }
-      .logo-icon { height: 36px; }
+      .logo-icon { height: 36px; width: 121.5px; }
       #gridView { padding: 0px 12px calc(24px + env(safe-area-inset-bottom, 0px)) 16px; }
       .toolbar { padding: 12px 16px 16px 16px; }
       .search-box { width: 100%; flex-shrink: 1; }
@@ -1022,3 +1022,79 @@
   transition: opacity 0.2s;
 }
 .load-retry-btn:hover { opacity: 0.85; }
+
+/* ===== 右下角浮動按鈕 .events-link（首頁→活動、活動頁→地圖共用；原在 events.css） ===== */
+.events-link {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0;
+  width: 52px;
+  height: 52px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%);
+  backdrop-filter: blur(4px);
+  color: var(--fill-white);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 102, 255, 0.35);
+  transition: width 0.22s ease, padding 0.22s ease, background 0.15s ease, box-shadow 0.15s ease, gap 0.15s ease;
+}
+
+/* 手機／平板地圖模式：FAB 固定右下角常跟 Leaflet 內建控制項或展開的 bottom sheet
+   內容卡在一起（sidebar 在這個斷點下變成貼底 fixed 全寬 bottom sheet），且地圖模式
+   本身已經有明確的返回列表視圖入口（view-toggle），不缺這顆固定入口，故隱藏。
+   桌機地圖模式（見下方 min-width:992px）則保留顯示——桌機側邊欄是常駐在左側的
+   400px 面板，不會跟右下角的 FAB 互相遮擋。 */
+@media (max-width: 991px) {
+  body.map-view .events-link {
+    display: none;
+  }
+}
+
+/* 桌機地圖模式下 FAB 保留顯示，但 Leaflet 預設控制項（attribution 等）z-index 是 1000，
+   FAB 平常（列表模式／events.html）維持 z-index:500 就好，這裡地圖模式下額外拉高，
+   避免跟疊在同個右下角的 Leaflet attribution 互相蓋住。 */
+@media (min-width: 992px) {
+  body.map-view .events-link {
+    z-index: 1100;
+  }
+}
+
+.events-link svg { flex-shrink: 0; }
+
+.events-link .events-label {
+  display: inline-block;
+  max-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.22s ease, opacity 0.15s ease;
+}
+
+@media (hover: hover) and (min-width: 992px) {
+  .events-link:hover {
+    width: auto;
+    padding: 16px;
+    gap: 8px;
+    background: linear-gradient(180deg, rgba(0, 102, 255, 0.4) 0%, #0066FF 100%);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 26px rgba(0, 102, 255, 0.45);
+  }
+
+  .events-link:hover .events-label {
+    max-width: 156px;
+    opacity: 1;
+    transition: max-width 0.22s ease, opacity 0.15s ease 0.05s;
+  }
+}

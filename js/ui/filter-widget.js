@@ -199,6 +199,7 @@ export function createFilterWidget({
     const panel = barEl.querySelector(`.filter-panel[data-panel="${key}"]`);
     const pill = barEl.querySelector(`.filter-pill[data-key="${key}"]`);
     panel.classList.add('open');
+    fitPanelWidth(panel);
     pill.classList.add('open');
     openPanelKey = key;
 
@@ -284,7 +285,8 @@ export function createFilterWidget({
       scroll.appendChild(group);
       group.querySelector('.filter-panel').addEventListener('click', (e) => e.stopPropagation());
       renderOptionsInto(group.querySelector('.filter-panel-options'), cfg);
-      fitPanelWidth(group.querySelector('.filter-panel'));
+      // 面板預設隱藏，寬度等實際展開時才量（見 toggleDesktopPanel）。
+      // 在這裡逐一量會每個面板各觸發一次強制重排，連同整頁卡片一起重算（PageSpeed「強制自動重排」約 500ms）。
     });
 
     barEl.querySelectorAll('.filter-pill').forEach((btn) => {
