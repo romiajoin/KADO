@@ -33,6 +33,7 @@ export function createSortWidget({
     group.className = 'sort-group';
     group.innerHTML = `
       <button class="sort-btn" id="sortBtn" type="button">
+        <span class="visually-hidden">排序</span>
         <span class="sort-label">
           <span id="sortLabel1"></span>
           <span id="sortLabel2"></span>

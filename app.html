@@ -10,13 +10,30 @@
   <meta name="description" content="動漫抽卡機、相卡機機台，持續更新中！">
 
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NGGBNKBJB9"></script>
   <script>
    window.dataLayer = window.dataLayer || [];
    function gtag(){dataLayer.push(arguments);}
    gtag('js', new Date());
 
    gtag('config', 'G-NGGBNKBJB9');
+   // 延後載入 gtag.js（約 380ms 主執行緒時間）：第一次互動（點擊／按鍵／捲動／觸控）或頁面載入完 3 秒後，先到先載入。
+   // 上面的 gtag() 呼叫都先排進 dataLayer 佇列，gtag.js 載入後會依序補送，事件不會遺失；
+   // 只有「3 秒內就離開、也沒互動」的造訪不會被 GA 記錄。
+   (function () {
+     var loaded = false;
+     var evs = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+     function load() {
+       if (loaded) return;
+       loaded = true;
+       evs.forEach(function (e) { removeEventListener(e, load, true); });
+       var s = document.createElement('script');
+       s.async = true;
+       s.src = 'https://www.googletagmanager.com/gtag/js?id=G-NGGBNKBJB9';
+       document.head.appendChild(s);
+     }
+     evs.forEach(function (e) { addEventListener(e, load, { capture: true, passive: true, once: true }); });
+     addEventListener('load', function () { setTimeout(load, 3000); });
+   })();
   </script>
 
   <script type="application/ld+json">
@@ -52,7 +69,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
   <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" /></noscript>
 
+  <link rel="preconnect" href="https://wsrv.nl" />
   <link rel="stylesheet" href="css/style.css" />
+  <!-- main.js 的 import 鏈有三層（main → utils/events-data/… → 資料請求），預載讓整串模組並行下載，資料請求能更早發出 -->
+  <link rel="modulepreload" href="js/shared/utils.js" />
+  <link rel="modulepreload" href="js/core/events-data.js" />
+  <link rel="modulepreload" href="js/core/event-match.js" />
+  <link rel="modulepreload" href="js/ui/sort-widget.js" />
+  <link rel="modulepreload" href="js/ui/filter-widget.js" />
+  <link rel="modulepreload" href="js/ui/basemap.js" />
 </head>
 <body>
 

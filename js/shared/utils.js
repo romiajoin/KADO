@@ -101,14 +101,66 @@ export const CLOSE_BTN_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" heigh
 
 // 圖片網址轉換：locations／events 兩份資料都會用到
 
+// ---- 外站圖片縮圖代理（wsrv.nl）----
+// Sheet 裡有不少圖是直接貼外站原圖（常常 1～2 MB、數千像素寬），卡片上只顯示約 335px，
+// 這裡統一包一層 wsrv.nl 縮成 800 寬的 WebP（實測約 16～120 KB）。Sheet 本身存的仍是原網址，不用動。
+// 一鍵關閉：把 IMAGE_PROXY 改成 null，全部回到原圖直連。
+// 圖片載入失敗（代理掛掉、被擋、超額）時，下面的全域 error 監聽會自動退回原圖，不會破圖。
+const IMAGE_PROXY = 'https://wsrv.nl/';
+const IMAGE_PROXY_HOSTS = ['wsrv.nl', 'images.weserv.nl'];
+// 不經代理的網域：
+// - res.cloudinary.com：已有自己的縮圖轉換（見下方）
+// - drive.google.com：已用 thumbnail?sz=w800
+// - cdn.sounova.com：被 wsrv.nl 的政策封鎖（回 400 "Domain or TLD blocked by policy"），圖本身也已是 webp
+const IMAGE_PROXY_SKIP_HOSTS = ['res.cloudinary.com', 'drive.google.com', 'cdn.sounova.com'];
+
+// 如果有人把「已經被 wsrv.nl 包過的網址」整串貼進 Sheet（例如從網頁上右鍵複製圖片網址），
+// 先還原成原始網址再處理，避免資料被綁死在這個代理上。
+function unwrapImageProxyUrl(url) {
+  try {
+    const u = new URL(url);
+    if (IMAGE_PROXY_HOSTS.includes(u.hostname)) {
+      const inner = u.searchParams.get('url');
+      if (inner) return /^https?:\/\//i.test(inner) ? inner : `https://${inner}`;
+    }
+  } catch (_) { /* 不是合法網址就原樣處理 */ }
+  return url;
+}
+
+function proxyImageUrl(url) {
+  if (!IMAGE_PROXY || !/^https?:\/\//i.test(url)) return url;
+  if (/\.gif(\?|#|$)/i.test(url)) return url; // 代理預設只輸出第一格，會讓動圖變靜態
+  try {
+    const host = new URL(url).hostname;
+    if (IMAGE_PROXY_SKIP_HOSTS.includes(host) || IMAGE_PROXY_HOSTS.includes(host)) return url;
+  } catch (_) { return url; }
+  return `${IMAGE_PROXY}?url=${encodeURIComponent(url)}&w=800&we&output=webp&q=75`;
+}
+
+// 代理圖載入失敗就退回原圖（只退一次）。error 事件不會冒泡，所以用 capture 階段掛在 document 上，
+// 這樣不用改各處 <img> 的寫法。
+if (typeof document !== 'undefined' && IMAGE_PROXY) {
+  document.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || img.dataset.proxyFallback) return;
+    if (!img.src.startsWith(IMAGE_PROXY)) return;
+    const orig = unwrapImageProxyUrl(img.src);
+    if (orig && orig !== img.src) {
+      img.dataset.proxyFallback = '1';
+      img.src = orig;
+    }
+  }, true);
+}
+
 export function driveUrlToImage(url) {
   if (!url) return '';
+  url = unwrapImageProxyUrl(url);
   const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
   if (url.includes('res.cloudinary.com')) {
     return url.replace('/upload/', '/upload/w_800,q_auto,f_auto/');
   }
-  return url;
+  return proxyImageUrl(url);
 }
 
 // 「最後更新」時間戳處理：main.js（機台頁）／events-header.js（活動頁）都要拿機台分頁 R 欄
@@ -290,11 +342,29 @@ export function submitMachineReport(machineId, machineName, type, source, extra 
 // tab：'machines' | 'events'；googleUrl：該分頁的直連網址（各檔案自己宣告，沿用既有常數）。
 // 回傳 Response，呼叫端照舊用 .ok／.text()。
 // =============================================
-export async function fetchSheetCsv(tab, googleUrl) {
+// 同一個分頁同時被多處呼叫時（例如首頁載入時 main.js 取「最後更新」時間戳、loadEvents() 取完整活動資料，
+// 兩邊都要同一份活動 CSV）共用同一次下載，避免重複抓 68 KiB 並跟機台請求搶頻寬。
+// 只共用「還在進行中」的請求：回應一到就移出 Map，之後的呼叫（背景自動刷新、下拉刷新）仍然是全新請求，
+// 維持原本 cache: 'no-store' 的「每次都拿最新資料」語意。每個呼叫端都拿 clone()，原始 Response 沒人讀，
+// 所以不會有 body 被讀過第二次的錯誤。
+const inflightSheetFetches = new Map();
+
+async function fetchSheetCsvOnce(tab, googleUrl) {
   try {
     const res = await fetch(`/api/sheet?tab=${encodeURIComponent(tab)}`, { cache: 'no-store' });
     const type = res.headers.get('content-type') || '';
     if (res.ok && type.includes('text/csv')) return res;
   } catch (_) { /* 退回直連 */ }
   return fetch(googleUrl, { cache: 'no-store' });
+}
+
+export function fetchSheetCsv(tab, googleUrl) {
+  let pending = inflightSheetFetches.get(tab);
+  if (!pending) {
+    pending = fetchSheetCsvOnce(tab, googleUrl);
+    inflightSheetFetches.set(tab, pending);
+    const clear = () => { if (inflightSheetFetches.get(tab) === pending) inflightSheetFetches.delete(tab); };
+    pending.then(clear, clear);
+  }
+  return pending.then((res) => res.clone());
 }

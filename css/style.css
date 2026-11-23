@@ -161,6 +161,9 @@
       display: flex; align-items: center; gap: 12px;
       flex-shrink: 0;
     }
+    /* 資料載入前 #filterBar 是空的，載入後才塞入 36px 高的 pill 列，會把整個內容區往下推（CLS）。
+       用 :empty 的偽元素先預留同樣高度；render 之後 bar 有子元素就不再 :empty，預留自動消失。 */
+    .filter-bar:empty::before { content: ''; display: block; height: 36px; }
     .filter-scroll {
       display: flex; align-items: center; gap: 12px;
       min-width: 0;
