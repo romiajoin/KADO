@@ -865,7 +865,8 @@
         transform: translateY(-100%);
       }
       body:not(.map-view) #gridView {
-        padding-top: calc(8px + var(--top-bar-height, 0px));
+        /* fallback 用手機版實測高度（≈211px），避免 JS 延後量測前 grid 先以 0 渲染、量完才被推下去（CLS） */
+        padding-top: calc(8px + var(--top-bar-height, 211px));
       }
       .view-btn .label { display: none; }
       .view-btn { padding: 8px 16px; }

@@ -63,6 +63,8 @@ function updateTopBarHeight() {
 function handleScroll() {
   if (!gridView) return;
 
+  if (lastScrollTop < 0) { lastScrollTop = gridView.scrollTop; return; }
+
   if (!isMobile() || !isListMode()) {
     showBar();
     downAccum = 0;
@@ -103,7 +105,7 @@ export function updateTopBarHeightExternal() {
 // 切換 view（grid ↔ map）或跨越 breakpoint 時呼叫，確保狀態乾淨、bar 一定可見
 export function resetTopBarScrollState() {
   downAccum = 0;
-  lastScrollTop = gridView ? gridView.scrollTop : 0;
+  lastScrollTop = -1; // 延後到第一次 scroll 事件再讀：此時樣式剛失效，讀 scrollTop 會強制重排
   showBar();
   updateTopBarHeight();
 }

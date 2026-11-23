@@ -60,6 +60,14 @@
   }
   </script>
 
+  <!-- 提早開始抓機台資料（不用等 main.js 下載執行完），fetchSheetCsv() 會接手這份 promise；失敗會自動退回原流程。
+       只預取 machines：活動資料不影響首屏，不跟它搶頻寬 -->
+  <script>
+    window.__sheetPrefetchAt = Date.now();
+    window.__sheetPrefetch = { machines: fetch('/api/sheet?tab=machines', { cache: 'no-store' }) };
+    window.__sheetPrefetch.machines.catch(function () {});
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://unpkg.com" crossorigin />
