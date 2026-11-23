@@ -128,6 +128,19 @@ export default {
       );
     }
 
+    // 明顯的機器人／測速工具（Lighthouse、PageSpeed、爬蟲等）只讀不寫，
+    // 不讓它們吃掉 KV 免費額度的「寫入」次數（免費版每天只有約 1,000 次寫入）。
+    // 一般訪客每次載入都 +1；也保留 /?peek=1 當作手動唯讀查詢用。
+    const ua = request.headers.get("User-Agent") || "";
+    const isBot = /bot|crawl|spider|slurp|lighthouse|pagespeed|gtmetrix|headless|prerender|monitor/i.test(ua);
+    if (url.searchParams.get("peek") === "1" || isBot) {
+      const count = parseInt((await env.VISITOR_KV.get("count")) ?? "0", 10);
+      return new Response(
+        JSON.stringify({ count }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=60" } }
+      );
+    }
+
     // /  → 累加 +1 並回傳目前數字（正常訪客計數用這個）
     const current = parseInt((await env.VISITOR_KV.get("count")) ?? "0", 10);
     const next = current + 1;

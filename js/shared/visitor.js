@@ -7,7 +7,9 @@ async function loadVisitorCount() {
   try {
     // TODO: 部署 Worker 後，把下面網址換成你自己的 Worker 網址
     // 例如 https://visitor-counter.你的子網域.workers.dev/
-    const res = await fetch('https://visitor-counter.gillsponge-601.workers.dev/');
+    // 本機開發（localhost／127.0.0.1）只讀不寫，測試時不會灌到正式人數、也不耗 KV 寫入額度
+    const isLocalDev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+    const res = await fetch('https://visitor-counter.gillsponge-601.workers.dev/' + (isLocalDev ? '?peek=1' : ''));
     const data = await res.json();
     document.getElementById('visitorCount').textContent = data.count.toLocaleString('zh-TW');
     // 一開始就用 visibility:hidden 保留版面高度（見 style.css 的 .visitor-banner），
