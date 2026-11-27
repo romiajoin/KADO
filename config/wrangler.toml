@@ -2,6 +2,11 @@ name = "visitor-counter"
 main = "../scripts/worker.js"
 compatibility_date = "2026-08-08"
 
+# Workers Logs：在 Cloudflare 後台看每個請求的 User-Agent／Origin／IP 等，
+# 用來追查像 2026-11-26 那種不明來源的請求尖峰（免費方案即可使用）
+[observability]
+enabled = true
+
 # 部署後，把下面的 id 換成你自己建立的 KV namespace id
 [[kv_namespaces]]
 binding = "VISITOR_KV"

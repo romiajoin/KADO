@@ -133,7 +133,13 @@ export default {
     // 一般訪客每次載入都 +1；也保留 /?peek=1 當作手動唯讀查詢用。
     const ua = request.headers.get("User-Agent") || "";
     const isBot = /bot|crawl|spider|slurp|lighthouse|pagespeed|gtmetrix|headless|prerender|monitor/i.test(ua);
-    if (url.searchParams.get("peek") === "1" || isBot) {
+    // 只有從正式站（SITE_URL）發出的請求才 +1：瀏覽器跨網域 fetch 一定會帶 Origin，
+    // 直接打這支 Worker 網址的腳本／掃描器通常不帶，Vercel 預覽網址、區網 IP 測試的 Origin 也不同。
+    // 2026-11-26 曾有兩波共約 1,200 次、幾乎全來自 HKG 節點的請求把 KV 每日寫入額度用完，
+    // 加上這道檢查後這類請求只讀不寫（照樣回傳人數，不回錯誤）。
+    // ⚠️ 之後若換自訂網域，要記得一起改 SITE_URL（或加進這裡的允許清單），否則正式訪客不會被計數。
+    const isSiteOrigin = request.headers.get("Origin") === SITE_URL;
+    if (url.searchParams.get("peek") === "1" || isBot || !isSiteOrigin) {
       const count = parseInt((await env.VISITOR_KV.get("count")) ?? "0", 10);
       return new Response(
         JSON.stringify({ count }),

@@ -26,6 +26,25 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 - **活動頁同縣市多場地標籤**：`events.js` 新增 `locationLabels(group)`／`uniqueLocationLabels(group)`。多地點活動標籤原本一律用縣市，同縣市有 2 個以上場地（例如 animate 信義店＋台北店）會出現重複的「台北」；改成這些列用場地欄（E 欄）當標籤，並去掉同縣市場地開頭共同的詞（「animate 台北店」「animate 信義店」→「台北店」「信義店」，至少保留最後一個詞）；場地欄空白就退回縣市。分隔符號：全是縣市用「・」，有任何標籤是場地名用「、」。套用在 `collageCardHtml()`、`locCardTopHtml()`、`cityTabsHtml()`；詳情頁「場地：」仍顯示完整 E 欄。
 - **刻意沒做／待辦**：`docs/changelog.json` 還沒補 v36／v36.1／v37 的條目（最後一筆是 v35.1；`changelog.js` 開頭註解要求每次上版補一筆）；`og.png` 等分享圖是否還有舊 logo 沒檢查；新 logo 是否要做成社群分享預覽圖也還沒處理。
 
+**v38（2026/11/27）**：三件事——地圖底圖改版、Safari logo 黑框修正、捲軸樣式統一。
+
+**v38 · 地圖底圖改版**（`js/ui/basemap.js` 新增，`js/ui/map.js` 的 `initMap()` 改呼叫 `addBasemap(map)`；commit `5b13649`）：原本的 OSM 官方圖磚外觀雜亂，且前提是不花錢，所以改預設 CARTO Positron。
+- **模式**：不帶參數／`?basemap=carto` ＝ CARTO Positron（冷藍濾鏡 `sepia(0.3) hue-rotate(170deg) saturate(0.8) brightness(0.97)` 只套在 `tilePane`）；`voyager` ＝ CARTO Voyager 原色；`osm` ＝ 原本的 OSM（網址改成不帶 `{s}` 的官方建議寫法）；`ofm` ＝ OpenFreeMap 向量底圖（maplibre-gl 4.7.1＋`@maplibre/maplibre-gl-leaflet` 0.0.22，暖米色色票 `PALETTE`、中文地名）。完整表格與參數見 spec.md「地圖底圖」。
+- **底圖與標籤拆兩層**：`{style}_nolabels` ＋ `{style}_only_labels`，標籤放自訂 pane `labels`（`z-index: 450`、`pointer-events: none`）；縮放按鈕下方多一顆「字」`L.Control`，顯示／隱藏標籤並存 `localStorage['kado_map_labels']`。
+- **踩過的坑**：① CARTO 現在**要求免費 API key**（直接打 `basemaps.cartocdn.com` 不帶 key 會被擋），key 寫在 `CARTO_KEY`，並在 CARTO 設 Referer 白名單 `kadotw.vercel.app`；欄位提示說明 `localhost`／`127.0.0.1` 要放另一把金鑰，所以本機預覽預設會被擋、自動退回 OSM。② 一開始用 `detectRetina` 載 2 倍圖，標籤文字被縮成一半大，改用 `{r}`（`@2x`）解決。③ `hue-rotate` 對灰色的 Positron 幾乎沒效果（灰色沒有色相），要先 `sepia` 才轉得出藍色；在彩色的 OSM 上則會變成粉紅海、紫色陸地。④ `@maplibre/maplibre-gl-leaflet` 0.1.x 只提供 ESM、需要 import map 並自帶一份 Leaflet，跟全域 `L` 不相容，所以固定用 0.0.22（UMD）。
+- **失敗保護**：CARTO 圖磚在「尚未載入成功任何一張」時累積 4 次 `tileerror` 就移除兩層、「字」按鈕與濾鏡，改加 OSM；`ofm` 在沒有 WebGL／外掛載入失敗／`webglcontextlost` 時同樣退回 OSM。
+- **刻意沒做／待辦**：CARTO 點陣圖磚的地名縮小到全台視角是英文、放大才中文（點陣圖磚無法改）；想全程中文地名要用 `?basemap=ofm`，但預設沒有採用它，是否改預設待決定。額度為非商業每月 500 萬次、商業每月 100 萬次，流量成長後要留意；若 `ofm` 日後要當預設，它是捐款維運、沒有 SLA。
+- **驗證**：只用內建瀏覽器（Chromium 系）在本機 `127.0.0.1:5500` 看過（圖磚 24／24 載入成功、「字」按鈕開關有效、退回 OSM 有效、`ofm` 外觀正常）。**部署到 `kadotw.vercel.app` 後尚未實測**（白名單是否生效、有沒有出現「字」按鈕）；Safari、實體手機也沒測過。
+
+**v38 · Safari logo 黑框修正**（`images/logo.svg`）：memoji 是 base64 內嵌的索引色 PNG（256 筆 `tRNS` 透明度），再經 `<pattern>`＋`<use>` 與 luminance `<mask>` 裁成圖釘形狀，Safari 會把透明區畫成黑色。修法：PNG 重新編碼成 RGBA、`<mask>` 換成等效 `<clipPath>`、`<image>` 直接放（不再經 `<pattern>`）；形狀與位置不變，檔案約 22KB→47KB。Safari 實機尚未確認，rsvg 轉繪與修正前一致。
+
+**v38 · 捲軸樣式統一**：Gill 要求調整 scroll bar 樣式，依序處理了三處。這一部分只動 CSS（`css/style.css`、`css/events.css`），沒動 JS／HTML。三處共用同一套寫法：Chrome／Safari 用 `::-webkit-scrollbar*`，Firefox 用 `scrollbar-width: thin` ＋ `scrollbar-color: rgba(0,0,0,.22) transparent`；軌道一律 `transparent`、滑塊 `rgba(0,0,0,.22)` 圓角 `999px`、hover 加深到 `.4`。
+- **活動詳情「相關機台」橫向卡片列（`.related-machines-list`）**：捲軸高度 2px，列底補 `padding-bottom: 2px` 讓捲軸跟卡片之間留一點空隙（一開始試 4px／8px，Gill 看過後調到 2px）。
+- **篩選桌機 dropdown（`.filter-panel`）**：縣市面板超過 `max-height: 320px` 後會出現系統預設捲軸（約 15px 寬），吃掉內容寬度，原本一排 3 個縣市 chip 被擠成 2 排。改成 6px 細捲軸，並把 `padding-right` 從 20px 扣成 14px（捲軸寬度 6 ＋ 14 ＝ 原本右側的 20），有沒有捲軸內容可用寬度都一樣，排列不會變。注意：`.filter-panel` 是 `width: max-content; max-width: 320px`，之後改 padding／捲軸寬度時要連動，否則欄數會變。`.sort-panel` 是獨立元件，不受影響。
+- **詳情彈窗（`.grid-modal-content`，首頁機台詳情與活動詳情共用）**：系統預設捲軸軌道是白色，在灰底（`--fill-gray6`）彈窗右側會露出一條白帶；軌道改透明、滑塊細 6px。
+- **沒動的**：`#gridView`（4px 藍色滑塊）、`.map-scroll-wrapper`（寬 0）、`.filter-scroll`（隱藏）的捲軸維持原樣，是各自刻意的設計。
+- **驗證**：只對照程式碼與使用者截圖，沒有用瀏覽器實測（縣市面板是否回到三欄、彈窗白帶是否消失，要看實機）。macOS 若設成「自動隱藏捲軸」（觸控板預設），系統本來就是浮層捲軸、不佔寬度，上述問題只會在外接滑鼠／設定「永遠顯示」時出現。
+
 **Skeleton 載入占位（v36.1）**：把機台頁／活動頁原本「⏳ 載入中...」文字改成跟真實卡片結構一致的 skeleton。動到 `app.html`、`events-app.html`、`css/style.css`（`.sk`／`.sk-card`／`.sk-sr`／`.load-error`／`.load-retry-btn` 等共用樣式）、`css/events.css`（`.sk-collage`／`.sk-week` 等活動頁專用）、`js/core/main.js`、`js/ui/map.js`、`js/pages/events/events.js`、`js/core/events-data.js`。
 - **為什麼 skeleton 寫在 HTML 裡、不是 JS 產生**：`main.js`／`grid.js` 是 ES module，會等 HTML 解析完才執行，JS 產生的 skeleton 至少慢一拍；寫在 HTML 首次繪製就看得到。同時 `#grid` 原本就有一行寫死的載入中文字、`renderGrid()` 一開始就 `innerHTML = ''` 整個清掉，直接換成 skeleton 不用加任何顯示／隱藏狀態。代價是 skeleton 標記跟真實卡片結構要各維護一份——所以卡片骨架沿用 `.loc-card-grid`／`.card-top`／`.card-actions`／`.loc-card` 這些真實 class，只另外定義色塊尺寸，卡片改版時要順便檢查。`sw.js` 已是自我卸載版本、沒有註冊任何 service worker，改 HTML 不用處理快取版本號。
 - **拿掉 `loadFromSheet()` 的 JS 覆寫**：原本非靜默（初次載入）時會把 `#grid` 再塞一次「⏳ 載入資料中...」，JS 一跑 HTML 內嵌的 skeleton 就被蓋掉，所以那行拿掉。「載入失敗後按重試」要還原 skeleton 時，用 module 載入當下先存好的快照（`GRID_SKELETON_HTML`／`LIST_SKELETON_HTML`，這時 `#grid`／`#locationList` 還是 HTML 寫的 skeleton），不另外在 JS 重複一份標記；活動頁同理（`COLLAGE_SKELETON_HTML`／`LIST_SKELETON_HTML`，`events.js`）。
@@ -188,7 +207,7 @@ KADO！抽卡機在哪 — 台灣 IP 抽卡機 / 相卡機 / 快閃活動地點�
 ## 技術架構
 
 - 前端：純 HTML / CSS / JavaScript（ES Modules，見下方「檔案結構」）
-- 地圖：Leaflet.js 1.9.4 + OpenStreetMap
+- 地圖：Leaflet.js 1.9.4；底圖 v38 起預設 CARTO Positron（可切 OSM／CARTO Voyager／OpenFreeMap，見 v38 段落與 spec.md「地圖底圖」）
 - 資料來源：Google Sheet 公開 CSV（`/pub?gid=0&single=true&output=csv`）
 - 圖片：Cloudinary（不用 Google Drive，有 CORS 問題）
 - 部署：Vercel（push 至 GitHub 後自動部署，約 1 分鐘生效）
@@ -209,6 +228,7 @@ events.css           # 活動行事曆頁專屬樣式
 js/
   main.js            # 核心協調：loadFromSheet／setView／applyFilters／回到前景自動刷新／下拉刷新（v31 起，原本在 pwa.js，PWA 移除時搬過來）
   map.js             # 地圖核心：Leaflet／marker／cluster popup／桌面側邊欄／mobile bottom sheet(最大的模組)
+  basemap.js         # 地圖底圖切換（v38 新增）：CARTO Positron／Voyager／OSM／OpenFreeMap、地名開關、失敗退回 OSM；由 map.js 的 initMap() 呼叫 addBasemap(map)
   filters.js         # 首頁篩選狀態＋資料（buildFilterOptions），UI 渲染/開合已抽到 filter-widget.js
   sort.js             # 首頁排序狀態串接（SORT_OPTIONS／sortState／userCoords），UI 渲染/開合/定位權限已抽到 sort-widget.js
   filter-widget.js    # 通用篩選元件核心（pill／桌機下拉／手機 bottom sheet／量寬／GA），首頁 filters.js 與 events.js 各自建立實例共用（v?? 抽出）

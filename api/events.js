@@ -99,29 +99,104 @@ function pickShareImage(raw, from) {
   return parts[idx] || fallback;
 }
 
-// 只在有帶 event 時才會真的打 Google Sheet（絕大多數流量是「搜尋結果」分享連結
-// 或一般訪客，沒有帶 event，這樣才不會每次載入都多打一次 Sheet API）。
-// 找不到、欄位空白、或抓取失敗都回傳「純預設狀態」該用的那張圖，任何失敗都不應該
-// 讓頁面整個掛掉。
-async function getShareImageUrl(id, query) {
-  if (!id) return pickPageDefaultImage(query);
+// 抓活動 CSV 並解析成欄位陣列（每次回源都抓一次：除了 ?event= 的分享圖，
+// 現在還要用來在伺服器端輸出活動清單給搜尋引擎，見下方 buildSeoEventList()）。
+// 加 3 秒逾時：Google Sheet 偶爾很慢，寧可這次不輸出清單，也不要讓整頁卡住。
+// 任何失敗都回傳 null，呼叫端退回原本「沒有資料」的行為，不讓頁面掛掉。
+// /events 有 CDN 快取（s-maxage=60），同一個網址每分鐘最多回源一次，不會每個訪客都打 Sheet。
+async function fetchEventRows() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
   try {
-    const response = await fetch(EVENTS_SHEET_CSV_URL);
+    const response = await fetch(EVENTS_SHEET_CSV_URL, { signal: controller.signal });
+    if (!response.ok) return null;
     const csvText = await response.text();
     const rows = csvText.trim().split('\n');
     const parsed = [];
     for (let i = 1; i < rows.length; i++) {
-      parsed.push(parseCSVRow(rows[i]));
+      parsed.push(parseCSVRow(rows[i].replace(/\r$/, '')));
     }
-    // ?event= 只認永久ID（O欄），跟 /api/event-share 現在的規則一致，不比對 A 欄流水號
-    const match = parsed.find((cols) => cols[PERMANENT_ID_COL] === id);
-    if (match) {
-      return pickShareImage(match[SHARE_IMAGE_COL], query.from || 'grid');
-    }
-    return pickPageDefaultImage(query);
+    return parsed;
   } catch (err) {
-    return pickPageDefaultImage(query);
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+// ?event= 只認永久ID（O欄），跟 /api/event-share 現在的規則一致，不比對 A 欄流水號。
+// 找不到、欄位空白、或抓取失敗都回傳「純預設狀態」該用的那張圖。
+function getShareImageUrl(id, query, rows) {
+  if (!id || !rows) return pickPageDefaultImage(query);
+  const match = rows.find((cols) => cols[PERMANENT_ID_COL] === id);
+  if (match) {
+    return pickShareImage(match[SHARE_IMAGE_COL], query.from || 'grid');
+  }
+  return pickPageDefaultImage(query);
+}
+
+// ── 伺服器端活動清單（SEO）──────────────────────────────────────────
+// events-app.html 原本只有 skeleton（「載入中…」），活動內容全靠前端 JS 抓 Sheet 再畫，
+// 搜尋引擎第一輪（不執行 JS）只看得到空殼。這裡把「進行中＋即將開始」的活動輸出成
+// 純文字清單，塞進 #eventsCollageGrid 的 skeleton 裡：
+//   - 用 .visually-hidden（style.css 既有，同 <h1> 的做法）視覺隱藏，不改變版面、不造成 CLS
+//   - 前端 renderCollageGrid() 第一次渲染就會整段覆寫 #eventsCollageGrid 的 innerHTML，
+//     所以 JS 執行後畫面／DOM 只剩真正的活動卡片，內容跟這份清單一致，不是隱藏關鍵字
+//   - events.js 的 COLLAGE_SKELETON_HTML 會連同這份清單一起快照，只在「資料還在載入」時
+//     重新顯示，一樣是視覺隱藏，不影響畫面
+// 欄位索引跟 js/core/events-data.js 的 COL 一致（各自獨立宣告，環境不同無法共用）
+const COL = { title: 2, category: 1, period: 3, venue: 4, city: 5 };
+const SEO_LIST_MAX = 300;
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+// 'YYYY/M/D' → 可比較的數字 YYYYMMDD；格式不對回傳 null
+function dateNum(str) {
+  const m = String(str || '').trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!m) return null;
+  return Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]);
+}
+
+// 台灣時間的今天（YYYYMMDD），Vercel function 跑在 UTC
+function todayNumTaipei() {
+  const d = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+
+function buildSeoEventList(rows) {
+  if (!rows) return '';
+  const today = todayNumTaipei();
+  // 同一檔活動多個地點：跟 events.js 的 groupKey() 一樣用「標題＋期間」合併成一筆
+  const groups = new Map();
+  rows.forEach((cols) => {
+    const title = (cols[COL.title] || '').trim();
+    const period = (cols[COL.period] || '').trim();
+    if (!title || !period) return;
+    const [startStr, endStr] = period.split('～').map((s) => s.trim());
+    const start = dateNum(startStr);
+    const end = dateNum(endStr) || start;
+    if (!start || end < today) return; // 已結束的活動不列
+    const key = `${title}\u0000${period}`;
+    if (!groups.has(key)) {
+      groups.set(key, { title, period, start, category: (cols[COL.category] || '').trim(), places: [] });
+    }
+    const place = [cols[COL.city], cols[COL.venue]].map((s) => (s || '').trim()).filter(Boolean).join(' ');
+    const g = groups.get(key);
+    if (place && !g.places.includes(place)) g.places.push(place);
+  });
+  const list = Array.from(groups.values())
+    .sort((a, b) => a.start - b.start)
+    .slice(0, SEO_LIST_MAX);
+  if (!list.length) return '';
+  const items = list.map((g) => {
+    const meta = [g.category, g.period, g.places.join('、')].filter(Boolean).map(escapeHtml).join('｜');
+    return `<li>${escapeHtml(g.title)}｜${meta}</li>`;
+  }).join('');
+  return `<section class="visually-hidden"><h2>進行中與即將開始的動漫活動</h2><ul>${items}</ul></section>`;
 }
 
 function buildOgTags(ogImageUrl) {
@@ -144,16 +219,20 @@ function buildOgTags(ogImageUrl) {
 
 module.exports = async function handler(req, res) {
   const eventId = req.query.event || '';
-  const ogImageUrl = await getShareImageUrl(eventId, req.query);
+  const rows = await fetchEventRows();
+  const ogImageUrl = getShareImageUrl(eventId, req.query, rows);
 
   const htmlPath = path.join(process.cwd(), 'events-app.html');
   const html = fs.readFileSync(htmlPath, 'utf-8');
-  const finalHtml = html.replace('</head>', buildOgTags(ogImageUrl));
+  const GRID_OPEN = '<div class="events-collage-grid" id="eventsCollageGrid">';
+  const finalHtml = html
+    .replace('</head>', buildOgTags(ogImageUrl))
+    .replace(GRID_OPEN, GRID_OPEN + buildSeoEventList(rows));
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   // 跟 api/index.js 對 "/" 的規則一致：瀏覽器端每次都向 CDN 重新驗證（max-age=0），
   // 但 Vercel CDN 可快取 60 秒並在背景更新（stale-while-revalidate），省下每次回源的
-  // function 冷啟動與（帶 ?event= 時）抓 Google Sheet 的時間。CDN 快取鍵包含完整網址
+  // function 冷啟動與抓 Google Sheet 的時間。CDN 快取鍵包含完整網址
   // （含 query string），所以各個 ?event=／?q=／?view= 的 OG 標籤不會互相污染。
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=600');
   res.status(200).send(finalHtml);
